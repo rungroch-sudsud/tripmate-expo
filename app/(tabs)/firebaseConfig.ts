@@ -2,14 +2,27 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import {
+  apiKey,
+  authDomain,
+  projectId,
+  storageBucket,
+  messagingSenderId,
+  appId,
+  measurementId,
+} from '@env';
+
+
+
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBunPb5WaaA7uMdKMKN0tvLQlIGgk_12LM",
-  authDomain: "my-app-19692.firebaseapp.com",
-  projectId: "my-app-19692",
-  storageBucket: "my-app-19692.appspot.com",
-  messagingSenderId: "226555179524",
-  appId: "1:226555179524:web:5ca64cb5b6ed1731b5bb51",
+  apiKey,
+  authDomain,
+  projectId,
+  storageBucket,
+  messagingSenderId,
+  appId,
+  measurementId
 };
 
 // ✅ Prevent double initialization

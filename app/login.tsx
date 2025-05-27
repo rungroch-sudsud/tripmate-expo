@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { Animated } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
+import axiosInstance from './lib/axios';
+import TravelStyleScreen from './travel_style_screen'
 
 
 
@@ -37,19 +39,48 @@ const Login = () => {
     setTimeout(animateProgress, 300);
   }, []);
 
-const handleWebGoogleSignIn = async () => {
+  const handleWebGoogleSignIn = async () => {
   const provider = new GoogleAuthProvider();
   const auth = getAuth();
 
   try {
     const result = await signInWithPopup(auth, provider);
-    console.log('Web login successful:', result.user);
+    const user = result.user;
+    const idToken = await user.getIdToken();
+
+    const userId = user.uid;
+
+    const response = await axiosInstance.post(
+      '/users/profile',
+      {
+        // id: userId,  // uncomment only if backend requires it explicitly
+        userId: userId,
+        nickname: user.displayName || '',
+        email: user.email || '',
+        fullname: user.displayName || '',
+        travelStyles: [],
+        destinations: [],
+        gender: '',
+        age: null,
+        lineId: '',
+        facebookUrl: ''
+      },
+      {
+        headers: { Authorization: `Bearer ${idToken}` },
+      }
+    );
+
+    console.log('Backend response:', response.data);
+
+    if (response.status === 201) {
+      const myJwt = response.data.token || response.data.jwt || response.data.accessToken;
+      console.log('Backend JWT:', myJwt);
+    }
+
   } catch (error) {
     console.error('Web login failed:', error);
   }
 };
-
-
 
 
   const handleBackPress = () => {
@@ -116,17 +147,22 @@ const handleWebGoogleSignIn = async () => {
           <Text
   numberOfLines={1}
   style={{
-    fontSize: 12,
+    fontSize: 14,
     color: '#999999',
     textAlign: 'center',
     flexShrink: 1,
+    fontFamily: 'Inter_400Regular',
   }}
 >
   เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
 </Text>
 {'\n'}{'\n'}{'\n'}{'\n'}
-          <Text style={styles.linkText}>ข้อกำหนดการใช้งาน</Text> และ{' '}
-          <Text style={styles.linkText}>นโยบายความเป็นส่วนตัว</Text>
+<Text>การเข้าสู่ระบบเป็นการยอมรับ 
+ </Text>{' '}
+          <Text style={styles.linkText}>นโยบายความเป็นส่วนตัว</Text> 
+          {'\n'}
+          และ{' '}
+          <Text style={styles.linkText}>ข้อกําหนดการใช้งาน</Text> และ ของเรา
         </Text>
       </View>
     </SafeAreaView>
@@ -219,9 +255,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 25,
+    borderRadius: 10,
     marginBottom: 5,
-    minWidth: 300,
+    minWidth: 400,
     borderWidth: 1,
     borderColor: '#dadce0',
     shadowColor: '#000',
@@ -252,12 +288,12 @@ const styles = StyleSheet.create({
   },
   googleButtonText: {
     color: '#3c4043',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '500',
     fontFamily: 'Inter_600SemiBold',
   },
   termsText: {
-    fontSize: 12,
+    fontSize: 15,
     color: '#999999',
     textAlign: 'center',
     lineHeight: 18,
