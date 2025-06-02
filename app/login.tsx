@@ -1,8 +1,9 @@
 import React, {useRef, useEffect} from 'react';
-import { getApps } from 'firebase/app';
-import auth from '@react-native-firebase/auth'
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { getAuth, signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import * as WebBrowser from 'expo-web-browser';
+import * as Google from 'expo-auth-session/providers/google';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { auth } from '../app/firebaseConfig.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {
   View,
   Text,
@@ -13,20 +14,20 @@ import {
 } from 'react-native';
 import { Animated } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import axiosInstance from './lib/axios';
-import TravelStyleScreen from './travel_style_screen'
+import { useRouter,Stack } from 'expo-router';
+import {axiosInstance} from '../lib/axios'
 
 
+WebBrowser.maybeCompleteAuthSession();
 
 
 const Login = () => {
+    const router = useRouter();
   const progressAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
 
-    GoogleSignin.configure({
-    webClientId: '189024899880-2755tl0jueo8p288mmu2rhkirqergvui.apps.googleusercontent.com', // From Firebase Console > Project > OAuth 2.0 Web client
-  });
+ 
     
     const animateProgress = () => {
       Animated.timing(progressAnimation, {
@@ -39,59 +40,74 @@ const Login = () => {
     setTimeout(animateProgress, 300);
   }, []);
 
-  const handleWebGoogleSignIn = async () => {
-  const provider = new GoogleAuthProvider();
-  const auth = getAuth();
+  const handleWebGoogleSignIn=async ()=>{
+    const provider=new GoogleAuthProvider()
 
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const idToken = await user.getIdToken();
+    try{
+       const result=await signInWithPopup(auth,provider)
+       const user=result.user
 
-    const userId = user.uid;
+       console.log("Google Sign In success: ",{
+        uid:user.uid,
+        email:user.email,
+        displayName:user.displayName
+       });
 
-    const response = await axiosInstance.post(
-      '/users/profile',
-      {
-        // id: userId,  // uncomment only if backend requires it explicitly
-        userId: userId,
-        nickname: user.displayName || '',
-        email: user.email || '',
-        fullname: user.displayName || '',
-        travelStyles: [],
-        destinations: [],
-        gender: '',
-        age: null,
-        lineId: '',
-        facebookUrl: ''
-      },
-      {
-        headers: { Authorization: `Bearer ${idToken}` },
-      }
-    );
+       try{
+        const profileData = {
+          userId: user.uid,
+          profileImageUrl: "N/A",
+          idCardImageUrl: "N/A",
+          portraitImageUrl: "N/A",
+          travelStyles: ["N/A"],
+          nickname: "N/A",
+          lineId: "N/A",
+          fullname: user.displayName,
+          facebookUrl: "N/A",
+          email: user.email,
+          destinations: ["N/A"],
+          age: -999,
+          phoneNumber: "N/A",
+          gender: "ชาย"
+        };
+        
+           const response=await axiosInstance.post('/users/profile',profileData)
+           if(response.status==201){
+            console.log("User Profile Created Successfully ",response.data);
+            console.log(response.data.data.userId);
 
-    console.log('Backend response:', response.data);
+            await AsyncStorage.setItem('userId',response.data.data.userId);
+            router.push('/travel-style')
+            
+            
+           }
+       }catch(profileError){
+          console.error("Failed to create user profile: ",profileError);
+          
+       }
+       
 
-    if (response.status === 201) {
-      const myJwt = response.data.token || response.data.jwt || response.data.accessToken;
-      console.log('Backend JWT:', myJwt);
+    }
+    catch(error){
+        console.error("Firebase Sign In Failed ",error);
+        
     }
 
-  } catch (error) {
-    console.error('Web login failed:', error);
-  }
-};
+   }
+  
 
 
   const handleBackPress = () => {
     // Handle back button press
-    console.log('Back button pressed');
+   // console.log('Back button pressed');
+   router.push('/')
   };
 
   return (
+    
     <SafeAreaView style={styles.container}>
      
-      
+     <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
@@ -151,7 +167,6 @@ const Login = () => {
     color: '#999999',
     textAlign: 'center',
     flexShrink: 1,
-    fontFamily: 'Inter_400Regular',
   }}
 >
   เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
@@ -179,7 +194,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    fontFamily: 'Inter_600SemiBold',
+  
    
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
@@ -201,8 +216,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333333',
     flex: 1,
-    textAlign: 'center',
-    fontFamily: 'Inter_600SemiBold',
+    textAlign: 'center'
   },
   placeholder: {
     width: 50,
@@ -219,7 +233,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4285F4',
+    backgroundColor: '#6366f1',
     borderRadius: 2,
   },
   content: {
@@ -242,14 +256,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333333',
     marginBottom: 8,
-    fontFamily: 'Inter_700Bold',
+
   },
   subtitle: {
     fontSize: 16,
     color: '#666666',
     marginBottom: 60,
     textAlign: 'center',
-    fontFamily: 'Inter_400Regular',
+  
   },
   googleButton: {
     backgroundColor: '#ffffff',
@@ -290,7 +304,7 @@ const styles = StyleSheet.create({
     color: '#3c4043',
     fontSize: 18,
     fontWeight: '500',
-    fontFamily: 'Inter_600SemiBold',
+  
   },
   termsText: {
     fontSize: 15,
@@ -298,17 +312,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 20,
-    fontFamily: 'Inter_400Regular',
+  
   },
   linkText: {
     color: '#4285F4',
     textDecorationLine: 'underline',
-     fontFamily: 'Inter_400Regular',
+
   },
 });
 
 export default Login;
-
-
-
-
