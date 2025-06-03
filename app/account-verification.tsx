@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,144 +9,546 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import { launchImageLibrary, ImagePickerResponse, MediaType } from 'react-native-image-picker';
-import { FontAwesome,MaterialCommunityIcons } from '@expo/vector-icons';
-import {  useRouter,Stack } from 'expo-router';
+
+import {requirements}  from './requirement'
+import { launchImageLibrary } from 'react-native-image-picker';
+import { FontAwesome, } from '@expo/vector-icons';
+import { useRouter, Stack } from 'expo-router';
 import { Animated } from 'react-native';
-import {axiosInstance} from '../lib/axios'
+import { axiosInstance } from '../lib/axios'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AxiosError } from 'axios';
+
+
 interface PrivacySettingsProps {}
-
+type PickedFile = {
+  uri: string;
+  type: string;
+  name: string;
+  size?: number;
+  base64Data?: string;
+  isBase64?: boolean;
+};
 const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
-  const [isLoading,setLoading]=useState(false)
-  const [fullName,setfullName]=useState('')
+  const [pickedFile1, setPickedFile1] = useState<PickedFile | null>(null);
+  const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [responseMessage, setResponseMessage] = useState<string | null>(null);
+  const [isLoading, setLoading] = useState(false)
+  const [fullName, setfullName] = useState('')
 
-    const router=useRouter()
+  const [fullNameError, setFullNameError] = useState(false);
+const [phoneNumberError, setPhoneNumberError] = useState(false);
+const [emailError, setEmailError] = useState(false);
+const [idCardError, setIdCardError] = useState(false);
+const [selfieError, setSelfieError] = useState(false);
 
-    const progressAnimation = useRef(new Animated.Value(66.66)).current;
 
-    useEffect(() => {
+  const router = useRouter()
 
- 
-    
-        const animateProgress = () => {
-          Animated.timing(progressAnimation, {
-            toValue: 83.33,
-            duration: 300,
-            useNativeDriver: false,
-          }).start();
-        };
-    
-        setTimeout(animateProgress, 300);
-      }, []);
-  const [idCardImage, setIdCardImage] = useState<string | null>(null);
-  const [selfieImage, setSelfieImage] = useState<string | null>(null);
+  const progressAnimation = useRef(new Animated.Value(66.66)).current;
+
+  useEffect(() => {
+    const animateProgress = () => {
+      Animated.timing(progressAnimation, {
+        toValue: 83.33,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    };
+
+    setTimeout(animateProgress, 300);
+  }, []);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
 
-  const selectImage = (type: 'idCard' | 'selfie') => {
-    const options = {
-      mediaType: 'photo' as MediaType,
+  const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
+    // Extract base64 data
+    const base64Data = base64Uri.split(',')[1];
+    return {
+      uri: base64Uri, // Keep original for display
+      base64Data: base64Data,
+      type: mimeType,
+      name: filename,
+      isBase64: true,
+    };
+  };
+
+  const pickImage1 = () => {
+    // Compatible options for different versions of react-native-image-picker
+    const options: any = {
+      mediaType: 'photo',
       includeBase64: false,
-      maxHeight: 2000,
-      maxWidth: 2000,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      // Force file URI instead of base64
+      presentationStyle: 'overFullScreen',
     };
 
-    launchImageLibrary(options, (response: ImagePickerResponse) => {
-      if (response.didCancel || response.errorMessage) {
+    launchImageLibrary(options, (response: any) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
         return;
       }
 
-      if (response.assets && response.assets[0]) {
-        const imageUri = response.assets[0].uri;
-        if (type === 'idCard') {
-          setIdCardImage(imageUri || null);
-        } else {
-          setSelfieImage(imageUri || null);
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const pickedImage = response.assets[0];
+        
+        // Handle base64 data URIs (common in web environment)
+        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
+          console.log('🟡 Base64 data detected, converting...');
+          const convertedFile = convertBase64ToFile(
+            pickedImage.uri,
+            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+            pickedImage.type ?? 'image/jpeg'
+          );
+          
+          setPickedFile1({
+            uri: convertedFile.uri,
+            type: convertedFile.type,
+            name: convertedFile.name,
+            base64Data: convertedFile.base64Data,
+            isBase64: true,
+          } as any);
+
+          console.log('🟢 Base64 image processed successfully');
+          return;
         }
+
+        // Validate that we have a proper file URI
+        if (!pickedImage.uri) {
+          Alert.alert('Error', 'No image URI received. Please try again.');
+          return;
+        }
+
+        setPickedFile1({
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+          size: pickedImage.fileSize,
+        });
+
+        console.log('🟢 Image 1 picked successfully:', {
+          uri: pickedImage.uri.substring(0, 50) + '...',
+          type: pickedImage.type,
+          name: pickedImage.fileName,
+          size: pickedImage.fileSize,
+        });
+      }
+    });
+  };
+
+  const pickImage2 = () => {
+    // Compatible options for different versions of react-native-image-picker
+    const options: any = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      // Force file URI instead of base64
+      presentationStyle: 'overFullScreen',
+    };
+
+    launchImageLibrary(options, (response: any) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const pickedImage = response.assets[0];
+        
+        // Handle base64 data URIs (common in web environment)
+        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
+          console.log('🟡 Base64 data detected, converting...');
+          const convertedFile = convertBase64ToFile(
+            pickedImage.uri,
+            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+            pickedImage.type ?? 'image/jpeg'
+          );
+          
+          setPickedFile2({
+            uri: convertedFile.uri,
+            type: convertedFile.type,
+            name: convertedFile.name,
+            base64Data: convertedFile.base64Data,
+            isBase64: true,
+          } as any);
+
+          console.log('🟢 Base64 image processed successfully');
+          return;
+        }
+
+        // Validate that we have a proper file URI
+        if (!pickedImage.uri) {
+          Alert.alert('Error', 'No image URI received. Please try again.');
+          return;
+        }
+
+        setPickedFile2({
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+          size: pickedImage.fileSize,
+        });
+
+        console.log('🟢 Image 2 picked successfully:', {
+          uri: pickedImage.uri.substring(0, 50) + '...',
+          type: pickedImage.type,
+          name: pickedImage.fileName,
+          size: pickedImage.fileSize,
+        });
       }
     });
   };
 
 
-  const handleSubmit=async()=>{
-       if(!idCardImage || !selfieImage || !phoneNumber || !email || !fullName){
-        Alert.alert("กรุณากรอกข้อมูลให้ครบถ้วน","Please fill in all required information")
-        return
-       }
-       setLoading(true)
 
-       try{
-        const userId=await AsyncStorage.getItem('userId')
-        if(!userId){
-          Alert.alert("ข้อผิดพลาด","ไม่พบข้อมูลผู้ใช้")
-          router.push('/login')
-        }
-
-        const idCardFormData=new FormData();
-        idCardFormData.append('file',{
-          uri:idCardImage,
-          type:'image/jpeg',
-          name:'id-card.jpg',
-        }as any);
-
-        const idCardResponse=await axiosInstance.patch(`/users/profile/id-card/image/${userId}`,idCardFormData,{
-          headers:{
-            'Content-Type':'multipart/form-data'
-          }
-        })
-
-        const portraitFormData=new FormData();
-        portraitFormData.append('file',{
-          uri:selfieImage,
-          type:'image/jpeg',
-          name:'portrait.jpg',
-        }as any)
-
-        const portraitResponse=await axiosInstance.patch(`/users/profile/`)
-
-
-       }
-
-       catch(error){
-        console.error("Error submitting Verification: ",error);
-       }
-
-       finally{
-        setLoading(false)
-       }
-  }
-
-
-  const handleGoBack=()=>{
-    console.log("Handle Go Back");
-    router.back()
-    
-  }
+  const validateFullName = (name: string): boolean => {
+    const trimmed = name.trim();
+    const spaceCount = (trimmed.match(/ /g) || []).length;
+    if (spaceCount !== 1) {
+      return false;
+    }
+  
+    const [firstName, lastName] = trimmed.split(" ");
+    if (!firstName || !lastName) {
+      return false;
+    }
+  
+    const specialCharRegex = /^[A-Za-zก-๙]+$/;
+    if (!specialCharRegex.test(firstName) || !specialCharRegex.test(lastName)) {
+      return false;
+    }
+  
+    return true;
+  };
+  
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /\S+@\S+\.\S+/;
+    return emailRegex.test(email);
+  };
+  
+  const validatePhoneNumber = (phone: string): boolean => {
+    const phoneRegex = /^[0-9]{9,10}$/;
+    return phoneRegex.test(phone);
+  };
 
   
+  
+  
+  
+  
+
+  const handleSubmit = async () => {
+    let hasError = false;
+
+    // Fullname validation
+    if (!validateFullName(fullName)) {
+      setFullNameError(true);
+      hasError = true;
+    } else {
+      setFullNameError(false);
+    }
+  
+    // Phone number validation
+    if (!validatePhoneNumber(phoneNumber)) {
+      setPhoneNumberError(true);
+      hasError = true;
+    } else {
+      setPhoneNumberError(false);
+    }
+  
+    // Email validation
+    if (!validateEmail(email)) {
+      setEmailError(true);
+      hasError = true;
+    } else {
+      setEmailError(false);
+    }
+  
+    // ID card image
+    if (!pickImage1) {
+      setIdCardError(true);
+      hasError = true;
+    } else {
+      setIdCardError(false);
+    }
+  
+    // Selfie image
+    if (!pickImage2) {
+      setSelfieError(true);
+      hasError = true;
+    } else {
+      setSelfieError(false);
+    }
+  
+    if (hasError) {
+      return; // prevent submit if any error
+    }
+  
+    // Proceed with API submission
+    console.log('All valid, submit form!');
+    console.log(email);
+    console.log(fullName);
+    console.log(phoneNumber);
+
+    console.log();
+    
+   try{
+    
+    const profileData = {
+      fullname: fullName,
+      email: email,
+      phoneNumber: phoneNumber,
+    };
+    const profileResponse=await axiosInstance.patch(`/users/profile/${await AsyncStorage.getItem('userId')}`,profileData,{
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    console.log("Profile updated successfully:", profileResponse.data);
+   }catch(error){
+    console.error("Error Updating User Profile: ",error);
+   }
+
+   try{
+    if (!pickedFile1) {
+      setResponseMessage('No image selected to upload');
+      return;
+    }
+
+    console.log('🟢 Starting FormData fetch upload...');
+
+    const formData = new FormData();
+    
+    if (pickedFile1.isBase64 && pickedFile1.base64Data) {
+      // Convert base64 to Blob for FormData
+      console.log('🟡 Converting base64 to Blob...');
+      
+      const byteCharacters = atob(pickedFile1.base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: pickedFile1.type });
+      
+      formData.append('file', blob, pickedFile1.name);
+    } else {
+      // Create proper file object for FormData
+      const fileObj = {
+        uri: pickedFile1.uri,
+        type: pickedFile1.type,
+        name: pickedFile1.name,
+      } as any;
+
+      formData.append('file', fileObj);
+    }
+
+    console.log('🟢 FormData upload with file:', {
+      uri: pickedFile1.uri.substring(0, 50) + '...',
+      type: pickedFile1.type,
+      name: pickedFile1.name,
+      size: pickedFile1.size,
+    });
+
+    setUploading(true);
+    setResponseMessage(null);
+
+    try {
+      const response = await axiosInstance.patch(
+        `/users/profile/id-card/image/${await AsyncStorage.getItem('userId')}`,
+        formData,
+        {
+          headers: {
+            // Don't set Content-Type header - axios will set it automatically for FormData
+          },
+        }
+      );
+    
+      console.log('🔵 Axios response status:', response.status);
+      console.log('🔵 Axios response headers:', response.headers);
+      console.log('🔵 Axios response data:', response.data);
+    
+      setResponseMessage(`Success: ${response.data.message || 'Upload completed'}`);
+      Alert.alert('Success', 'ID Card uploaded successfully!');
+    
+    } catch (error) {
+      console.log('🔴 Axios error:', error);
+      
+      if (error instanceof AxiosError) {
+        if (error.response) {
+          // Server responded with error status
+          const status = error.response.status;
+          const data = error.response.data;
+          
+          setResponseMessage(`Error (${status}): ${data.message || 'Failed to upload'}`);
+          Alert.alert('Upload Failed', `${data.message || 'Unknown error occurred'} (Status: ${status})`);
+        } else {
+          // Network error or other issues
+          setResponseMessage(`Error: ${error.message || 'Network error'}`);
+          Alert.alert('Upload Failed', 'Network error occurred');
+        }
+      } else {
+        // Handle non-axios errors
+        setResponseMessage(`Error: ${String(error)}`);
+        Alert.alert('Upload Failed', 'An unexpected error occurred');
+      }
+    } finally {
+      setUploading(false);
+    }
+            
+   }catch(error){
+      console.error("Error Updating Id-Card Image: ",error);
+      
+   }
+
+   try {
+  if (!pickedFile2) {
+    setResponseMessage('No image selected to upload');
+    return;
+  }
+
+  console.log('🟢 Starting FormData axios upload...');
+
+  const formData = new FormData();
+  
+  if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+    // Convert base64 to Blob for FormData
+    console.log('🟡 Converting base64 to Blob...');
+    
+    const byteCharacters = atob(pickedFile2.base64Data);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    const blob = new Blob([byteArray], { type: pickedFile2.type });
+    
+    formData.append('file', blob, pickedFile2.name);
+  } else {
+    // Create proper file object for FormData
+    const fileObj = {
+      uri: pickedFile2.uri,
+      type: pickedFile2.type,
+      name: pickedFile2.name,
+    } as any;
+
+    formData.append('file', fileObj);
+  }
+
+  console.log('🟢 FormData upload with file:', {
+    uri: pickedFile2.uri.substring(0, 50) + '...',
+    type: pickedFile2.type,
+    name: pickedFile2.name,
+    size: pickedFile2.size,
+  });
+
+  setUploading(true);
+  setResponseMessage(null);
+
+  try {
+    const response = await axiosInstance.patch(
+      `/users/profile/portrait/image/${await AsyncStorage.getItem('userId')}`,
+      formData,
+      {
+        headers: {
+          // Don't set Content-Type header - axios will set it automatically for FormData
+        },
+      }
+    );
+
+    console.log('🔵 Axios response status:', response.status);
+    console.log('🔵 Axios response headers:', response.headers);
+    console.log('🔵 Axios response data:', response.data);
+
+    setResponseMessage(`Success: ${response.data.message || 'Upload completed'}`);
+    Alert.alert('Success', 'Portrait uploaded successfully!');
+
+  } catch (error) {
+    console.log('🔴 Axios error:', error);
+    
+    if (error instanceof AxiosError) {
+      if (error.response) {
+        // Server responded with error status
+        const status = error.response.status;
+        const data = error.response.data;
+        
+        setResponseMessage(`Error (${status}): ${data.message || 'Failed to upload'}`);
+        Alert.alert('Upload Failed', `${data.message || 'Unknown error occurred'} (Status: ${status})`);
+      } else {
+        // Network error or other issues
+        setResponseMessage(`Error: ${error.message || 'Network error'}`);
+        Alert.alert('Upload Failed', 'Network error occurred');
+      }
+    } else {
+      // Handle non-axios errors
+      setResponseMessage(`Error: ${String(error)}`);
+      Alert.alert('Upload Failed', 'An unexpected error occurred');
+    }
+  } finally {
+    setUploading(false);
+  }
+} catch (error) {
+  console.error("Error Updating Portrait Image: ", error);
+}
+    
+    
+   router.push('/profile')
+      
+  };
+
+  const handleSkip = () => {
+    console.log("Handle Go Back");
+    router.push('/profile')
+  }
+  const handleGoBack = () => {
+    console.log("Handle Go Back");
+    router.push('/travel-style')
+  }
 
   return (
     <View style={styles.container}>
-      
       {/* Header */}
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-        <FontAwesome name="angle-left" size={24} color="#333" />
+        <TouchableOpacity style={styles.backButton} onPress={handleSkip}>
+          <FontAwesome name="angle-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ยืนยันตัวตน</Text>
-       
-       <TouchableOpacity onPress={handleGoBack}>
-       <View style={styles.flagContainer}>
-          <Text style={styles.flag}>ข้าม</Text>
-        </View>
-       </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleGoBack}>
+          <View style={styles.flagContainer}>
+            <Text style={styles.flag}>ข้าม</Text>
+          </View>
+        </TouchableOpacity>
       </View>
-        {/* Progress Bar */}
-        <View style={styles.progressContainer}>
+
+      {/* Progress Bar */}
+      <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.progressFill,
               {
@@ -155,7 +557,7 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
                   outputRange: ['0%', '33.33%'],
                 }),
               },
-            ]} 
+            ]}
           />
         </View>
       </View>
@@ -164,15 +566,15 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
         {/* Privacy Shield Section */}
         <View style={styles.privacySection}>
           <View style={styles.shieldIcon}>
-          <Image
-        source={require('../assets/images/images/image1.png')} // Replace with your image path
-        style={{height:36,width:36}}
-        resizeMode="contain"
-      />
+            <Image
+              source={require('../assets/images/images/image1.png')}
+              style={{ height: 36, width: 36 }}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.privacyTitle}>ยืนยันตัวตนของคุณ</Text>
           <Text style={styles.privacySubtitle}>
-          เพิ่มความน่าเชื่อถือให้โปรไฟล์ของคุณ และสร้างความปลอดภัยในคอมมูนิตี้ (ไม่บังคับ)
+            เพิ่มความน่าเชื่อถือให้โปรไฟล์ของคุณ และสร้างความปลอดภัยในคอมมูนิตี้ (ไม่บังคับ)
           </Text>
         </View>
 
@@ -180,37 +582,44 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
         <View style={styles.formSection}>
           <Text style={styles.sectionLabel}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
 
-      <TextInput
-        style={styles.input}
-       // value={username}
-       // onChangeText={setUsername}
-        placeholder="กรอกชื่อจริงของคุณ"
-        placeholderTextColor="#888"
-      />
-       
+          <TextInput
+  style={[
+    styles.input,
+    fullNameError && { borderColor: 'red', borderWidth: 1 }
+  ]}
+  value={fullName}
+  onChangeText={setfullName}
+  placeholder="กรอกชื่อจริงของคุณ"
+  placeholderTextColor="#888"
+/>
+
+
           {/* ID Card Upload */}
           <View style={styles.uploadSection}>
             <Text style={styles.uploadLabel}>บัตรประชาชน</Text>
-            <TouchableOpacity 
-              style={styles.uploadBox}
-              onPress={() => selectImage('idCard')}
+            <TouchableOpacity
+              style={[
+                styles.uploadBox,
+                idCardError && { borderColor: 'red', borderWidth: 1 }
+              ]}
+              onPress={pickImage1}
             >
-              {idCardImage ? (
-                <Image source={{ uri: idCardImage }} style={styles.uploadedImage} />
+              {pickedFile1 ? (
+                <Image source={{ uri: pickedFile1.uri }} style={styles.uploadedImage} />
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.cameraIcon}>
-                  <Image
-        source={require('../assets/images/images/image2.png')} // Replace with your image path
-        style={{height:24,width:27}}
-        resizeMode="contain"
-      />
+                    <Image
+                      source={require('../assets/images/images/image2.png')}
+                      style={{ height: 24, width: 27 }}
+                      resizeMode="contain"
+                    />
                   </View>
                   <Text style={styles.uploadText}>
-                  อัพโหลดรูปถ่ายบัตรประชาชน
+                    อัพโหลดรูปถ่ายบัตรประชาชน
                   </Text>
                   <Text style={styles.uploadSubtext}>
-                  ถ่ายในที่แสงสว่างเพียงพอ เห็นหน้าชัดเจน
+                    ถ่ายในที่แสงสว่างเพียงพอ เห็นหน้าชัดเจน
                   </Text>
                 </View>
               )}
@@ -220,20 +629,23 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
           {/* Selfie Upload */}
           <View style={styles.uploadSection}>
             <Text style={styles.uploadLabel}>ภาพถ่ายยืนยันตัวตน</Text>
-            <TouchableOpacity 
-              style={styles.uploadBox}
-              onPress={() => selectImage('selfie')}
+            <TouchableOpacity
+              style={[
+                styles.uploadBox,
+                selfieError && { borderColor: 'red', borderWidth: 1 }
+              ]}
+              onPress={pickImage2}
             >
-              {selfieImage ? (
-                <Image source={{ uri: selfieImage }} style={styles.uploadedImage} />
+              {pickedFile2 ? (
+                <Image source={{ uri: pickedFile2.uri }} style={styles.uploadedImage} />
               ) : (
                 <View style={styles.uploadPlaceholder}>
                   <View style={styles.personIcon}>
-                  <Image
-        source={require('../assets/images/images/image3.png')} // Replace with your image path
-        style={{height:24,width:24}}
-        resizeMode="contain"
-      />
+                    <Image
+                      source={require('../assets/images/images/image3.png')}
+                      style={{ height: 24, width: 24 }}
+                      resizeMode="contain"
+                    />
                   </View>
                   <Text style={styles.uploadText}>
                     ถ่ายรูปหน้าตรงกับบัตรประชาชน
@@ -248,30 +660,35 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
 
           {/* Contact Information */}
           <View style={styles.contactSection}>
-            
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>เบอร์โทรศัพท์</Text>
               <TextInput
-                style={styles.textInput}
-                value={phoneNumber}
-                onChangeText={setPhoneNumber}
-                placeholder="เช่น 0891234567"
-                placeholderTextColor="#C0C0C0"
-                keyboardType="phone-pad"
-              />
+  style={[
+    styles.textInput,
+    phoneNumberError && { borderColor: 'red', borderWidth: 1 }
+  ]}
+  value={phoneNumber}
+  onChangeText={setPhoneNumber}
+  placeholder="เช่น 0891234567"
+  placeholderTextColor="#C0C0C0"
+  keyboardType="phone-pad"
+/>
             </View>
 
             <View style={styles.inputGroup}>
               <Text style={styles.inputLabel}>อีเมล</Text>
               <TextInput
-                style={styles.textInput}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="example@email.com"
-                placeholderTextColor="#C0C0C0"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
+  style={[
+    styles.textInput,
+    emailError && { borderColor: 'red', borderWidth: 1 }
+  ]}
+  value={email}
+  onChangeText={setEmail}
+  placeholder="example@email.com"
+  placeholderTextColor="#C0C0C0"
+  keyboardType="email-address"
+  autoCapitalize="none"
+/>
             </View>
           </View>
         </View>
@@ -279,23 +696,30 @@ const PrivacySettings: React.FC<PrivacySettingsProps> = () => {
 
       {/* Submit Button */}
       <View style={styles.bottomSection}>
-  <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-    <Text style={styles.submitButtonText}>ยืนยันตัวตน</Text>
-    <Image
-        source={require('../assets/images/images/image5.png')} // Replace with your image path
-        style={{height:16,width:16}}
-        resizeMode="contain"
-      />
-  </TouchableOpacity>
-  <Text style={styles.disclaimer}>
-  <Image
-        source={require('../assets/images/images/image4.png')} // Replace with your image path
-        style={{height:12,width:10.5}}
-        resizeMode="contain"
-      /> ข้อมูลของคุณจะถูกเก็บรักษาอย่างปลอดภัย
-  </Text>
-</View>
-
+        <TouchableOpacity
+          style={[styles.submitButton, isLoading && styles.disabledButton]}
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          <Text style={styles.submitButtonText}>
+            {isLoading ? 'กำลังบันทึก...' : 'ยืนยันตัวตน'}
+          </Text>
+          {!isLoading && (
+            <Image
+              source={require('../assets/images/images/image5.png')}
+              style={{ height: 16, width: 16 }}
+              resizeMode="contain"
+            />
+          )}
+        </TouchableOpacity>
+        <Text style={styles.disclaimer}>
+          <Image
+            source={require('../assets/images/images/image4.png')}
+            style={{ height: 12, width: 10.5 }}
+            resizeMode="contain"
+          /> ข้อมูลของคุณจะถูกเก็บรักษาอย่างปลอดภัย
+        </Text>
+      </View>
     </View>
   );
 };
@@ -328,7 +752,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily:'Inter_700Bold',
+    fontFamily:'InterTightBold',
     color: '#1F2937',
     flex: 1,
     textAlign: 'center',
@@ -345,7 +769,7 @@ const styles = StyleSheet.create({
   flag: {
     fontSize: 16,
     color:'#4F46E5',
-    fontFamily:'Inter_600SemiBold',
+    fontFamily:'InterTightRegular',
 
   },
   content: {
@@ -470,7 +894,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 120,
     borderRadius: 8,
-    resizeMode: 'cover',
+    resizeMode:'contain'
   },
   contactSection: {
     paddingTop: 1,
@@ -499,6 +923,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   submitButton: {
     backgroundColor: '#4F46E5',

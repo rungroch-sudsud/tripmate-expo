@@ -1,8 +1,8 @@
 import React, { useState,useEffect,useRef } from 'react';
 import { FontAwesome } from '@expo/vector-icons';
-import { Animated,Platform } from 'react-native';
+import { Animated} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as ImagePicker from 'expo-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import {
     FlatList,
   View,
@@ -20,7 +20,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router,Stack } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
-
+import {requirements} from './requirement'
 interface Category {
   id: string;
   title: string;
@@ -65,6 +65,15 @@ interface ProfileFormData {
   travelStyles?: string[];
 }
 
+type PickedFile = {
+  uri: string;
+  type: string;
+  name: string;
+  size?: number;
+  base64Data?: string;
+  isBase64?: boolean;
+};
+
 
 
 interface ValidationErrors {
@@ -76,14 +85,16 @@ interface ValidationErrors {
 }
 
 const ProfileForm: React.FC = () => {
-  const [imageFile, setImageFile] = useState<{ uri: string; type: string; fileName: string } | null>(null);
+  const [imageFile, setImageFile] = useState<PickedFile | null>(null);
     const [email, setEmail] = useState<string | null>(null);
-
+    const [uploading, setUploading] = useState(false);
+    const [responseMessage, setResponseMessage] = useState<string | null>(null);
 
     const [destinations, setDestinations] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [selected, setSelected] = useState<string[]>([]);
     const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [searchText, setSearchText] = useState('');
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [showGenderDropdown, setShowGenderDropdown] = useState(false);
@@ -134,38 +145,42 @@ const ProfileForm: React.FC = () => {
 
   
   useEffect(() => {
-    setLoading(true); 
-    
-    
-    axiosInstance.get('/destinations') 
+    setLoading(true);
+    axiosInstance.get('/destinations')
       .then(response => {
-        setDestinations(response.data.data || []); 
+        setDestinations(response.data.data || []);
       })
       .catch(err => {
         console.error('Axios error:', err);
-        setDestinations([]); 
+        setDestinations([]);
       })
       .finally(() => {
-        setLoading(false); 
+        setLoading(false);
       });
   }, []);
   
-    function addDestination(dest: string) {
-      if (!selected.includes(dest)) {
-        setSelected([...selected, dest]);
-      }
-      setDropdownOpen(false);
-    }
+  // Add filtered destinations based on search
+  const filteredDestinations = destinations.filter(dest =>
+    dest.toLowerCase().includes(searchText.toLowerCase())
+  );
   
-    function removeDestination(dest: string) {
-      setSelected(selected.filter(d => d !== dest));
+  function addDestination(dest: string) {
+    if (!selected.includes(dest)) {
+      setSelected([...selected, dest]);
     }
+    setDropdownOpen(false);
+    setSearchText(''); // Clear search when selecting
+  }
+  
+  function removeDestination(dest: string) {
+    setSelected(selected.filter(d => d !== dest));
+  }
 
 
     const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
     useEffect(() => {
         const fetchEmail = async () => {
-          const storedID = await AsyncStorage.getItem('userID');
+          const storedID = await AsyncStorage.getItem('userId');
           console.log('User Id:', storedID);
           setEmail(storedID);
         };
@@ -291,6 +306,8 @@ const ProfileForm: React.FC = () => {
   
     return null;
   };
+
+
   
 
 
@@ -352,13 +369,10 @@ const ProfileForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const toggleInterest = (interest: string): void => {
-    if (selectedInterests.includes(interest)) {
-      setSelectedInterests(selectedInterests.filter(item => item !== interest));
-    } else {
-      setSelectedInterests([...selectedInterests, interest]);
-    }
-  };
+
+
+
+  
   
 
   const removeSelectedInterest = (interest: string): void => {
@@ -369,139 +383,216 @@ const ProfileForm: React.FC = () => {
     router.push('/travel-style')
   };
 
+
+  const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
+    // Extract base64 data
+    const base64Data = base64Uri.split(',')[1];
+    return {
+      uri: base64Uri, // Keep original for display
+      base64Data: base64Data,
+      type: mimeType,
+      name: filename,
+      isBase64: true,
+    };
+  };
+
+   const pickImage = () => {
+    // Compatible options for different versions of react-native-image-picker
+    const options: any = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      // Force file URI instead of base64
+      presentationStyle: 'overFullScreen',
+    };
+
+    launchImageLibrary(options, (response: any) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const pickedImage = response.assets[0];
+        
+        // Handle base64 data URIs (common in web environment)
+        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
+          console.log('🟡 Base64 data detected, converting...');
+          const convertedFile = convertBase64ToFile(
+            pickedImage.uri,
+            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+            pickedImage.type ?? 'image/jpeg'
+          );
+          
+          setImageFile({
+            uri: convertedFile.uri,
+            type: convertedFile.type,
+            name: convertedFile.name,
+            base64Data: convertedFile.base64Data,
+            isBase64: true,
+          } as any);
+
+          console.log('🟢 Base64 image processed successfully');
+          return;
+        }
+
+        // Validate that we have a proper file URI
+        if (!pickedImage.uri) {
+          Alert.alert('Error', 'No image URI received. Please try again.');
+          return;
+        }
+
+        setImageFile({
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+          size: pickedImage.fileSize,
+        });
+
+        console.log('🟢 Image picked successfully:', {
+          uri: pickedImage.uri.substring(0, 50) + '...',
+          type: pickedImage.type,
+          name: pickedImage.fileName,
+          size: pickedImage.fileSize,
+        });
+      }
+    });
+  };
+
+  const uploadImageWithFetch = async () => {
+    if (!imageFile) {
+      setResponseMessage('No image selected to upload');
+      return;
+    }
+
+    console.log('🟢 Starting FormData fetch upload...');
+
+    const formData = new FormData();
+    
+    if (imageFile.isBase64 && imageFile.base64Data) {
+      // Convert base64 to Blob for FormData
+      console.log('🟡 Converting base64 to Blob...');
+      
+      const byteCharacters = atob(imageFile.base64Data);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: imageFile.type });
+      
+      formData.append('file', blob, imageFile.name);
+    } else {
+      // Create proper file object for FormData
+      const fileObj = {
+        uri: imageFile.uri,
+        type: imageFile.type,
+        name: imageFile.name,
+      } as any;
+
+      formData.append('file', fileObj);
+    }
+
+    console.log('🟢 FormData upload with file:', {
+      uri: imageFile.uri.substring(0, 50) + '...',
+      type: imageFile.type,
+      name: imageFile.name,
+      size: imageFile.size,
+    });
+
+    setUploading(true);
+    setResponseMessage(null);
+
+    try {
+      const response = await fetch(`${requirements.baseURL}/users/profile/image/${await AsyncStorage.getItem('userId')}`, {
+        method: 'PATCH',
+        // Don't set Content-Type header manually - let the browser handle it
+        body: formData,
+      });
+
+      console.log('🔵 Fetch response status:', response.status);
+      console.log('🔵 Fetch response headers:', response.headers);
+
+      const data = await response.json();
+      console.log('🔵 Fetch response data:', data);
+
+      if (response.ok) {
+        setResponseMessage(`Success: ${data.message || 'Upload completed'}`);
+        Alert.alert('Success', 'ID Card uploaded successfully!');
+      } else {
+        setResponseMessage(`Error (${response.status}): ${data.message || 'Failed to upload'}`);
+        Alert.alert('Upload Failed', `${data.message || 'Unknown error occurred'} (Status: ${response.status})`);
+      }
+    } catch (error: any) {
+      console.error('🔴 Fetch upload error:', error);
+      setResponseMessage(`Error: ${error.message}`);
+      Alert.alert('Upload Error', error.message || 'Network error occurred');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+
   const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) {
       console.log('ข้อผิดพลาด', 'กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง');
       return;
     }
   
-    const userId = await AsyncStorage.getItem('userID');
-    if (!userId) {
-      console.log('ข้อผิดพลาด', 'ไม่พบ userID');
-      return;
-    }
-  
-    const selectedStyleNames = categories
-      .filter(cat => selectedItems.includes(cat.id))
-      .map(cat => cat.title);
-  
+    else{
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) {
+        console.log('ข้อผิดพลาด', 'ไม่พบ userID');
+        return;
+      }
+    
+      const selectedStyleNames = categories
+        .filter(cat => selectedItems.includes(cat.id))
+        .map(cat => cat.id);
+    
+   try{
     const profileData = {
-      id: userId,
-      userId: userId,
-      fullname: formData.fullName || '',
-      nickname: formData.nickname || '',
-      email: formData.email ?? '',
-      gender: formData.gender || '',
-      age: Number(formData.age) || 0,
+      fullname: formData.fullName,
+      nickname: formData.nickname,
+      email: formData.email,
+      gender: formData.gender,
+      age: Number(formData.age),
       travelStyles: selectedStyleNames,
       destinations: Array.from(new Set(selected)),
       lineId: formData.lineId || '',
       facebookUrl: formData.facebookUrl || '',
-      profileImageUrl: '',
     };
-    console.log('📦 Sending profileData:', JSON.stringify(profileData, null, 2));
-  
-    try {
-      const res = await fetch('http://143.198.83.179:8080/users/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profileData),
-      });
-  
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`Failed to create profile: ${text}`);
+    const profileResponse=await axiosInstance.patch(`/users/profile/${userId}`,profileData,{
+      headers:{
+        "Content-Type":'application/json'
       }
+    })
+    console.log("Profile updated successfully:", profileResponse.data);
+   }catch(error){
+    console.error("Error Updating User Profile: ",error);
+    
+   }
   
-      const createdProfile = await res.json();
-      console.log('Created profile response:', createdProfile);
-      const profileId = createdProfile.data?.userId; 
   
-      if (imageFile && profileId) {
-        const isWeb = Platform.OS === 'web';
-  
-        const formDataObj = new FormData();
-  
-        if (isWeb) {
-          formDataObj.append('file', imageFile as any);
-        } else {
-          formDataObj.append('file', {
-            uri: imageFile.uri,
-            name: imageFile.fileName || 'profile.jpg',
-            type: imageFile.type || 'image/jpeg',
-          } as any);
-        }
-  
-        try {
-        
-          
-          const uploadRes = await axiosInstance.patch(
-            `/users/profile/image/${profileId}`, 
-            formDataObj, 
-            {
-              headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'multipart/form-data', // Important for uploading files
-              },
-            }
-          );
-        
-          // Check for success (status code 2xx)
-          if (uploadRes.status >= 200 && uploadRes.status < 300) {
-            console.log('✅ Upload Success:', 'บันทึกรูปภาพเรียบร้อยแล้ว');
-            Alert.alert('สำเร็จ', 'สร้างโปรไฟล์และอัปโหลดรูปภาพสำเร็จ');
-          } else {
-            throw new Error(`Failed to upload image: ${uploadRes.data.message || 'Unknown error'}`);
-          }
-        
-        } catch (err: any) {
-          console.log('❌ Upload Failed:', err.message);
-          Alert.alert('ข้อผิดพลาด', 'เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ');
-        }
-      } else if (imageFile && !profileId) {
-        console.log('❌ Cannot upload image because profileId is missing');
-        Alert.alert('ข้อผิดพลาด', 'ไม่พบรหัสโปรไฟล์สำหรับอัปโหลดรูปภาพ');
-      }
-  
-    } catch (error: any) {
-      console.log('ข้อผิดพลาด', error.message || 'เกิดข้อผิดพลาดในการสร้างโปรไฟล์');
+    uploadImageWithFetch()
     }
-  };
-  
-  
-  
-  
-  
-  
-  
 
-  const handleImagePicker = async (): Promise<void> => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission denied', 'ต้องการสิทธิ์เข้าถึงรูปภาพ');
-      return;
-    }
-  
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-  
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
-      setImageFile({
-        uri: asset.uri,
-        type: 'image/jpeg', // or infer from asset info if available
-        fileName: asset.uri.split('/').pop() || 'profile.jpg',
-      });
-    }
-  };
-  
-  
+    
 
-  const renderError = (error?: string) => {
+     
+  };
+    const renderError = (error?: string) => {
     if (!error) return null;
     return <Text style={styles.errorText}>{error}</Text>;
   };
@@ -543,7 +634,7 @@ const ProfileForm: React.FC = () => {
         <View style={styles.profileSection}>
   <TouchableOpacity 
     style={styles.profileImageContainer}
-    onPress={handleImagePicker}
+    onPress={pickImage}
   >
     <Image 
       source={
@@ -637,6 +728,7 @@ const ProfileForm: React.FC = () => {
             }}
             keyboardType="numeric"
             placeholder="อายุของคุณ"
+            placeholderTextColor="#999"
           
           />
           {renderError(errors.age)}
@@ -644,51 +736,66 @@ const ProfileForm: React.FC = () => {
 
         {/* Gender Dropdown */}
         <View style={{ flex: 1 }}>
-          <Text style={styles.label}>เพศ</Text>
-
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowGenderDropdown(!showGenderDropdown)}
-          >
-            <Text>{formData.gender || 'เลือกเพศ'}</Text>
-          </TouchableOpacity>
-
-          {showGenderDropdown && (
-            <View style={styles.dropdownList}>
-              {genderOptions.map((option) => (
-                <TouchableOpacity
-                  key={option}
-                  onPress={() => {
-                    setFormData({ ...formData, gender: option, customGender: '' });
-                    setShowGenderDropdown(false);
-                    if (errors.gender) setErrors({ ...errors, gender: undefined });
-                  }}
-                  style={[
-                    styles.dropdownItem,
-                    formData.gender === option && styles.dropdownItemSelected,
-                  ]}
-                >
-                  <Text>{option}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          {renderError(errors.gender)}
-
-          {/* Custom Gender Input */}
-          {formData.gender === 'อื่นๆ' && (
-            <TextInput
-              value={formData.customGender}
-              onChangeText={(text) =>
-                setFormData({ ...formData, customGender: text })
-              }
-              placeholder="โปรดระบุ"
-              placeholderTextColor="#999"
-              style={[styles.input, { marginTop: 6 }]}
-            />
-          )}
-        </View>
+  <Text style={styles.label}>เพศ</Text>
+  
+  {/* Container with input/text and icon */}
+  <View style={styles.inputWithIcon}>
+    {/* Left side - TextInput when อื่นๆ, Text display otherwise */}
+    {formData.gender === 'อื่นๆ' ? (
+      <TextInput
+        value={formData.customGender}
+        onChangeText={(text) =>
+          setFormData({ ...formData, customGender: text })
+        }
+        placeholder="อื่นๆ"
+        placeholderTextColor="#999"
+        autoFocus={true}
+        style={[{ height:'90%',borderColor:'#999',width:'90%',paddingLeft:10 }]} // Add flex: 1 here
+      />
+    ) : (
+      <View style={styles.textDisplayArea}>
+        <Text style={styles.displayText}>
+          {formData.gender || 'เลือกเพศ'}
+        </Text>
+      </View>
+    )}
+    
+    {/* Right side - Always visible clickable icon */}
+    <TouchableOpacity 
+      onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+      style={styles.iconButton}
+    >
+      <Image 
+        source={require('../assets/images/images/image10.png')} // Replace with your icon path
+        style={styles.dropdownIcon}
+      />
+    </TouchableOpacity>
+  </View>
+  
+  {/* Dropdown list */}
+  {showGenderDropdown && (
+    <View style={styles.dropdownList}>
+      {genderOptions.map((option) => (
+        <TouchableOpacity
+          key={option}
+          onPress={() => {
+            setFormData({ ...formData, gender: option, customGender: '' });
+            setShowGenderDropdown(false);
+            if (errors.gender) setErrors({ ...errors, gender: undefined });
+          }}
+          style={[
+            styles.dropdownItem,
+            formData.gender === option && styles.dropdownItemSelected,
+          ]}
+        >
+          <Text>{option}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  )}
+  
+  {renderError(errors.gender)}
+</View>
       </View>
           {/* Additional Contacts */}
           
@@ -792,56 +899,64 @@ const ProfileForm: React.FC = () => {
             )}
 
 <View style={styles.container}>
-      <TouchableOpacity
-        
-        onPress={() => setDropdownOpen(!dropdownOpen)}
-      >
-        <Text style={styles.input}>ค้นหาสถานที่</Text>
-      </TouchableOpacity>
-
-      {dropdownOpen && (
-        <View style={styles.dropdown}>
-          {loading ? (
-            <ActivityIndicator size="small" />
-          ) : (
-            <FlatList
-              data={destinations}
-              keyExtractor={item => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.dropdownItem}
-                  onPress={() => addDestination(item)}
-                >
-                  <Text>{item}</Text>
-                </TouchableOpacity>
-              )}
-            />
-          )}
-        </View>
+  <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
+    <View style={styles.inputContainer}>
+      {dropdownOpen ? (
+    
+        <TextInput
+          style={styles.input}
+          placeholder="ค้นหาสถานที่"
+          value={searchText}
+          onChangeText={setSearchText}
+          autoFocus={true}
+        />
+      ) : (
+        <Text style={styles.input}><Image source={require('../assets/images/images/image9.png')} style={{width:16,height:16,}}/>{' '} ค้นหาสถานที่</Text>
       )}
+    </View>
+  </TouchableOpacity>
 
-<View style={styles.selectedContainer}>
-  {selected.length === 0 && <Text>No destinations selected</Text>}
-  <View style={styles.selectedGrid}>
-    {selected.map(dest => (
-      <TouchableOpacity
-        key={dest}
-        style={styles.selectedButton}
-        onPress={() => removeDestination(dest)}
-      >
-        <Text style={styles.selectedButtonText}>{dest} <Text style={{fontSize:16}}>x</Text></Text>
-      </TouchableOpacity>
-    ))}
+  {dropdownOpen && (
+    <View style={styles.dropdown}>
+      {loading ? (
+        <ActivityIndicator size="small" />
+      ) : (
+        <FlatList
+          data={filteredDestinations} // Use filtered data
+          keyExtractor={item => item}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => addDestination(item)}
+            >
+              <Text>{item}</Text>
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>ไม่พบสถานที่ที่ค้นหา</Text>
+          }
+        />
+      )}
+    </View>
+  )}
+
+  <View style={styles.selectedContainer}>
+    <View style={styles.selectedGrid}>
+      {selected.map(dest => (
+        <TouchableOpacity
+          key={dest}
+          style={styles.selectedButton}
+          onPress={() => removeDestination(dest)}
+        >
+          <Text style={styles.selectedButtonText}>
+            {dest} <Text style={{fontSize: 16}}>×</Text>
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
   </View>
 </View>
-
-
-
-
-       
-          </View>
         </View>
-
     </View>
 
       
@@ -865,6 +980,9 @@ const styles = StyleSheet.create({
     
     flex: 1,
     backgroundColor: '#fff',
+  },
+  inputContainer:{
+  
   },
   header: {
     flexDirection: 'row',
@@ -955,7 +1073,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily:'Inter_400Regular',
     lineHeight:24,
-    color: '#333',
+    color: '#374151',
     height:50,
     backgroundColor: '#FFFFFF',
   },
@@ -1028,8 +1146,10 @@ const styles = StyleSheet.create({
     paddingLeft: 12,
     fontSize: 16,
     fontFamily:'Inter_400Regular',
-    color: '#ADAEBC',
+    color: '#374151',
     lineHeight:24,
+    marginLeft:10,
+    width:'100%'
   },
   lineIcon: {
     backgroundColor: '#00B900',
@@ -1248,6 +1368,12 @@ const styles = StyleSheet.create({
     borderColor: '#D1D5DB',
     
   },
+  emptyText: {
+    padding: 10,
+    textAlign: 'center',
+    color: '#999',
+    fontStyle: 'italic'
+  },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
@@ -1259,6 +1385,61 @@ const styles = StyleSheet.create({
   selectedText: {
     color: '#6366f1',
   },
+  // Updated styles to match your existing input style
+inputWithIcon: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  borderWidth: 1,
+  borderColor: '#D1D5DB', // Match your input borderColor
+  borderRadius: 8,
+  backgroundColor: '#FFFFFF', // Match your input backgroundColor
+  height: 50, // Match your input height
+  overflow: 'visible', // Ensure icon is not clipped
+},
+
+textInputField: {
+  flex: 1,
+  paddingHorizontal: 12,
+  paddingVertical: 12, // Match your input paddingVertical
+  fontSize: 16,
+  color: '#333',
+  fontFamily: 'Inter_400Regular', // Match your input fontFamily
+  lineHeight: 24, // Match your input lineHeight
+  height: '100%', // Take full height of container
+},
+
+textDisplayArea: {
+  flex: 1,
+  paddingHorizontal: 12,
+  paddingVertical: 12, // Match your input paddingVertical
+  justifyContent: 'center',
+  height: '100%', // Take full height of container
+},
+
+displayText: {
+  fontSize: 16,
+  color: '#ADAEBC', // Match your input placeholder color for consistency
+  fontFamily: 'Inter_400Regular', // Match your input fontFamily
+  lineHeight: 24, // Match your input lineHeight
+},
+
+iconButton: {
+  paddingHorizontal: 8, // Reduced horizontal padding for mobile
+  paddingVertical: 0, // Remove vertical padding
+  justifyContent: 'center',
+  alignItems: 'center',
+  minWidth: 40, // Ensure minimum touchable area
+  height: 48, // Slightly smaller than container height
+},
+
+dropdownIcon: {
+  width: 18, // Slightly larger for better visibility
+  height: 18, // Slightly larger for better visibility
+  tintColor: '#666',
+  resizeMode: 'contain', // Ensure icon scales properly
+},
+  
+
 });
 
 export default ProfileForm;

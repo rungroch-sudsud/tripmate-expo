@@ -10,6 +10,12 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
+    InterTightRegular: require('../assets/fonts/InterTight-Regular.ttf'),
+    InterTightBold: require('../assets/fonts/InterTight-Bold.ttf'),
+    InterTightItalic: require('../assets/fonts/InterTight-Italic.ttf'),
+    InterTightBoldItalic: require('../assets/fonts/InterTight-BoldItalic.ttf'),
+    InterTightMedium: require('../assets/fonts/InterTight-Medium.ttf'),
+    InterTightLight: require('../assets/fonts/InterTight-Light.ttf'),
   });
 
   if (!loaded) {

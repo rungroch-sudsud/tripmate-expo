@@ -3,7 +3,7 @@ import * as WebBrowser from 'expo-web-browser';
 import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { auth } from '../app/firebaseConfig.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { Animated } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter,Stack } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
-
+import axios from 'axios'
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -40,60 +40,100 @@ const Login = () => {
     setTimeout(animateProgress, 300);
   }, []);
 
-  const handleWebGoogleSignIn=async ()=>{
-    const provider=new GoogleAuthProvider()
-
-    try{
-       const result=await signInWithPopup(auth,provider)
-       const user=result.user
-
-       console.log("Google Sign In success: ",{
-        uid:user.uid,
-        email:user.email,
-        displayName:user.displayName
-       });
-
-       try{
-        const profileData = {
-          userId: user.uid,
-          profileImageUrl: "N/A",
-          idCardImageUrl: "N/A",
-          portraitImageUrl: "N/A",
-          travelStyles: ["N/A"],
-          nickname: "N/A",
-          lineId: "N/A",
-          fullname: user.displayName,
-          facebookUrl: "N/A",
-          email: user.email,
-          destinations: ["N/A"],
-          age: -999,
-          phoneNumber: "N/A",
-          gender: "ชาย"
-        };
-        
-           const response=await axiosInstance.post('/users/profile',profileData)
-           if(response.status==201){
-            console.log("User Profile Created Successfully ",response.data);
-            console.log(response.data.data.userId);
-
-            await AsyncStorage.setItem('userId',response.data.data.userId);
-            router.push('/travel-style')
+  const handleWebGoogleSignIn = async () => {
+    const provider = new GoogleAuthProvider();
+    
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log("Google Sign In success: ", {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+      });
+      
+      // Use auth state change listener for better reliability
+      return new Promise((resolve, reject) => {
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+          if (currentUser && currentUser.uid === user.uid) {
+            unsubscribe(); // Stop listening
             
-            
-           }
-       }catch(profileError){
-          console.error("Failed to create user profile: ",profileError);
-          
-       }
-       
-
-    }
-    catch(error){
-        console.error("Firebase Sign In Failed ",error);
+            try {
+              console.log('Auth state confirmed, making API request...');
+              
+              const profileData = {
+                userId: currentUser.uid,
+                profileImageUrl: "N/A",
+                idCardImageUrl: "N/A",
+                portraitImageUrl: "N/A",
+                travelStyles: ["N/A"],
+                nickname: "N/A",
+                lineId: "N/A",
+                fullname: currentUser.displayName || "N/A",
+                facebookUrl: "N/A",
+                email: currentUser.email || "N/A",
+                destinations: ["N/A"],
+                age: -999,
+                phoneNumber: "N/A",
+                gender: "ชาย",
+              };
+              
+              const response = await axiosInstance.post('/users/profile', profileData);
+              
+              if (response.status === 201) {
+                console.log("User Profile Created Successfully", response.data);
+                await AsyncStorage.setItem('userId', response.data.data.userId);
+                router.push('/travel-style');
+                resolve(response.data);
+              }
+            } catch (apiError) {
+              if (axios.isAxiosError(apiError)) {
+                if (apiError.response?.status === 409) {
+                  console.log("User already exists, proceeding...");
+                  await AsyncStorage.setItem('userId', currentUser.uid);
+                  router.push('/travel-style');
+                  resolve({ message: 'User exists' });
+                } else {
+                  console.error("API Error:", apiError.response?.data || apiError.message);
+                  reject(apiError);
+                }
+              } else {
+                console.error("Non-Axios API Error:", apiError);
+                reject(apiError);
+              }
+            }
+          }
+        });
         
+        // Timeout after 10 seconds
+        setTimeout(() => {
+          unsubscribe();
+          reject(new Error('Auth state change timeout'));
+        }, 100000);
+      });
+      
+    } catch (error: any) {
+      if (error.code) {
+        console.error("Firebase Auth Error:", error.code, error.message);
+        
+        switch (error.code) {
+          case 'auth/popup-closed-by-user':
+            console.log("User cancelled sign-in");
+            break;
+          case 'auth/popup-blocked':
+            console.log("Popup was blocked by browser");
+            break;
+          default:
+            console.error("Authentication failed:", error.message);
+        }
+      } else {
+        console.error("Sign In Process Failed:", error);
+      }
+      throw error;
     }
-
-   }
+  };
+  
   
 
 
