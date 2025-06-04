@@ -1,0 +1,1178 @@
+import React, { useState,useEffect,useRef } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  Alert,
+  ActivityIndicator
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { router,Stack } from 'expo-router';
+import { launchImageLibrary } from 'react-native-image-picker';
+import {axiosInstance} from '../lib/axios'
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+
+
+
+interface Service {
+  id: string;
+  title: string;
+}
+
+
+interface Category {
+    id: string;
+    title: string;
+    iconImageUrl: string;
+    activeIconImageUrl?: string;
+  }
+type PickedFile = {
+    uri: string;
+    type: string;
+    name: string;
+    size?: number;
+    base64Data?: string;
+    isBase64?: boolean;
+  };
+  interface ApiResponse {
+    data: {
+      id: string;
+      title: string;
+      iconImageUrl: string;
+      activeIconImageUrl?: string;
+    }[];
+  }
+  interface TravelStyleResponse {
+    data: Category[];
+  }
+  
+  interface ServicesResponse {
+    data: {
+      id: string;
+      title: string;
+    }[];
+  }
+  
+  interface FormatState {
+    bold: boolean;
+    italic: boolean;
+    underline: boolean;
+    fontSize: string;
+  }
+  
+  interface EditorState {
+    content: string;
+    format: FormatState;
+    selectionStart: number;
+    selectionEnd: number;
+  }
+  
+  interface ToolbarButtonProps {
+    title: string;
+    isActive: boolean;
+    onPress: () => void;
+    style?: any;
+  }
+  
+  // Toolbar Button Component
+  const ToolbarButton: React.FC<ToolbarButtonProps> = ({ 
+    title, 
+    isActive, 
+    onPress, 
+    style 
+  }) => (
+    <TouchableOpacity
+      style={[
+        styles.toolbarButton,
+        isActive && styles.activeButton,
+        style
+      ]}
+      onPress={onPress}
+    >
+      <Text style={[
+        styles.toolbarButtonText,
+        isActive && styles.activeButtonText
+      ]}>
+        {title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+const ThaiFormScreen = () => {
+    const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
+    const [selfieError, setSelfieError] = useState(false);
+     
+    const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [services, setServices] = useState<Service[]>([]);
+const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+
+
+
+
+
+
+const handleCheckboxToggle = (id: string) => {
+  setSelectedServices((prev) =>
+    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+  );
+};
+
+const isChecked = (id: string) => selectedServices.includes(id);
+
+
+    
+    
+  const [formData, setFormData] = useState({
+    name: '',
+    startDate: '',
+    endDate: '',
+    description: '',
+    selectedOptions: [] as string[],
+    attachments: 0,
+  });
+
+ // For services
+const toggleServiceCheckbox = (id: string) => {
+  setSelectedServices(prev =>
+    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+  );
+};
+
+const isServiceChecked = (id: string) => selectedServices.includes(id);
+
+
+
+
+  
+  const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
+    // Extract base64 data
+    const base64Data = base64Uri.split(',')[1];
+    return {
+      uri: base64Uri, // Keep original for display
+      base64Data: base64Data,
+      type: mimeType,
+      name: filename,
+      isBase64: true,
+    };
+  };
+
+   const handleSubmit=()=>{
+    let hasError = false;
+    if (!pickImage2) {
+        setSelfieError(true);
+        hasError = true;
+      } else {
+        setSelfieError(false);
+      }
+   }
+
+  const pickImage2 = () => {
+    // Compatible options for different versions of react-native-image-picker
+    const options: any = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      // Force file URI instead of base64
+      presentationStyle: 'overFullScreen',
+    };
+
+    launchImageLibrary(options, (response: any) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const pickedImage = response.assets[0];
+        
+        // Handle base64 data URIs (common in web environment)
+        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
+          console.log('🟡 Base64 data detected, converting...');
+          const convertedFile = convertBase64ToFile(
+            pickedImage.uri,
+            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+            pickedImage.type ?? 'image/jpeg'
+          );
+          
+          setPickedFile2({
+            uri: convertedFile.uri,
+            type: convertedFile.type,
+            name: convertedFile.name,
+            base64Data: convertedFile.base64Data,
+            isBase64: true,
+          } as any);
+
+          console.log('🟢 Base64 image processed successfully');
+          return;
+        }
+
+        // Validate that we have a proper file URI
+        if (!pickedImage.uri) {
+          Alert.alert('Error', 'No image URI received. Please try again.');
+          return;
+        }
+
+        setPickedFile2({
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+          size: pickedImage.fileSize,
+        });
+
+        console.log('🟢 Image 2 picked successfully:', {
+          uri: pickedImage.uri.substring(0, 50) + '...',
+          type: pickedImage.type,
+          name: pickedImage.fileName,
+          size: pickedImage.fileSize,
+        });
+      }
+    });
+  };
+
+  const toggleSelection = (id: string): void => {
+    setSelectedItems(prev =>
+      prev.includes(id)
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
+  const fetchServices = async (): Promise<void> => {
+    try {
+      setLoading(true);
+  
+      const response = await axiosInstance.get('/services');
+      const result: ServicesResponse = response.data;
+  
+      const mappedServices: Service[] = result.data.map(item => ({
+        id: item.id,
+        title: item.title,
+      }));
+  
+      setServices(mappedServices);
+    } catch (error) {
+      console.error('Failed to fetch services:', error);
+      Alert.alert('Error', 'ไม่สามารถโหลดบริการได้ กรุณาลองใหม่', [{ text: 'OK' }]);
+      setServices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+  
+  
+  const fetchTravelStyles = async (): Promise<void> => {
+    try {
+      setLoading(true); 
+    
+ 
+      const response = await axiosInstance.get('/travel-styles'); 
+    
+      const result: ApiResponse = response.data; 
+      
+      
+      const mappedCategories: Category[] = result.data.map(item => ({
+        id: item.id,
+        title: item.title,
+        iconImageUrl: item.iconImageUrl,
+        activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
+      }));
+    
+      setCategories(mappedCategories); 
+    } catch (error) {
+      console.error('Failed to fetch travel styles:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load travel styles. Please try again.',
+        [{ text: 'OK' }]
+      );
+    
+      setCategories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+  useEffect(() => {
+    fetchTravelStyles();
+  }, []);
+
+  
+  const [editorState, setEditorState] = useState<EditorState>({
+    content: '',
+    format: {
+      bold: false,
+      italic: false,
+      underline: false,
+      fontSize: 'Normal'
+    },
+    selectionStart: 0,
+    selectionEnd: 0
+  });
+
+  const [textInputRef, setTextInputRef] = useState<TextInput | null>(null);
+
+  // Format toggle functions
+  const toggleBold = () => {
+    setEditorState(prev => ({
+      ...prev,
+      format: { ...prev.format, bold: !prev.format.bold }
+    }));
+  };
+
+  const toggleItalic = () => {
+    setEditorState(prev => ({
+      ...prev,
+      format: { ...prev.format, italic: !prev.format.italic }
+    }));
+  };
+
+  const toggleUnderline = () => {
+    setEditorState(prev => ({
+      ...prev,
+      format: { ...prev.format, underline: !prev.format.underline }
+    }));
+  };
+
+  const insertBulletList = () => {
+    const newContent = editorState.content + '\n• ';
+    setEditorState(prev => ({
+      ...prev,
+      content: newContent
+    }));
+  };
+
+  const insertNumberedList = () => {
+    const newContent = editorState.content + '\n1. ';
+    setEditorState(prev => ({
+      ...prev,
+      content: newContent
+    }));
+  };
+
+  const handleContentChange = (text: string) => {
+    setEditorState(prev => ({
+      ...prev,
+      content: text
+    }));
+  };
+
+  const handleSelectionChange = (event: any) => {
+    const { start, end } = event.nativeEvent.selection;
+    setEditorState(prev => ({
+      ...prev,
+      selectionStart: start,
+      selectionEnd: end
+    }));
+  };
+
+  // Dynamic text style based on format state
+  const getTextStyle = () => {
+    return {
+      fontWeight: editorState.format.bold ? 'bold' as 'bold' : 'normal' as 'normal',
+      fontStyle: editorState.format.italic ? 'italic' as 'italic' : 'normal' as 'normal',
+      textDecorationLine: editorState.format.underline ? 'underline' as 'underline' : 'none' as 'none',
+    };
+  };
+
+
+  useEffect(() => {
+    // Any initialization logic here
+    console.log('Thai Form Screen initialized');
+  }, []);
+
+  const formatDateInput = (text: string): string => {
+    // Remove all non-numeric characters
+    const cleaned = text.replace(/\D/g, '');
+    
+    // Apply formatting
+    if (cleaned.length <= 2) {
+      return cleaned;
+    } else if (cleaned.length <= 4) {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
+    } else {
+      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
+    }
+  };
+  
+  const validateDate = (dateString: string): boolean => {
+    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+    const match = dateString.match(regex);
+    
+    if (!match) return false;
+    
+    const day = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10);
+    const year = parseInt(match[3], 10);
+    
+    const date = new Date(year, month - 1, day);
+    return date.getDate() === day && 
+           date.getMonth() === month - 1 && 
+           date.getFullYear() === year;
+  };
+  
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton}>
+          <Ionicons name="chevron-back" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>สร้างรายไฟล์</Text>
+      </View>
+
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      
+        
+           
+        
+
+        {/* Form Fields */}
+        <View style={styles.formSection}>
+              {/* Image Upload Section */}
+        <TouchableOpacity
+              style={[
+                styles.uploadBox,
+                selfieError && { borderColor: 'red', borderWidth: 1 }
+              ]}
+              onPress={pickImage2}
+            >
+              {pickedFile2 ? (
+                <Image source={{ uri: pickedFile2.uri }} style={styles.uploadedImage} />
+              ) : (
+                <View style={styles.uploadPlaceholder}>
+                  <View style={styles.personIcon}>
+                    <Image
+                      source={require('../assets/images/images/image3.png')}
+                      style={{ height: 24, width: 24 }}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <Text style={styles.uploadText}>
+                    ถ่ายรูปหน้าตรงกับบัตรประชาชน
+                  </Text>
+                  <Text style={styles.uploadSubtext}>
+                    กรุณาถ่ายรูปให้ตรงกับบัตร เสื้อผ้าเรียบร้อย
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          {/* Name Field */}
+          <View style={styles.fieldContainer}>
+            <Text style={styles.label}>ชื่อรายไฟล์</Text>
+            <TextInput
+              style={styles.textInput}
+              value={formData.name}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, name: text }))}
+              placeholder=""
+            />
+          </View>
+
+          {/* Date Fields */}
+          <View style={styles.dateContainer}>
+  <View style={styles.dateField}>
+    <Text style={styles.dateLabel}>วันที่เริ่มต้น</Text>
+    <TextInput
+      style={[
+        styles.dateInput,
+        formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
+      ]}
+      value={formData.startDate}
+      onChangeText={(text) => {
+        const formatted = formatDateInput(text);
+        setFormData(prev => ({ ...prev, startDate: formatted }));
+      }}
+      placeholder="dd/mm/yyyy"
+      keyboardType="numeric"
+      maxLength={10}
+      accessibilityLabel="วันที่เริ่มต้น"
+    />
+  </View>
+  <View style={styles.dateField}>
+    <Text style={styles.dateLabel}>วันที่สิ้นสุด</Text>
+    <TextInput
+      style={[
+        styles.dateInput,
+        formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
+      ]}
+      value={formData.endDate}
+      onChangeText={(text) => {
+        const formatted = formatDateInput(text);
+        setFormData(prev => ({ ...prev, endDate: formatted }));
+      }}
+      placeholder="dd/mm/yyyy"
+      keyboardType="numeric"
+      maxLength={10}
+      accessibilityLabel="วันที่สิ้นสุด"
+    />
+  </View>
+</View>
+
+          {/* Travel-Style */}
+
+          <View style={styles.content}>
+        <Text style={styles.title}>
+        เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว
+        </Text>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.loadingText}>กำลังโหลด...</Text>
+          </View>
+        ) : (
+          <View style={styles.categoriesContainer}>
+            {categories.map((category: Category) => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.categoryItem,
+                  selectedItems.includes(category.id) && styles.selectedItem
+                ]}
+                onPress={() => toggleSelection(category.id)}
+              >
+  <Image
+  source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' }}
+  style={{
+    width: 14,
+    height: 12,
+   
+    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
+    
+  }}
+  resizeMode="contain"
+/>
+
+                <Text style={[
+                  styles.categoryText,
+                  selectedItems.includes(category.id) && styles.selectedText
+                ]}>
+                  {category.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+
+
+       {/* Description Field */}
+       <View style={styles.fieldContainer}>
+            <Text style={styles.label}>รายละเอียดเพิ่มเติม</Text>
+            <TextInput
+              style={styles.textArea}
+              multiline
+              numberOfLines={4}
+              value={formData.description}
+              onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
+              placeholder="เพิ่มรายละเอียดอื่นให้กับไฟล์ของคุณ..."
+            />
+          </View>
+
+      <View style={styles.container2}>
+{/* Header */}
+<Text style={styles.header}>รายละเอียดทั่วไป</Text>
+      
+      {/* Toolbar */}
+      <View style={styles.toolbar}>
+        {/* Font Size Dropdown */}
+        <TouchableOpacity style={styles.dropdown}>
+          <Text style={styles.dropdownText}>Normal</Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
+        </TouchableOpacity>
+        
+        {/* Format Buttons */}
+        <ToolbarButton
+          title="B"
+          isActive={editorState.format.bold}
+          onPress={toggleBold}
+          style={styles.formatButton}
+        />
+        
+        <ToolbarButton
+          title="I"
+          isActive={editorState.format.italic}
+          onPress={toggleItalic}
+          style={[styles.formatButton, styles.italicButton]}
+        />
+        
+        <ToolbarButton
+          title="U"
+          isActive={editorState.format.underline}
+          onPress={toggleUnderline}
+          style={[styles.formatButton, styles.underlineButton]}
+        />
+        
+        {/* List Buttons */}
+        <ToolbarButton
+          title="•"
+          isActive={false}
+          onPress={insertBulletList}
+          style={styles.listButton}
+        />
+        
+        <ToolbarButton
+          title="1."
+          isActive={false}
+          onPress={insertNumberedList}
+          style={styles.listButton}
+        />
+        
+        {/* Additional Tools */}
+        <TouchableOpacity style={styles.toolButton}>
+          <Text style={styles.toolButtonText}>≡</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.toolButton}>
+          <Text style={styles.toolButtonText}>🔗</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.toolButton}>
+          <Text style={styles.toolButtonText}>🖼️</Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity style={styles.toolButton}>
+          <Text style={styles.toolButtonText}>Aa</Text>
+        </TouchableOpacity>
+      </View>
+      
+      {/* Text Editor */}
+      <ScrollView style={styles.editorContainer}>
+        <TextInput
+          ref={(ref) => setTextInputRef(ref)}
+          style={[styles.textEditor, getTextStyle()]}
+          multiline={true}
+          placeholder="เขียนรายละเอียดทั่วไปของคุณ..."
+          placeholderTextColor="#999"
+          value={editorState.content}
+          onChangeText={handleContentChange}
+          onSelectionChange={handleSelectionChange}
+          textAlignVertical="top"
+        />
+      </ScrollView>
+      </View>  
+
+         
+
+          {/* Attachments */}
+          <View style={styles.attachmentSection}>
+            <Text style={styles.attachmentText}>ไฟล้แนบเอกสาร</Text>
+            <View style={styles.attachmentCount}>
+              <Text style={styles.countNumber}>📎 0</Text>
+            </View>
+          </View>
+
+          {/* Checkbox Options */}
+          <View style={styles.checkboxSection}>
+  <Text style={styles.label}>บริการที่คุณต้องการ</Text>
+
+  <View style={styles.checkboxContainer}>
+  {services.map(service => (
+  <View key={service.id} style={styles.checkboxRow}>
+    <TouchableOpacity
+      style={styles.checkbox}
+      onPress={() => toggleServiceCheckbox(service.id)}
+    >
+      <View
+        style={[
+          styles.checkboxInner,
+          isServiceChecked(service.id) && styles.checked,
+        ]}
+      />
+    </TouchableOpacity>
+    <Text style={styles.checkboxText}>{service.title}</Text>
+  </View>
+))}
+
+  </View>
+</View>
+   
+
+
+
+          {/* Bottom Section */}
+          <View style={styles.bottomSection}>
+            <TouchableOpacity style={styles.addButton}>
+              <Ionicons name="add" size={20} color="#666" />
+              <Text style={styles.addButtonText}>บันทึกและสร้าง</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+
+      {/* Submit Button */}
+      <View style={styles.submitContainer}>
+        <TouchableOpacity style={styles.submitButton}>
+          <Ionicons name="send" size={20} color="#fff" />
+          <Text style={styles.submitText}>โอเคดีงาม</Text>
+        </TouchableOpacity>
+        <Text style={styles.submitNote}>กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง</Text>
+      </View>
+    </SafeAreaView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  backButton: {
+    marginRight: 10,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontFamily:'Inter_500Medium',
+    color: '#1F2937',
+    flex: 1,
+    textAlign: 'center',
+
+    marginLeft:-20
+  },
+  content: {
+    flex: 1,
+    
+  },
+  imageSection: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  imageText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#666',
+  },
+  formSection: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 16,
+    marginBottom: 16,
+  },
+  fieldContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+
+  },
+  requiredText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth:1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    backgroundColor: '#fff',
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  dateField: {
+    flex: 0.48,
+  },
+  dateLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+    marginBottom: 8,
+  },
+  dateInput: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+  },
+  tagsContainer: {
+    marginBottom: 20,
+  },
+  tagButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  tagButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  activeTag: {
+    backgroundColor: '#4285f4',
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeTagText: {
+    fontSize: 14,
+    color: '#fff',
+  },
+  textArea: {
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+    minHeight: 80,
+    textAlignVertical: 'top',
+  },
+  attachmentSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  attachmentText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  attachmentCount: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  countNumber: {
+    fontSize: 14,
+    color: '#666',
+  },
+  checkboxSection: {
+    marginBottom: 20,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 0.48,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 2,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 2,
+  },
+  checked: {
+    backgroundColor: '#4285f4',
+  },
+  checkboxText: {
+    fontSize: 14,
+    color: '#333',
+  },
+  bottomSection: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  addButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  submitContainer: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
+  },
+  submitButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#4285f4',
+    paddingVertical: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  submitText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  submitNote: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  uploadBox: {
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'solid',
+    borderRadius: 12,
+    padding: 24,
+    alignItems: 'center',
+    minHeight: 270,
+    backgroundColor:'',
+    verticalAlign:'middle',
+    marginBottom:12
+
+  },
+  uploadPlaceholder: {
+    marginTop:46,
+    alignItems: 'center',
+    verticalAlign:'middle'
+  },
+  container2:{
+    padding: 16,
+  },
+  personIcon: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  uploadText: {
+    fontSize: 14,
+    fontFamily:"Inter_500Medium",
+    color: '#374151',
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  uploadedImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 8,
+    resizeMode:'contain'
+  },
+  uploadSubtext: {
+    fontSize: 12,
+    fontFamily:'Inter_400Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  title: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '800',
+    marginBottom: 14,
+    lineHeight: 24,
+    fontFamily:'Inter_900Black'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  categoriesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    height:38,
+    borderRadius: 30,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  selectedItem: {
+    backgroundColor: 'rgba(99, 102, 241, 0.1)', // 10% opacity of #6366f1
+    borderColor: '#6366f1',
+  },
+  selectedText: {
+    color: '#6366f1',
+  },
+  categoryText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '700',
+  },
+  toolbarButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  activeButton: {
+    backgroundColor: '#007bff',
+  },
+  toolbarButtonText: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  activeButtonText: {
+    color: '#fff',
+  },
+
+  toolbar: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  dropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 8,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  dropdownText: {
+    fontSize: 14,
+    color: '#333',
+    marginRight: 4,
+  },
+  dropdownArrow: {
+    fontSize: 10,
+    color: '#666',
+  },
+
+  formatButton: {
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  italicButton: {
+    fontStyle: 'italic',
+  },
+  underlineButton: {
+    textDecorationLine: 'underline',
+  },
+  listButton: {
+    minWidth: 32,
+    alignItems: 'center',
+  },
+  toolButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginRight: 4,
+  },
+  toolButtonText: {
+    fontSize: 14,
+    color: '#666',
+  },
+
+  editorContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  textEditor: {
+    flex: 1,
+    padding: 16,
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#333',
+    fontFamily: 'System', // Supports Thai characters
+    minHeight: 200,
+  },
+  dateInputError: {
+    borderColor: '#FF6B6B',
+    borderWidth: 1,
+  },
+
+
+});
+
+export default ThaiFormScreen;

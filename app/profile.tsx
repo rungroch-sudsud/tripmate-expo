@@ -20,7 +20,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router,Stack } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
-import {requirements} from './requirement'
+import axios from 'axios'
 interface Category {
   id: string;
   title: string;
@@ -77,11 +77,13 @@ type PickedFile = {
 
 
 interface ValidationErrors {
-  nickname?:string;
   fullName?: string;
+  nickname?: string;
   age?: string;
   gender?: string;
   email?: string;
+  facebookUrl?: string;  // Add this
+  lineId?: string;       // Add this
 }
 
 const ProfileForm: React.FC = () => {
@@ -189,20 +191,32 @@ const ProfileForm: React.FC = () => {
       }, []);
      // console.log('User ID:', email);
 
-      useEffect(() => {
-        const fetchCategories = async () => {
-          try {
-            const stored = await AsyncStorage.getItem('Catagories_id');
-            if (stored) {
-              setSelectedCategories(JSON.parse(stored));
+     useEffect(() => {
+      const initializeData = async () => {
+        try {
+          // Fetch all available travel styles first
+          await fetchTravelStyles();
+          
+          // Then load user's existing travel styles
+          const savedTravelStyles = await AsyncStorage.getItem('travelStyles');
+          if (savedTravelStyles) {
+            const userTravelStyles = JSON.parse(savedTravelStyles);
+            
+            // Since userTravelStyles is already an array of IDs, use directly
+            setSelectedItems(userTravelStyles);
+            
+            if (__DEV__) {
+              console.log('Loaded user travel styles:', userTravelStyles);
+              console.log('Selected IDs:', userTravelStyles);
             }
-          } catch (error) {
-            console.error('Error reading categories:', error);
           }
-        };
+        } catch (error) {
+          console.error('Error initializing data:', error);
+        }
+      };
     
-        fetchCategories();
-      }, []);
+      initializeData();
+    }, []);
 
       console.log("Catagories IDDDDDD:  "+selectedCategories);
       
@@ -341,30 +355,64 @@ const ProfileForm: React.FC = () => {
 
     return null;
   };
+  const validateFacebookUrl = (url: string): string | undefined => {
+    if (!url.trim()) return undefined; // Empty is OK
+    
+    // Check if it's a valid Facebook URL or username
+    const facebookUrlRegex = /^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com)\/.+/i;
+    const usernameRegex = /^[a-zA-Z0-9.]{5,}$/; // Basic username format
+    
+    if (facebookUrlRegex.test(url) || usernameRegex.test(url)) {
+      return undefined; // Valid
+    }
+    
+    return "กรุณาใส่ Facebook URL ที่ถูกต้อง หรือ Username";
+  };
+  
+  const validateLineId = (lineId: string): string | undefined => {
+    if (!lineId.trim()) return undefined; // Empty is OK
+    
+    // LINE ID validation: letters, numbers, dots, underscores, hyphens, 4-20 characters
+    const lineIdRegex = /^[a-zA-Z0-9._-]{4,20}$/;
+    
+    if (lineIdRegex.test(lineId)) {
+      return undefined; // Valid
+    }
+    
+    return "LINE ID ต้องมี 4-20 ตัวอักษร และใช้ได้เฉพาะ a-z, 0-9, ., _, -";
+  };
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
-
+  
     // Validate full name
     const fullNameError = validateFullName(formData.fullName);
     if (fullNameError) newErrors.fullName = fullNameError;
-
+  
     const nicknameError = validatenickName(formData.nickname);
     if (nicknameError) newErrors.nickname = nicknameError;
-
+  
     // Validate age
     const ageError = validateAge(formData.age);
     if (ageError) newErrors.age = ageError;
-
+  
     // Validate gender
     if (!formData.gender) {
       newErrors.gender = 'กรุณาเลือกเพศ';
     }
-
+  
     // Validate email
     const emailError = validateEmail(formData.email);
     if (emailError) newErrors.email = emailError;
-
+  
+    // Validate Facebook URL (only if filled)
+    const facebookError = validateFacebookUrl(formData.facebookUrl);
+    if (facebookError) newErrors.facebookUrl = facebookError;
+  
+    // Validate LINE ID (only if filled)
+    const lineError = validateLineId(formData.lineId);
+    if (lineError) newErrors.lineId = lineError;
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -380,7 +428,9 @@ const ProfileForm: React.FC = () => {
   };
 
   const handleBack = (): void => {
-    router.push('/travel-style')
+    router.push('/account-verification')
+    console.log("Back");
+    
   };
 
 
@@ -515,30 +565,33 @@ const ProfileForm: React.FC = () => {
     setResponseMessage(null);
 
     try {
-      const response = await fetch(`${requirements.baseURL}/users/profile/image/${await AsyncStorage.getItem('userId')}`, {
-        method: 'PATCH',
-        // Don't set Content-Type header manually - let the browser handle it
-        body: formData,
+      const userId = await AsyncStorage.getItem('userId');
+      
+      // Use your configured axios instance (already has token interceptor)
+      const response = await axiosInstance.patch(`/users/profile/image/${userId}`, formData, {
+        headers: {
+         
+        },
       });
-
-      console.log('🔵 Fetch response status:', response.status);
-      console.log('🔵 Fetch response headers:', response.headers);
-
-      const data = await response.json();
-      console.log('🔵 Fetch response data:', data);
-
-      if (response.ok) {
-        setResponseMessage(`Success: ${data.message || 'Upload completed'}`);
+    
+      console.log('🔵 Axios response status:', response.status);
+      console.log('🔵 Axios response data:', response.data);
+    
+      if (response.status === 200) {
+        setResponseMessage(`Success: ${response.data.message || 'Upload completed'}`);
         Alert.alert('Success', 'ID Card uploaded successfully!');
-      } else {
-        setResponseMessage(`Error (${response.status}): ${data.message || 'Failed to upload'}`);
-        Alert.alert('Upload Failed', `${data.message || 'Unknown error occurred'} (Status: ${response.status})`);
       }
     } catch (error: any) {
-      console.error('🔴 Fetch upload error:', error);
-      setResponseMessage(`Error: ${error.message}`);
-      Alert.alert('Upload Error', error.message || 'Network error occurred');
-    } finally {
+      console.error('🔴 Upload error:', error);
+      if (axios.isAxiosError(error)) {
+        const message = error.response?.data?.message || error.message;
+        setResponseMessage(`Error (${error.response?.status}): ${message}`);
+        Alert.alert('Upload Failed', `${message} (Status: ${error.response?.status})`);
+      } else {
+        setResponseMessage(`Error: ${error.message}`);
+        Alert.alert('Upload Error', error.message);
+      }
+    }finally {
       setUploading(false);
     }
   };
@@ -583,14 +636,15 @@ const ProfileForm: React.FC = () => {
     console.error("Error Updating User Profile: ",error);
     
    }
-  
-  
-    uploadImageWithFetch()
+    try{
+      uploadImageWithFetch()
+      router.push('/createTrip')
+    }catch(error){
+      console.error("Error uploading Profile Image: ",error);
+      
     }
 
-    
-
-     
+    }
   };
     const renderError = (error?: string) => {
     if (!error) return null;
@@ -740,38 +794,25 @@ const ProfileForm: React.FC = () => {
   
   {/* Container with input/text and icon */}
   <View style={styles.inputWithIcon}>
-    {/* Left side - TextInput when อื่นๆ, Text display otherwise */}
-    {formData.gender === 'อื่นๆ' ? (
-      <TextInput
-        value={formData.customGender}
-        onChangeText={(text) =>
-          setFormData({ ...formData, customGender: text })
-        }
-        placeholder="อื่นๆ"
-        placeholderTextColor="#999"
-        autoFocus={true}
-        style={[{ height:'90%',borderColor:'#999',width:'90%',paddingLeft:10 }]} // Add flex: 1 here
-      />
-    ) : (
-      <View style={styles.textDisplayArea}>
-        <Text style={styles.displayText}>
-          {formData.gender || 'เลือกเพศ'}
-        </Text>
-      </View>
-    )}
-    
+    {/* Left side - Always show text display */}
+    <View style={styles.textDisplayArea}>
+      <Text style={styles.displayText}>
+        {formData.gender || 'เลือกเพศ'}
+      </Text>
+    </View>
+
     {/* Right side - Always visible clickable icon */}
-    <TouchableOpacity 
+    <TouchableOpacity
       onPress={() => setShowGenderDropdown(!showGenderDropdown)}
       style={styles.iconButton}
     >
-      <Image 
-        source={require('../assets/images/images/image10.png')} // Replace with your icon path
+      <Image
+        source={require('../assets/images/images/image10.png')}
         style={styles.dropdownIcon}
       />
     </TouchableOpacity>
   </View>
-  
+
   {/* Dropdown list */}
   {showGenderDropdown && (
     <View style={styles.dropdownList}>
@@ -779,7 +820,11 @@ const ProfileForm: React.FC = () => {
         <TouchableOpacity
           key={option}
           onPress={() => {
-            setFormData({ ...formData, gender: option, customGender: '' });
+            setFormData({
+              ...formData,
+              gender: option,
+              customGender: ''
+            });
             setShowGenderDropdown(false);
             if (errors.gender) setErrors({ ...errors, gender: undefined });
           }}
@@ -801,35 +846,47 @@ const ProfileForm: React.FC = () => {
           
           <Text style={styles.label}>ช่องทางการติดต่อเพิ่มเติม (ไม่บังคับ)</Text>
             
-            {/* Facebook */}
-            <View style={styles.socialInputContainer}>
-              <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-              <TextInput
-                style={styles.socialInput}
-                placeholder="Facebook URL หรือ Username"
-                value={formData.facebookUrl}
-                onChangeText={(text: string) => setFormData({...formData, facebookUrl: text})}
-                placeholderTextColor="#999"
-                autoCapitalize="none"
-              />
-            </View>
+         {/* Facebook */}
+<View style={styles.socialInputContainer}>
+  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+  <TextInput
+    style={[styles.socialInput, errors.facebookUrl && styles.inputError]}
+    placeholder="Facebook URL หรือ Username"
+    value={formData.facebookUrl}
+    onChangeText={(text: string) => {
+      setFormData({...formData, facebookUrl: text});
+      if (errors.facebookUrl) {
+        setErrors({...errors, facebookUrl: undefined});
+      }
+    }}
+    placeholderTextColor="#999"
+    autoCapitalize="none"
+  />
+</View>
+{renderError(errors.facebookUrl)}
 
-              {/* LINE */}
-              <View style={styles.socialInputContainer}>
-              <Image
-        source={require('../assets/images/images/image7.png')} // Replace with your image path
-        style={{height:16,width:16}}
-        resizeMode="contain"
-      />
-              <TextInput
-                style={styles.socialInput}
-                placeholder="LINE ID"
-                value={formData.lineId}
-                onChangeText={(text: string) => setFormData({...formData, lineId: text})}
-                placeholderTextColor="#999"
-                autoCapitalize="none"
-              />
-            </View>
+{/* LINE */}
+<View style={styles.socialInputContainer}>
+  <Image
+    source={require('../assets/images/images/image7.png')}
+    style={{height:16,width:16}}
+    resizeMode="contain"
+  />
+  <TextInput
+    style={[styles.socialInput, errors.lineId && styles.inputError]}
+    placeholder="LINE ID"
+    value={formData.lineId}
+    onChangeText={(text: string) => {
+      setFormData({...formData, lineId: text});
+      if (errors.lineId) {
+        setErrors({...errors, lineId: undefined});
+      }
+    }}
+    placeholderTextColor="#999"
+    autoCapitalize="none"
+  />
+</View>
+{renderError(errors.lineId)}
 
             <View style={styles.content}>
         <Text style={styles.title}>

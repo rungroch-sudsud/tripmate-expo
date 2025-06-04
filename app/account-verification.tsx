@@ -533,12 +533,12 @@ const [selfieError, setSelfieError] = useState(false);
       {/* Header */}
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleSkip}>
+        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
           <FontAwesome name="angle-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ยืนยันตัวตน</Text>
 
-        <TouchableOpacity onPress={handleGoBack}>
+        <TouchableOpacity onPress={handleSkip}>
           <View style={styles.flagContainer}>
             <Text style={styles.flag}>ข้าม</Text>
           </View>
