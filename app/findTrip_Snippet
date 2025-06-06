@@ -1,0 +1,750 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { axiosInstance } from '../lib/axios';
+import {Stack} from 'expo-router'
+import {Calendar} from 'react-native-calendars'
+
+interface TravelStyle {
+    id: string;
+    title: string;
+    iconImageUrl: string;
+    activeIconImageUrl: string;
+  }
+  
+  interface TravelStylesResponse {
+    message: string;
+    data: TravelStyle[];
+  }
+
+interface TripOwner {
+  portraitImageUrl: string;
+  reviews: any[];
+  email: string;
+  gender: string;
+  destinations: string[];
+  travelStyles: string[];
+  profileImageUrl: string;
+  nickname: string;
+  phoneNumber: string;
+  userId: string;
+  lineId: string;
+  idCardImageUrl: string;
+  facebookUrl: string;
+  fullname: string;
+  age: number;
+}
+
+interface Participant {
+  gender: string;
+  profileImageUrl: string;
+  reviews: any[];
+  phoneNumber: string;
+  idCardImageUrl: string;
+  age: number;
+  facebookUrl: string;
+  userId: string;
+  lineId: string;
+  travelStyles: string[];
+  nickname: string;
+  portraitImageUrl: string;
+  fullname: string;
+  email: string;
+  destinations: string[];
+}
+
+interface Trip {
+  id: string;
+  status: string;
+  name: string;
+  includedServices: string[];
+  destinations: string[];
+  endDate: string;
+  maxParticipants: number;
+  tripOwnerId: string;
+  groupAtmosphere: string;
+  startDate: string;
+  participants: Participant[];
+  travelStyles: string[];
+  tripCoverImageUrl: string;
+  pricePerPerson: number;
+  detail: string;
+  tripOwner: TripOwner;
+}
+
+interface ApiResponse {
+  message: string;
+  data: Trip[];
+}
+
+const FindTripScreen: React.FC = () => {
+    const [allTrips, setAllTrips] = useState<Trip[]>([]);
+    const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
+  const [travelStyles, setTravelStyles] = useState<TravelStyle[]>([]);
+  const [selectedTravelStyle, setSelectedTravelStyle] = useState<string>('all');
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchTravelStyles = async () => {
+    try {
+      const response = await axiosInstance.get<TravelStylesResponse>('/travel-styles');
+      setTravelStyles(response.data.data);
+    } catch (error) {
+      console.error('Error fetching travel styles:', error);
+    }
+  };
+  const filterTrips = (trips: Trip[], styleId: string) => {
+    console.log('Filtering trips for style:', styleId);
+    console.log('Total trips to filter:', trips.length);
+    
+    if (styleId === 'all') {
+      console.log('Showing all trips');
+      setFilteredTrips(trips);
+    } else {
+      const filtered = trips.filter(trip => {
+        console.log(`Trip "${trip.name}" has styles:`, trip.travelStyles);
+        return trip.travelStyles && trip.travelStyles.includes(styleId);
+      });
+      console.log('Filtered trips count:', filtered.length);
+      setFilteredTrips(filtered);
+    }
+  };
+
+  const getOwnerInfo = (tripOwner: TripOwner | null | undefined) => {
+    if (!tripOwner) {
+      return {
+        profileImageUrl: 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
+        displayName: 'ไม่ระบุชื่อ',
+        age: 'ไม่ระบุอายุ'
+      };
+    }
+
+    return {
+      profileImageUrl: tripOwner.profileImageUrl && tripOwner.profileImageUrl !== 'N/A' 
+        ? tripOwner.profileImageUrl 
+        : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
+      displayName: tripOwner.nickname && tripOwner.nickname !== 'N/A' 
+        ? tripOwner.nickname 
+        : tripOwner.fullname || 'ไม่ระบุชื่อ',
+      age: tripOwner.age && tripOwner.age > 0 ? `${tripOwner.age} ปี` : 'ไม่ระบุอายุ'
+    };
+  };
+  const fetchTrips = async () => {
+    try {
+      const response = await axiosInstance.get<ApiResponse>('/trips');
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        console.log('Fetched trips:', response.data.data.length);
+        setAllTrips(response.data.data);
+        // Apply current filter
+        filterTrips(response.data.data, selectedTravelStyle);
+      } else {
+        setAllTrips([]);
+        setFilteredTrips([]);
+      }
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      Alert.alert('Error', 'Failed to load trips. Please try again.');
+      setAllTrips([]);
+      setFilteredTrips([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      await Promise.all([
+        fetchTravelStyles(),
+        fetchTrips()
+      ]);
+    };
+    loadData();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchTrips();
+  };
+
+  const formatDateRange = (startDate: string, endDate: string) => {
+    const start = new Date(startDate).toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+    });
+    const end = new Date(endDate).toLocaleDateString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+    });
+    return `${start} - ${end}`;
+  };
+
+  const handleTripPress = (trip: Trip) => {
+    // Navigate to trip details or handle trip selection
+    console.log('Trip pressed:', trip.id);
+  };
+
+  const handleTravelStylePress = (styleId: string) => {
+    console.log('Travel style selected:', styleId);
+    setSelectedTravelStyle(styleId);
+    // Filter the existing trips immediately (no loading needed)
+    filterTrips(allTrips, styleId);
+  };
+
+  const handleJoinTrip = (trip: Trip) => {
+    // Handle join trip action
+    console.log('Join trip:', trip.id);
+    Alert.alert('สนใจเข้าร่วม', `คุณต้องการเข้าร่วม ${trip.name} หรือไม่?`);
+  };
+
+  const renderTravelStyleItem = (style: TravelStyle, isSelected: boolean) => (
+    <TouchableOpacity
+      key={style.id}
+      style={[
+        styles.categoryItem,
+        isSelected && styles.categoryItemActive
+      ]}
+      onPress={() => handleTravelStylePress(style.id)}
+    >
+      {(style.iconImageUrl || style.activeIconImageUrl) && (
+        <Image
+          source={{ 
+            uri: isSelected && style.activeIconImageUrl 
+              ? style.activeIconImageUrl 
+              : style.iconImageUrl 
+          }}
+          style={[
+            styles.categoryIcon,
+            isSelected && styles.categoryIconActive
+          ]}
+        />
+      )}
+      <Text style={[
+        styles.categoryText,
+        isSelected && styles.categoryTextActive
+      ]}>
+        {style.title}
+      </Text>
+    </TouchableOpacity>
+  );
+
+  // Render "All" category
+  const renderAllCategory = () => (
+    <TouchableOpacity
+      key="all"
+      style={[
+        styles.categoryItem,
+        selectedTravelStyle === 'all' && styles.categoryItemActive
+      ]}
+      onPress={() => handleTravelStylePress('all')}
+    >
+      <Text style={[
+        styles.categoryText,
+        selectedTravelStyle === 'all' && styles.categoryTextActive
+      ]}>
+        ทั้งหมด
+      </Text>
+    </TouchableOpacity>
+  );
+
+  const renderTripCard = (trip: Trip) => {
+    const ownerInfo = getOwnerInfo(trip.tripOwner);
+
+    return(
+
+    
+        <TouchableOpacity
+        key={trip.id}
+        style={styles.card}
+        onPress={() => handleTripPress(trip)}
+      >
+      {/* Header Image Container */}
+      <View style={styles.imageContainer}>
+        {trip.tripCoverImageUrl ? (
+          <Image
+            source={{ uri: trip.tripCoverImageUrl }}
+            style={styles.backgroundImage}
+          />
+        ) : (
+          <View style={styles.placeholderImage} />
+        )}
+        
+        {/* Date Badge - Top Left */}
+        <View style={styles.dateBadge}>
+          <Text style={styles.dateIcon}>📅</Text>
+          <Text style={styles.dateText}>
+            {formatDateRange(trip.startDate, trip.endDate)}
+          </Text>
+        </View>
+        
+        {/* Max Participant Badge - Top Right */}
+        <View style={styles.participantBadge}>
+          <Text style={styles.participantIcon}>👥</Text>
+          <Text style={styles.participantText}>
+            ต้องการ {trip.maxParticipants} คน
+          </Text>
+        </View>
+
+        {/* Status Badge 
+        {trip.status === 'draft' && (
+          <View style={styles.statusBadge}>
+            <Text style={styles.statusText}>แบบร่าง</Text>
+          </View>
+        )}*/}
+      </View>
+
+      {/* Content Below Image */}
+      <View style={styles.content}>
+        {/* Trip Name */}
+        <Text style={styles.tripName}>{trip.name}</Text>
+
+        {/* Destinations */}
+        {trip.destinations.length > 0 && (
+          <View style={styles.destinationRow}>
+           <Image source={require('../assets/images/images/image13.png')} style={{width:10.5,height:14,marginRight:10}}/>
+            <View style={styles.destinationContainer}>
+              {trip.destinations.map((dest, index) => (
+                <Text key={dest} style={styles.destinationText}>
+                  {dest}{index < trip.destinations.length - 1 ? ', ' : ''}
+                </Text>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Description */}
+        {trip.detail && (
+          <Text style={styles.description} numberOfLines={2}>
+            {trip.detail}
+          </Text>
+        )}
+
+        {/* Group Atmosphere */}
+        {trip.groupAtmosphere && (
+          <Text style={styles.atmosphere} numberOfLines={2}>
+            {trip.groupAtmosphere}
+          </Text>
+        )}
+
+        {/* Price 
+        <View style={styles.priceContainer}>
+          <Text style={styles.priceLabel}>ราคา:</Text>
+          <Text style={styles.priceValue}>
+            {trip.pricePerPerson.toLocaleString()} ฿/คน
+          </Text>
+        </View>*/}
+
+        {/* Services Tags */}
+        {trip.includedServices.length > 0 && (
+          <View style={styles.tagsContainer}>
+            {trip.includedServices.map((service, index) => (
+              <View key={index} style={styles.serviceTag}>
+                <Text style={styles.serviceTagText}>#{service}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Bottom Row - Owner & Join Button */}
+        <View style={styles.bottomRow}>
+          <View style={styles.ownerInfo}>
+            <Image
+              source={{ uri: ownerInfo.profileImageUrl }}
+              style={styles.ownerAvatar}
+            />
+            <View style={styles.ownerDetails}>
+              <Text style={styles.ownerName}>
+                {ownerInfo.displayName}
+              </Text>
+              <Text style={styles.ownerAge}>
+                {ownerInfo.age}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.joinButton}
+            onPress={() => handleJoinTrip(trip)}
+          >
+            <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Participants Count */}
+        <View style={styles.participantsInfo}>
+          <Text style={styles.participantsText}>
+            ผู้เข้าร่วม: {trip.participants.length}/{trip.maxParticipants} คน
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>)
+  };
+
+  if (loading) {
+    return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loadingText}>กำลังโหลดทริป...</Text>
+        </View>
+      );
+  }
+
+  return (
+    <View style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white'}}>
+     <Text style={styles.headerTitle}>หาเพื่อนเที่ยว</Text>
+     <Image source={require('../assets/images/images/image16.png')} style={{width:18,height:18,flex:0.05}} />
+     <Image source={require('../assets/images/images/image17.png')} style={{width:15.75,height:18,flex:0.05,marginHorizontal:15}} />
+     </View>
+     {/* Travel Styles Categories - Horizontal Scroll */}
+     <View style={styles.categoriesContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScrollContent}
+        >
+          {renderAllCategory()}
+          {travelStyles.map(style => 
+            renderTravelStyleItem(style, selectedTravelStyle === style.id)
+          )}
+        </ScrollView>
+      </View>
+      
+         {/* Trips List */}
+         <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {filteredTrips.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {loading ? 'กำลังโหลด...' : 'ไม่พบทริปในหมวดหมู่นี้'}
+            </Text>
+          </View>
+        ) : (
+          filteredTrips.map(trip => renderTripCard(trip))
+        )}
+      </ScrollView>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',paddingVertical:10, }}>
+  <View style={{ alignItems: 'center' }}>
+    <Image 
+      source={require('../assets/images/images/image18.png')} 
+      style={{ width: 24, height: 24 }} 
+    />
+    <Text style={{ fontSize: 12 }}>หน้าหลัก</Text>
+  </View>
+  <View style={{ alignItems: 'center' }}>
+    <Image 
+      source={require('../assets/images/images/image19.png')} 
+      style={{ width: 24, height: 24 }} 
+    />
+    <Text style={{ fontSize: 12 }}>ค้นหา</Text>
+  </View>
+  <View style={{ alignItems: 'center' }}>
+    <Image 
+      source={require('../assets/images/images/image20.png')} 
+      style={{ width: 24, height: 24 }} 
+    />
+    <Text style={{ fontSize: 12 }}>โปรไฟล์</Text>
+  </View>
+</View>
+
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  headerTitle: {
+    flex:0.9,
+    fontSize: 18,
+    color: '#1F2937',
+    textAlign: 'left',
+    paddingVertical: 16,
+    marginLeft:10
+  },
+  scrollView: {
+    flex: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#6b7280',
+  },
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    margin: 16,
+    marginBottom: 12,
+  },
+  imageContainer: {
+    height: 270,
+    position: 'relative',
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dateBadge: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+  },
+  participantBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  participantText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'white',
+  },
+  statusBadge: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    backgroundColor: 'rgba(251, 191, 36, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#92400e',
+  },
+  content: {
+    padding: 16,
+  },
+  tripName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  destinationContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  destinationText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  description: {
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  atmosphere: {
+    fontSize: 14,
+    color: '#6366f1',
+    fontStyle: 'italic',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  priceLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginRight: 8,
+  },
+  priceValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#059669',
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  serviceTag: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  serviceTagText: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  ownerInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  ownerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  ownerDetails: {
+    flex: 1,
+  },
+  ownerName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  ownerAge: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  joinButton: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  participantsInfo: {
+    alignItems: 'center',
+  },
+  participantsText: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  categoriesContainer: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  categoriesScrollContent: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    gap: 8,
+  },
+  categoryItemActive: {
+    backgroundColor: '#6366f1',
+    borderColor: '#6366f1',
+  },
+  categoryIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#6c757d',
+  },
+  categoryIconActive: {
+    tintColor: '#ffffff',
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6c757d',
+  },
+  categoryTextActive: {
+    color: '#ffffff',
+  },
+});
+
+export default FindTripScreen;

@@ -17,9 +17,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../lib/axios'
+import '@expo-google-fonts/inter'
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import {Calendar} from 'react-native-calendars'
 
 
 const MAX_WORDS = 40;
@@ -71,6 +75,8 @@ interface FormatState {
   textColor: string;
   backgroundColor: string;
   textAlign: 'left' | 'center' | 'right' | 'justify';
+  fontFamily: string;
+  
 }
 
 interface EditorState {
@@ -101,6 +107,16 @@ interface FontSizePickerProps {
   onSizeSelect: (size: number) => void;
   currentSize: number;
 }
+
+interface InputModalProps {
+  visible: boolean;
+  title: string;
+  placeholder: string;
+  onClose: () => void;
+  onSubmit: (text: string) => void;
+}
+
+
 
 // Color Picker Component
 const ColorPicker: React.FC<ColorPickerProps> = ({ 
@@ -145,7 +161,103 @@ const ColorPicker: React.FC<ColorPickerProps> = ({
   );
 };
 
-// Font Size Picker Component
+const LinkInputModal = ({
+  visible,
+  onClose,
+  url,
+  setUrl,
+  linkText,
+  setLinkText,
+  onSubmit
+}: {
+  visible: boolean;
+  onClose: () => void;
+  url: string;
+  setUrl: (url: string) => void;
+  linkText: string;
+  setLinkText: (text: string) => void;
+  onSubmit: () => void;
+}) => {
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Insert Link</Text>
+          <TextInput
+            placeholder="URL (https://example.com)"
+            value={url}
+            onChangeText={setUrl}
+            style={styles.input}
+          />
+          <TextInput
+            placeholder="Display Text (optional)"
+            value={linkText}
+            onChangeText={setLinkText}
+            style={styles.input}
+          />
+          <View style={styles.modalActions}>
+            <TouchableOpacity onPress={onClose}>
+              <Text style={{ color: 'red' }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onSubmit}>
+              <Text style={{ color: 'blue',}}>Insert</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+
+// Input Modal Component
+const InputModal: React.FC<InputModalProps> = ({ 
+  visible, 
+  title, 
+  placeholder, 
+  onClose, 
+  onSubmit 
+}) => {
+  const [inputText, setInputText] = useState('');
+
+  const handleSubmit = () => {
+    if (inputText.trim()) {
+      onSubmit(inputText.trim());
+      setInputText('');
+      onClose();
+    }
+  };
+
+  const handleClose = () => {
+    setInputText('');
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={styles.modalOverlay}>
+        <View style={styles.inputModalContainer}>
+          <Text style={styles.modalTitle}>{title}</Text>
+          <TextInput
+            style={styles.modalInput}
+            placeholder={placeholder}
+            value={inputText}
+            onChangeText={setInputText}
+            autoFocus
+            onSubmitEditing={handleSubmit}
+          />
+          <View style={styles.modalButtons}>
+            <TouchableOpacity style={styles.modalCancelButton} onPress={handleClose}>
+              <Text style={styles.modalCancelText}>ยกเลิก</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.modalSubmitButton} onPress={handleSubmit}>
+              <Text style={styles.modalSubmitText}>ตกลง</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+};
 const FontSizePicker: React.FC<FontSizePickerProps> = ({ 
   visible, 
   onClose, 
@@ -216,9 +328,15 @@ const ToolbarButton: React.FC<ToolbarButtonProps> = ({
   </TouchableOpacity>
 );
 
+
  //Rich Editor//
 
 const ThaiFormScreen = () => {
+ 
+
+
+// Available fonts array
+
     const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
     const [selfieError, setSelfieError] = useState(false);
      
@@ -227,7 +345,9 @@ const ThaiFormScreen = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [services, setServices] = useState<Service[]>([]);
 const [selectedServices, setSelectedServices] = useState<string[]>([]);
-
+const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+ 
   const [formData, setFormData] = useState({
     name: '',
     startDate: '',
@@ -261,17 +381,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       isBase64: true,
     };
   };
-
-   const handleSubmit=()=>{
-    let hasError = false;
-    if (!pickImage2) {
-        setSelfieError(true);
-        hasError = true;
-      } else {
-        setSelfieError(false);
-      }
-   }
-
   const pickImage2 = () => {
     // Compatible options for different versions of react-native-image-picker
     const options: any = {
@@ -426,17 +535,87 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       fontSize: 16,
       textColor: '#000000',
       backgroundColor: '#ffffff',
-      textAlign: 'left'
+      textAlign: 'left',
+      fontFamily: 'System', 
     },
     selectionStart: 0,
-    selectionEnd: 0
+    selectionEnd: 0,
+    images: [] // Add this to store image data
   });
+  const [isFocused, setIsFocused] = useState(false);
 
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showFontSizePicker, setShowFontSizePicker] = useState(false);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [showLinkTextInput, setShowLinkTextInput] = useState(false);
+  const [showLinkInputModal, setShowLinkInputModal] = useState(false);
+const [tempUrl, setTempUrl] = useState('');
+const [tempLinkText, setTempLinkText] = useState('');
+
+  const [showImageUrlInput, setShowImageUrlInput] = useState(false);
+  
   const [textInputRef, setTextInputRef] = useState<TextInput | null>(null);
   const [listCounter, setListCounter] = useState(1);
-
+  const [showFontDropdown, setShowFontDropdown] = useState(false);
+  const FontDropdown = () => (
+    <Modal
+      visible={showFontDropdown}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setShowFontDropdown(false)}
+    >
+      <TouchableOpacity 
+        style={styles.modalOverlay}
+        activeOpacity={1}
+        onPress={() => setShowFontDropdown(false)}
+      >
+        <View style={styles.fontDropdownContainer}>
+          <Text style={styles.dropdownTitle}>Select Font</Text>
+          <ScrollView style={styles.fontList}>
+            {fontFamilies.map((font) => (
+              <TouchableOpacity
+                key={font.value}
+                style={[
+                  styles.fontItem,
+                  editorState.format.fontFamily === font.value && styles.selectedFontItem
+                ]}
+                onPress={() => changeFontFamily(font.value)}
+              >
+                <Text 
+                  style={[
+                    styles.fontItemText,
+                    { fontFamily: font.value },
+                    editorState.format.fontFamily === font.value && styles.selectedFontText
+                  ]}
+                >
+                  {font.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+      </TouchableOpacity>
+    </Modal>
+  );
+  const fontFamilies = [
+    { name: 'Default', value: 'System' },
+    { name: 'Arial', value: 'Arial' },
+    { name: 'Times New Roman', value: 'Times New Roman' },
+    { name: 'Helvetica', value: 'Helvetica' },
+    { name: 'Georgia', value: 'Georgia' },
+    { name: 'Verdana', value: 'Verdana' },
+    { name: 'Courier New', value: 'Courier New' },
+    { name: 'Trebuchet MS', value: 'Trebuchet MS' },
+    { name: 'Comic Sans MS', value: 'Comic Sans MS' },
+    { name: 'Impact', value: 'Impact' },
+  ];
+  const changeFontFamily = (fontFamily: string) => {
+    setEditorState(prev => ({
+      ...prev,
+      format: { ...prev.format, fontFamily }
+    }));
+    setShowFontDropdown(false);
+  };  
   // Format toggle functions
   const toggleBold = () => {
     setEditorState(prev => ({
@@ -508,103 +687,81 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     }));
   };
 
-  // Insert link function
+
+  const handleLinkSubmit = () => {
+    const url = tempUrl.trim();
+    const linkText = tempLinkText.trim() || tempUrl;
+  
+    if (!url) {
+      // You might show an alert/toast here: "URL is required"
+      return;
+    }
+  
+    const { selectionStart, content } = editorState;
+    const beforeCursor = content.substring(0, selectionStart);
+    const afterCursor = content.substring(selectionStart);
+    const markdownLink = `[${linkText}](${url})`;
+    const newContent = `${beforeCursor}${markdownLink}${afterCursor}`;
+  
+    setEditorState((prev) => ({
+      ...prev,
+      content: newContent,
+      selectionStart: selectionStart + markdownLink.length,
+      selectionEnd: selectionStart + markdownLink.length,
+    }));
+  
+    // Reset modal fields and close modal
+    setTempUrl('');
+    setTempLinkText('');
+    setShowLinkInputModal(false);
+  };
+  
+
+  // Insert link function - Web compatible
   const insertLink = () => {
-    Alert.prompt(
-      'เพิ่มลิงก์',
-      'กรุณาใส่ URL:',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'เพิ่ม',
-          onPress: (url) => {
-            if (url) {
-              Alert.prompt(
-                'ข้อความลิงก์',
-                'กรุณาใส่ข้อความที่จะแสดง:',
-                [
-                  { text: 'ยกเลิก', style: 'cancel' },
-                  {
-                    text: 'เพิ่ม',
-                    onPress: (linkText) => {
-                      const displayText = linkText || url;
-                      const cursor = editorState.selectionStart;
-                      const beforeCursor = editorState.content.substring(0, cursor);
-                      const afterCursor = editorState.content.substring(cursor);
-                      const newContent = beforeCursor + `[${displayText}](${url})` + afterCursor;
-                      
-                      setEditorState(prev => ({
-                        ...prev,
-                        content: newContent
-                      }));
-                    }
-                  }
-                ]
-              );
-            }
-          }
-        }
-      ]
-    );
+    setShowLinkInputModal(true);
   };
 
-  // Insert image placeholder
+  const handleUrlSubmit = (url: string) => {
+    setTempUrl(url);
+    setShowLinkTextInput(true);
+  };
+
+  const handleLinkTextSubmit = (linkText: string) => {
+    const displayText = linkText || tempUrl;
+    const cursor = editorState.selectionStart;
+    const beforeCursor = editorState.content.substring(0, cursor);
+    const afterCursor = editorState.content.substring(cursor);
+    const newContent = beforeCursor + `[${displayText}](${tempUrl})` + afterCursor;
+    
+    setEditorState(prev => ({
+      ...prev,
+      content: newContent
+    }));
+    setTempUrl('');
+  };
+
+  // Insert image function - Web compatible
   const insertImage = () => {
-    Alert.alert(
-      'เพิ่มรูปภาพ',
-      'เลือกวิธีการเพิ่มรูปภาพ:',
-      [
-        { text: 'ยกเลิก', style: 'cancel' },
-        {
-          text: 'URL รูปภาพ',
-          onPress: () => {
-            Alert.prompt(
-              'URL รูปภาพ',
-              'กรุณาใส่ URL ของรูปภาพ:',
-              [
-                { text: 'ยกเลิก', style: 'cancel' },
-                {
-                  text: 'เพิ่ม',
-                  onPress: (imageUrl) => {
-                    if (imageUrl) {
-                      const cursor = editorState.selectionStart;
-                      const beforeCursor = editorState.content.substring(0, cursor);
-                      const afterCursor = editorState.content.substring(cursor);
-                      const newContent = beforeCursor + `\n[รูปภาพ: ${imageUrl}]\n` + afterCursor;
-                      
-                      setEditorState(prev => ({
-                        ...prev,
-                        content: newContent
-                      }));
-                    }
-                  }
-                }
-              ]
-            );
-          }
-        },
-        {
-          text: 'Placeholder',
-          onPress: () => {
-            const cursor = editorState.selectionStart;
-            const beforeCursor = editorState.content.substring(0, cursor);
-            const afterCursor = editorState.content.substring(cursor);
-            const newContent = beforeCursor + '\n[📷 รูปภาพ]\n' + afterCursor;
-            
-            setEditorState(prev => ({
-              ...prev,
-              content: newContent
-            }));
-          }
-        }
-      ]
-    );
+    setShowImageUrlInput(true);
+  };
+
+  const handleImageUrlSubmit = (imageUrl: string) => {
+    const cursor = editorState.selectionStart;
+    const beforeCursor = editorState.content.substring(0, cursor);
+    const afterCursor = editorState.content.substring(cursor);
+    const newContent = beforeCursor + `\n[รูปภาพ: ${imageUrl}]\n` + afterCursor;
+    
+    setEditorState(prev => ({
+      ...prev,
+      content: newContent
+    }));
   };
 
   const handleContentChange = (text: string) => {
     setEditorState(prev => ({
       ...prev,
-      content: text
+      content: text,
     }));
   };
 
@@ -640,24 +797,12 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       fontSize: editorState.format.fontSize,
       color: editorState.format.textColor,
       textAlign: editorState.format.textAlign,
+      fontFamily: editorState.format.fontFamily === 'System' ? undefined : editorState.format.fontFamily,
     };
   };
 
   // Clear formatting
-  const clearFormatting = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: {
-        bold: false,
-        italic: false,
-        underline: false,
-        fontSize: 16,
-        textColor: '#000000',
-        backgroundColor: '#ffffff',
-        textAlign: 'left'
-      }
-    }));
-  };
+ 
 
   // Get word count
   const getWordCount = () => {
@@ -667,7 +812,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
   useEffect(() => {
     console.log('Enhanced Thai Form Screen initialized');
   }, []);
-
 //Rich Editor ///
 
   const formatDateInput = (text: string): string => {
@@ -712,8 +856,54 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
            date.getMonth() === month - 1 && 
            date.getFullYear() === year;
   };
+
+  const formatDateToCalendar = (dateString: string): string => {
+    // Convert dd/mm/yyyy to yyyy-mm-dd format for calendar
+    if (!dateString || !validateDate(dateString)) return '';
+    const [day, month, year] = dateString.split('/');
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  };
+  
+  const formatDateFromCalendar = (dateString: string): string => {
+    // Convert yyyy-mm-dd to dd/mm/yyyy format
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
+  
+  const handleStartDateSelect = (day: any) => {
+    const selectedDate = formatDateFromCalendar(day.dateString);
+    setFormData(prev => ({ ...prev, startDate: selectedDate }));
+    setShowStartDatePicker(false);
+  };
+  
+  const handleEndDateSelect = (day: any) => {
+    const selectedDate = formatDateFromCalendar(day.dateString);
+    setFormData(prev => ({ ...prev, endDate: selectedDate }));
+    setShowEndDatePicker(false);
+  };
   
   const [formData2, setFormData2] = useState({ name: '' });
+
+  const formatDateRange = (start: string, end: string): string => {
+    const [sd, sm, sy] = start.split('/').map(Number); // dd/mm/yyyy
+    const [ed, em, ey] = end.split('/').map(Number);
+  
+    if (!sd || !sm || !sy || !ed || !em || !ey) return '';
+  
+    if (sy === ey && sm === em) {
+      // Same month & year: 01-05/06/2025
+      return `${sd}-${ed}/${pad(sm)}/${sy}`;
+    } else if (sy === ey) {
+      // Same year, different months: 29/05-02/06/2025
+      return `${pad(sd)}/${pad(sm)}-${pad(ed)}/${pad(em)}/${sy}`;
+    } else {
+      // Different years: 29/12/2024-02/01/2025
+      return `${pad(sd)}/${pad(sm)}/${sy}-${pad(ed)}/${pad(em)}/${ey}`;
+    }
+  };
+  
+  const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
+  
 
   // Calculate word count from current text
   const wordCount = formData2.name.trim() === ''
@@ -741,6 +931,8 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     const [selected, setSelected] = useState<string[]>([]);
     const [searchText, setSearchText] = useState('');
     const [destinations, setDestinations] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [responseMessage, setResponseMessage] = useState<string | null>(null);
     function addDestination(dest: string) {
       if (!selected.includes(dest)) {
         setSelected([...selected, dest]);
@@ -768,7 +960,529 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           setLoading(false);
         });
     }, []);
-  
+    const draft = async (): Promise<void> => {
+      try {
+        console.log("🚀 Starting trip creation...");
+        
+        // Validation - check if required fields are filled
+        if (!formData2.name || !formData.startDate || !formData.endDate || 
+            selected.length === 0 || !maxParticipant || !pricePerPerson || 
+            categories.length === 0) {
+          Alert.alert('Error', 'Please fill in all required fields');
+          return;
+        }
+    
+        setUploading(true);
+        setResponseMessage(null);
+    
+        // Improved date formatting with validation
+        const formatDate = (dateStr: string): string => {
+          try {
+            let date: Date;
+        
+            if (dateStr.includes('/')) {
+              const [day, month, year] = dateStr.split('/');
+              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else {
+              date = new Date(dateStr);
+            }
+        
+            if (isNaN(date.getTime())) {
+              throw new Error(`Invalid date: ${dateStr}`);
+            }
+        
+            // Return in YYYY-MM-DD format
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+            const day = String(date.getDate()).padStart(2, '0');
+        
+            return `${year}-${month}-${day}`;
+          } catch (error) {
+            console.error('Date formatting error:', error);
+            throw new Error(`Invalid date format: ${dateStr}`);
+          }
+        };
+        
+    
+        // Extract IDs from category objects
+        const travelStyleIds: string[] = categories.map((category: any) => category.id);
+    
+        // Create FormData for multipart request (renamed to avoid conflict)
+        const requestFormData = new FormData();
+    
+        // Add all trip data to FormData
+        requestFormData.append('name', formData2.name.trim());
+        
+        try {
+          requestFormData.append('startDate', formatDate(formData.startDate));
+          requestFormData.append('endDate', formatDate(formData.endDate));
+        } catch (dateError) {
+          Alert.alert('Error', 'Invalid date format. Please check your dates.');
+          return;
+        }
+        
+        // Add destinations - handle as JSON string or individual entries based on backend expectation
+        if (selected.length > 0) {
+          // Option 1: As JSON string (if backend expects JSON)
+          requestFormData.append('destinations', selected);
+          
+          // Option 2: As individual entries (uncomment if backend expects this)
+          // selected.forEach((destination: string, index: number) => {
+          //   requestFormData.append(`destinations[${index}]`, destination);
+          // });
+        }
+        
+        requestFormData.append('maxParticipants', maxParticipant.toString());
+        requestFormData.append('pricePerPerson', pricePerPerson.toString());
+        
+        // Add included services
+        if (selectedServices.length > 0) {
+          // Option 1: As JSON string
+          requestFormData.append('includedServices', selectedServices);
+          
+          // Option 2: As individual entries (uncomment if needed)
+          // selectedServices.forEach((service: string, index: number) => {
+          //   requestFormData.append(`includedServices[${index}]`, service);
+          // });
+        }
+        
+        requestFormData.append('detail', editorState.content || '');
+        
+        // Add travel styles
+        if (travelStyleIds.length > 0) {
+          // Option 1: As JSON string
+          requestFormData.append('travelStyles', travelStyleIds);
+          
+          // Option 2: As individual entries (uncomment if needed)
+          // travelStyleIds.forEach((styleId: string, index: number) => {
+          //   requestFormData.append(`travelStyles[${index}]`, styleId);
+          // });
+        }
+        
+        requestFormData.append('groupAtmosphere', formData.description || '');
+        requestFormData.append('status', 'draft');
+        
+        // TEMPORARY: Add tripOwnerId for testing
+        requestFormData.append('tripOwnerId', 'Q5zdE5tOTUb6qaZddlFgngpqxOk2');
+    
+        // Improved image file handling
+        if (pickedFile2) {
+          console.log("📷 Adding image to request...", {
+            name: pickedFile2.name,
+            type: pickedFile2.type,
+            size: pickedFile2.size || 'unknown'
+          });
+          
+          try {
+            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+              // Convert base64 to Blob
+              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
+              const blob = await response.blob();
+              requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
+            } else if (pickedFile2.uri) {
+              // For React Native, create proper file object
+              const fileObj = {
+                uri: pickedFile2.uri,
+                type: pickedFile2.type || 'image/jpeg',
+                name: pickedFile2.name || 'image.jpg',
+              } as any;
+              
+              requestFormData.append('tripCoverImageFile', fileObj);
+            } else {
+              console.warn('⚠️ No valid image data found');
+            }
+          } catch (imageError) {
+            console.error('Image processing error:', imageError);
+            Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
+          }
+        }
+    
+        console.log("📤 Sending trip creation request...");
+        
+        // Log FormData contents for debugging (remove in production)
+        console.log("📋 Request data summary:", {
+          name: formData2.name,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          destinations: selected.length,
+          maxParticipants: maxParticipant,
+          pricePerPerson: pricePerPerson,
+          services: selectedServices.length,
+          categories: categories.length,
+          hasImage: !!pickedFile2
+        });
+    
+        // Send request using axios
+        const response = await axiosInstance.post('/trips', requestFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000, // Increased timeout to 60 seconds
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+    
+        console.log("✅ Trip created successfully:", response.data);
+        
+        setResponseMessage(`Success: Trip "${response.data.name}" created successfully!`);
+        Alert.alert(
+          'Success', 
+          `Trip "${response.data.name}" has been created successfully!`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Reset form after user acknowledges success
+                resetForm();
+                // Optionally navigate back
+                // navigation.goBack();
+              }
+            }
+          ]
+        );
+    
+      } catch (error: unknown) {
+        console.error('🔴 Trip creation error:', error);
+        
+        let errorMessage = 'Failed to create trip';
+        let debugInfo = '';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as any;
+          console.error('Server Error Response:', axiosError.response?.data);
+          console.error('Server Error Status:', axiosError.response?.status);
+          console.error('Server Error Headers:', axiosError.response?.headers);
+          
+          const serverMessage = axiosError.response?.data?.message;
+          const statusCode = axiosError.response?.status;
+          
+          if (serverMessage) {
+            errorMessage = serverMessage;
+          } else {
+            errorMessage = `Server Error (${statusCode})`;
+          }
+          
+          debugInfo = `Status: ${statusCode}`;
+        } else if (error && typeof error === 'object' && 'request' in error) {
+          console.error('Network Error:', (error as any).request);
+          errorMessage = 'Network error. Please check your connection.';
+        } else if (error instanceof Error) {
+          console.error('General Error:', error.message);
+          errorMessage = error.message || 'Unknown error occurred';
+        }
+        
+        setResponseMessage(`Error: ${errorMessage}`);
+        
+        // Show more detailed error in development
+        const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
+        const displayMessage = isDevelopment && debugInfo 
+          ? `${errorMessage}\n\n${debugInfo}` 
+          : errorMessage;
+        
+        Alert.alert('Trip Creation Failed', displayMessage);
+      } finally {
+        setUploading(false);
+      }
+       
+    }
+    //Submit
+    const create = async (): Promise<void> => {
+      try {
+        console.log("🚀 Starting trip creation...");
+        
+        // Validation - check if required fields are filled
+        if (!formData2.name || !formData.startDate || !formData.endDate || 
+            selected.length === 0 || !maxParticipant || !pricePerPerson || 
+            categories.length === 0) {
+          Alert.alert('Error', 'Please fill in all required fields');
+          return;
+        }
+    
+        setUploading(true);
+        setResponseMessage(null);
+    
+        // Improved date formatting with validation
+        const formatDate = (dateStr: string): string => {
+          try {
+            let date: Date;
+        
+            if (dateStr.includes('/')) {
+              const [day, month, year] = dateStr.split('/');
+              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else {
+              date = new Date(dateStr);
+            }
+        
+            if (isNaN(date.getTime())) {
+              throw new Error(`Invalid date: ${dateStr}`);
+            }
+        
+            // Return in YYYY-MM-DD format
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
+            const day = String(date.getDate()).padStart(2, '0');
+        
+            return `${year}-${month}-${day}`;
+          } catch (error) {
+            console.error('Date formatting error:', error);
+            throw new Error(`Invalid date format: ${dateStr}`);
+          }
+        };
+        
+    
+        // Extract IDs from category objects
+        const travelStyleIds: string[] = categories.map((category: any) => category.id);
+    
+        // Create FormData for multipart request (renamed to avoid conflict)
+        const requestFormData = new FormData();
+    
+        // Add all trip data to FormData
+        requestFormData.append('name', formData2.name.trim());
+        
+        try {
+          requestFormData.append('startDate', formatDate(formData.startDate));
+          requestFormData.append('endDate', formatDate(formData.endDate));
+        } catch (dateError) {
+          Alert.alert('Error', 'Invalid date format. Please check your dates.');
+          return;
+        }
+        
+        // Add destinations - handle as JSON string or individual entries based on backend expectation
+        if (selected.length > 0) {
+          // Option 1: As JSON string (if backend expects JSON)
+          //requestFormData.append('destinations', JSON.stringify(selected));
+          selected.forEach((destination) => {
+            requestFormData.append('destinations', destination);
+          });
+          // Option 2: As individual entries (uncomment if backend expects this)
+           //selected.forEach((destination: string, index: number) => {
+           // requestFormData.append(`destinations[${index}]`, destination);
+          // });
+        }
+        
+        requestFormData.append('maxParticipants', maxParticipant.toString());
+        requestFormData.append('pricePerPerson', pricePerPerson.toString());
+        
+        // Add included services
+        if (selectedServices.length > 0) {
+          // Option 1: As JSON string
+         // requestFormData.append('includedServices', JSON.stringify(selectedServices));
+         selectedServices.forEach((service) => {
+          requestFormData.append('includedServices', service);
+        });
+          // Option 2: As individual entries (uncomment if needed)
+          // selectedServices.forEach((service: string, index: number) => {
+           // requestFormData.append(`includedServices[${index}]`, service);
+           //});
+        }
+        
+        requestFormData.append('detail', editorState.content || '');
+        
+        // Add travel styles
+        if (travelStyleIds.length > 0) {
+          // Option 1: As JSON string
+          requestFormData.append('travelStyles', JSON.stringify(travelStyleIds));
+          
+          // Option 2: As individual entries (uncomment if needed)
+           travelStyleIds.forEach((styleId: string, index: number) => {
+             requestFormData.append(`travelStyles[${index}]`, styleId);
+           });
+        }
+        
+        requestFormData.append('groupAtmosphere', formData.description || '');
+        requestFormData.append('status', 'published');
+        
+        // TEMPORARY: Add tripOwnerId for testing
+        requestFormData.append('tripOwnerId', 'Q5zdE5tOTUb6qaZddlFgngpqxOk2');
+    
+        // Improved image file handling
+        if (pickedFile2) {
+          console.log("📷 Adding image to request...", {
+            name: pickedFile2.name,
+            type: pickedFile2.type,
+            size: pickedFile2.size || 'unknown'
+          });
+          
+          try {
+            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+              // Convert base64 to Blob
+              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
+              const blob = await response.blob();
+              requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
+            } else if (pickedFile2.uri) {
+              // For React Native, create proper file object
+              const fileObj = {
+                uri: pickedFile2.uri,
+                type: pickedFile2.type || 'image/jpeg',
+                name: pickedFile2.name || 'image.jpg',
+              } as any;
+              
+              requestFormData.append('tripCoverImageFile', fileObj);
+            } else {
+              console.warn('⚠️ No valid image data found');
+            }
+          } catch (imageError) {
+            console.error('Image processing error:', imageError);
+            Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
+          }
+        }
+    
+        console.log("📤 Sending trip creation request...");
+        
+        // Log FormData contents for debugging (remove in production)
+        console.log("📋 Request data summary:", {
+          name: formData2.name,
+          startDate: formData.startDate,
+          endDate: formData.endDate,
+          destinations: selected.length,
+          maxParticipants: maxParticipant,
+          pricePerPerson: pricePerPerson,
+          services: selectedServices.length,
+          categories: categories.length,
+          hasImage: !!pickedFile2
+        });
+    
+        // Send request using axios
+        const response = await axiosInstance.post('/trips', requestFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          timeout: 60000, // Increased timeout to 60 seconds
+          maxContentLength: Infinity,
+          maxBodyLength: Infinity,
+        });
+    
+        console.log("✅ Trip created successfully:", response.data);
+        
+        setResponseMessage(`Success: Trip "${response.data.name}" created successfully!`);
+        Alert.alert(
+          'Success', 
+          `Trip "${response.data.name}" has been created successfully!`,
+          [
+            {
+              text: 'OK',
+              onPress: () => {
+                // Reset form after user acknowledges success
+                resetForm();
+                // Optionally navigate back
+                // navigation.goBack();
+              }
+            }
+          ]
+        );
+    
+      } catch (error: unknown) {
+        console.error('🔴 Trip creation error:', error);
+        
+        let errorMessage = 'Failed to create trip';
+        let debugInfo = '';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as any;
+          console.error('Server Error Response:', axiosError.response?.data);
+          console.error('Server Error Status:', axiosError.response?.status);
+          console.error('Server Error Headers:', axiosError.response?.headers);
+          
+          const serverMessage = axiosError.response?.data?.message;
+          const statusCode = axiosError.response?.status;
+          
+          if (serverMessage) {
+            errorMessage = serverMessage;
+          } else {
+            errorMessage = `Server Error (${statusCode})`;
+          }
+          
+          debugInfo = `Status: ${statusCode}`;
+        } else if (error && typeof error === 'object' && 'request' in error) {
+          console.error('Network Error:', (error as any).request);
+          errorMessage = 'Network error. Please check your connection.';
+        } else if (error instanceof Error) {
+          console.error('General Error:', error.message);
+          errorMessage = error.message || 'Unknown error occurred';
+        }
+        
+        setResponseMessage(`Error: ${errorMessage}`);
+        
+        // Show more detailed error in development
+        const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
+        const displayMessage = isDevelopment && debugInfo 
+          ? `${errorMessage}\n\n${debugInfo}` 
+          : errorMessage;
+        
+        Alert.alert('Trip Creation Failed', displayMessage);
+      } finally {
+        setUploading(false);
+      }
+       
+    }
+    const resetForm = () => {
+      console.log("Resetted");
+      
+    };
+    const insertImage2 = async () => {
+      try {
+        // For React Native CLI
+        const options = {
+          mediaType: 'photo',
+          quality: 0.8,
+          maxWidth: 1000,
+          maxHeight: 1000,
+        };
+    
+        launchImageLibrary(options, (response) => {
+          if (response.assets && response.assets[0]) {
+            const imageUri = response.assets[0].uri;
+            insertImageIntoEditor(imageUri);
+          }
+        });
+    
+        // For Expo (alternative approach)
+        /*
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+    
+        if (!result.canceled) {
+          insertImageIntoEditor(result.assets[0].uri);
+        }
+        */
+      } catch (error) {
+        console.error('Error picking image:', error);
+      }
+    };
+    
+    const insertImageIntoEditor = (imageUri) => {
+      const { start, end } = editorState.selection;
+      const content = editorState.content;
+      
+      // Create image placeholder/marker in text
+      const imageMarker = `[IMAGE:${imageUri}]`;
+      
+      const newContent = 
+        content.slice(0, start) + 
+        imageMarker + 
+        content.slice(end);
+    
+      setEditorState(prev => ({
+        ...prev,
+        content: newContent,
+        images: [...(prev.images || []), { uri: imageUri, position: start }]
+      }));
+    
+      // Move cursor after inserted image
+      setTimeout(() => {
+        if (textInputRef) {
+          textInputRef.setNativeProps({
+            selection: { start: start + imageMarker.length, end: start + imageMarker.length }
+          });
+        }
+      }, 100);
+    };
+
+    
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -822,7 +1536,9 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       <Text style={styles.label}>ชื่อทริป
       </Text>
       <TextInput
-        style={styles.textInput}
+        style={[styles.textInput, isFocused && styles.textInputFocused]}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
         value={formData2.name}
         onChangeText={(text) => setFormData2(prev => ({ ...prev, name: text }))}
         placeholder="ตั้งชื่อทริปของคุณ"
@@ -839,41 +1555,123 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           <View style={styles.dateContainer}>
   <View style={styles.dateField}>
     <Text style={styles.dateLabel}>วันที่เริ่มต้น</Text>
-    <TextInput
-      style={[
-        styles.dateInput,
-        formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
-      ]}
-      value={formData.startDate}
-      onChangeText={(text) => {
-        const formatted = formatDateInput(text);
-        setFormData(prev => ({ ...prev, startDate: formatted }));
-      }}
-      placeholder="dd/mm/yyyy"
-      keyboardType="numeric"
-      maxLength={10}
-      accessibilityLabel="วันที่เริ่มต้น"
-    />
+    <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
+      <TextInput
+        style={[
+          styles.dateInput,
+          formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
+        ]}
+        value={formData.startDate}
+        onChangeText={(text) => {
+          const formatted = formatDateInput(text);
+          setFormData(prev => ({ ...prev, startDate: formatted }));
+        }}
+        placeholder="dd/mm/yyyy"
+        keyboardType="numeric"
+        maxLength={10}
+        accessibilityLabel="วันที่เริ่มต้น"
+        editable={true}
+        pointerEvents="none"
+      />
+    </TouchableOpacity>
   </View>
+  
   <View style={styles.dateField}>
     <Text style={styles.dateLabel}>วันที่สิ้นสุด</Text>
-    <TextInput
-      style={[
-        styles.dateInput,
-        formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
-      ]}
-      value={formData.endDate}
-      onChangeText={(text) => {
-        const formatted = formatDateInput(text);
-        setFormData(prev => ({ ...prev, endDate: formatted }));
-      }}
-      placeholder="dd/mm/yyyy"
-      keyboardType="numeric"
-      maxLength={10}
-      accessibilityLabel="วันที่สิ้นสุด"
-    />
+    <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
+      <TextInput
+        style={[
+          styles.dateInput,
+          formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
+        ]}
+        value={formData.endDate}
+        onChangeText={(text) => {
+          const formatted = formatDateInput(text);
+          setFormData(prev => ({ ...prev, endDate: formatted }));
+        }}
+        placeholder="dd/mm/yyyy"
+        keyboardType="numeric"
+        maxLength={10}
+        accessibilityLabel="วันที่สิ้นสุด"
+        editable={true}
+        pointerEvents="none"
+      />
+    </TouchableOpacity>
   </View>
-</View> 
+
+  {/* Start Date Calendar Modal */}
+  <Modal
+    visible={showStartDatePicker}
+    transparent={true}
+    animationType="fade"
+    onRequestClose={() => setShowStartDatePicker(false)}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.calendarContainer}>
+        <View style={styles.calendarHeader}>
+          <Text style={styles.calendarTitle}>เลือกวันที่เริ่มต้น</Text>
+          <TouchableOpacity
+            onPress={() => setShowStartDatePicker(false)}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        <Calendar
+          onDayPress={handleStartDateSelect}
+          markedDates={{
+            [formatDateToCalendar(formData.startDate)]: {
+              selected: true,
+              selectedColor: '#007AFF'
+            }
+          }}
+          theme={{
+            selectedDayBackgroundColor: '#007AFF',
+            todayTextColor: '#007AFF',
+            arrowColor: '#007AFF',
+          }}
+        />
+      </View>
+    </View>
+  </Modal>
+
+  {/* End Date Calendar Modal */}
+  <Modal
+    visible={showEndDatePicker}
+    transparent={true}
+    animationType="fade"
+    onRequestClose={() => setShowEndDatePicker(false)}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.calendarContainer}>
+        <View style={styles.calendarHeader}>
+          <Text style={styles.calendarTitle}>เลือกวันที่สิ้นสุด</Text>
+          <TouchableOpacity
+            onPress={() => setShowEndDatePicker(false)}
+            style={styles.closeButton}
+          >
+            <Text style={styles.closeButtonText}>✕</Text>
+          </TouchableOpacity>
+        </View>
+        <Calendar
+          onDayPress={handleEndDateSelect}
+          markedDates={{
+            [formatDateToCalendar(formData.endDate)]: {
+              selected: true,
+              selectedColor: '#007AFF'
+            }
+          }}
+          theme={{
+            selectedDayBackgroundColor: '#007AFF',
+            todayTextColor: '#007AFF',
+            arrowColor: '#007AFF',
+          }}
+          minDate={formData.startDate ? formatDateToCalendar(formData.startDate) : undefined}
+        />
+      </View>
+    </View>
+  </Modal>
+</View>
 {/* Max Participants */}
       <Text style={{marginLeft:2,marginBottom:6}}>จํานวนคน
       </Text>
@@ -886,7 +1684,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         style={{height:16,width:16,marginHorizontal:3}}
         resizeMode="contain"
       />
-      <TextInput style={{width:100,height:'80%',paddingHorizontal:5}}
+      <TextInput style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'#e0e0e0'}}
       placeholder=''
       value={maxParticipant!=''?maxParticipant.toString():''}
       onChangeText={handleMaxParticipant}
@@ -906,7 +1704,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       />
       <Text style={{marginLeft:5,marginRight:10,width:100}}>ราคาต่อคน
       </Text>
-       <TextInput style={{width:'100%',height:'70%',paddingHorizontal:5}}
+       <TextInput style={{width:'100%',height:'70%',paddingHorizontal:5,outlineColor:'#e0e0e0'}}
       placeholder=''
       value={pricePerPerson!=''?pricePerPerson.toString():''}
       onChangeText={handlepricePerPerson}
@@ -989,8 +1787,10 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           </View>
         )}
       </View>
+
+  
   {/* Destination */}
-      <View style={styles.container3}>
+      <View style={styles.container4}>
   <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
     <View>
       {dropdownOpen ? (
@@ -1014,6 +1814,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         <ActivityIndicator size="small" />
       ) : (
         <FlatList
+        style={{display:'contents',position:'fixed'}}
           data={filteredDestinations} // Use filtered data
           keyExtractor={item => item}
           renderItem={({ item }) => (
@@ -1063,24 +1864,23 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
             />
           </View>
       {/*RIch Editor */}
-      <View style={styles.container2}>
-             {/* Header */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.header}>รายละเอียดทั่วไป</Text>
-        <Text style={styles.wordCount}>จำนวนคำ: {getWordCount()}</Text>
-      </View>
+      <View style={styles.container3}>
+      {/* Header */}
+    
+        <Text style={styles.label}>รายละเอียดทั่วไป</Text>
+       
       
       {/* Toolbar - Only tools from image */}
       <View style={styles.toolbar}>
         {/* Font Size Dropdown */}
-        <TouchableOpacity 
-          style={styles.dropdown}
-          onPress={() => setShowFontSizePicker(true)}
-        >
-          <Text style={styles.dropdownText}>Normal</Text>
-          <Text style={styles.dropdownArrow}>▼</Text>
-        </TouchableOpacity>
-        
+        <TouchableOpacity
+  style={styles.toolButton}
+  onPress={() => setShowFontDropdown(true)}
+>
+  <Text style={styles.fontButtonText}>Font</Text>
+</TouchableOpacity>
+
+<FontDropdown />
         {/* Format Buttons */}
         <ToolbarButton
           title="B"
@@ -1138,7 +1938,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         {/* Image Button */}
         <TouchableOpacity
           style={styles.toolButton}
-          onPress={insertImage}
+          onPress={insertImage2}
         >
           <Text style={styles.toolButtonText}>🖼️</Text>
         </TouchableOpacity>
@@ -1169,17 +1969,51 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         />
       </ScrollView>
 
-      {/* Status Bar 
-      <View style={styles.statusBar}>
-        <Text style={styles.statusText}>
-          ตำแหน่งเคอร์เซอร์: {editorState.selectionStart}
-        </Text>
-        <Text style={styles.statusText}>
-          ตัวอักษร: {editorState.content.length}
-        </Text>
-      </View>*/}
+       {/*Link MOdal */}
 
-      {/* Modals */}
+       <LinkInputModal
+    visible={showLinkInputModal}
+    onClose={() => {
+      setShowLinkInputModal(false);
+      setTempUrl('');
+      setTempLinkText('');
+    }}
+    url={tempUrl}
+    setUrl={setTempUrl}
+    linkText={tempLinkText}
+    setLinkText={setTempLinkText}
+    onSubmit={handleLinkSubmit}
+  />
+
+      {/* Input Modals */}
+      <InputModal
+        visible={showUrlInput}
+        title="เพิ่มลิงก์"
+        placeholder="กรุณาใส่ URL (เช่น https://example.com)"
+        onClose={() => setShowUrlInput(false)}
+        onSubmit={handleUrlSubmit}
+      />
+
+      <InputModal
+        visible={showLinkTextInput}
+        title="ข้อความลิงก์"
+        placeholder="กรุณาใส่ข้อความที่จะแสดง"
+        onClose={() => {
+          setShowLinkTextInput(false);
+          setTempUrl('');
+        }}
+        onSubmit={handleLinkTextSubmit}
+      />
+
+      <InputModal
+        visible={showImageUrlInput}
+        title="เพิ่มรูปภาพ"
+        placeholder="กรุณาใส่ URL ของรูปภาพ"
+        onClose={() => setShowImageUrlInput(false)}
+        onSubmit={handleImageUrlSubmit}
+      />
+
+      {/* Color and Font Size Modals */}
       <ColorPicker
         visible={showColorPicker}
         onClose={() => setShowColorPicker(false)}
@@ -1193,21 +2027,111 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         onSizeSelect={onFontSizeSelect}
         currentSize={editorState.format.fontSize}
       />
-
-      </View>  
+    </View>
          </View>
         
       
      <view style={{marginLeft:20,marginRight:20}}>
-     <View>
-  {pickedFile2 ? (
-    <Image source={{ uri: pickedFile2.uri }} style={styles.uploadedImage} />
-  ) : (
+      <Text style={{fontWeight:600,}}>ตัวอย่างโพสต์
+      </Text>
+     <View style={styles.card}>
+  {/* Header Image Container */}
+  <View style={styles.imageContainer}>
+    {pickedFile2 ? (
+      <Image source={{ uri: pickedFile2.uri }} style={styles.backgroundImage} />
+    ) : (
+      <View style={styles.placeholderImage} />
+    )}
     
-    <view style={{height:270,backgroundColor:'#E5E7EB',borderRadius:12}}></view>
-  )}
+    {/* Date Badge - Top Left */}
+    {formData.startDate && formData.endDate && (
+      <View style={styles.dateBadge}>
+        <Text style={styles.dateIcon}>📅</Text>
+        <Text style={styles.dateText}>
+          {formatDateRange(formData.startDate, formData.endDate)}
+        </Text>
+      </View>
+    )}
+    
+    {/* Max Participant Badge - Top Right */}
+    {maxParticipant && (
+      <View style={styles.participantBadge}>
+        <Image source={require('../assets/images/images/image14.png')} style={{width:15,height:12,marginRight:3}} />
+        <Text style={styles.participantText}>ต้องการ {maxParticipant} คน</Text>
+      </View>
+    )}
+  </View>
 
-<View style={styles.checkboxContainer}>
+  {/* Content Below Image */}
+  <View style={styles.content2}>
+    {/* Trip Name */}
+    {formData2.name && (
+      <Text style={styles.tripName}>{formData2.name}</Text>
+    )}
+
+    {/* Destinations */}
+    {selected.length > 0 && (
+      <View style={styles.destinationRow}>
+       
+
+        <View style={styles.destinationContainer}>
+          {selected.map((dest, index) => (
+            <Text key={dest} style={styles.destinationText}>
+              {dest}{index < selected.length - 1 ? ', ' : ''}
+            </Text>
+          ))}
+        </View>
+      </View>
+    )}
+
+    {/* Description */}
+    {formData.description && (
+      <Text style={styles.description}>{formData.description}</Text>
+    )}
+
+    {/* Editor Content */}
+    {editorState.content && (
+      <Text style={styles.description}>{editorState.content}</Text>
+    )}
+
+    {/* Services Tags */}
+    <View style={styles.tagsContainer2}>
+      {services.map(service =>
+        isServiceChecked(service.id) ? (
+          <View key={service.id} style={styles.serviceTag}>
+            <Text style={styles.serviceTagText}>#{service.title}</Text>
+          </View>
+        ) : null
+      )}
+    </View>
+
+    {/* Travel Styles */}
+    <View style={styles.travelStylesContainer}>
+      {categories
+        .filter(category => selectedItems.includes(category.id))
+        .map(category => (
+          <View key={category.id} style={styles.categoryItem2}>
+            <Image
+              source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30' }}
+              style={styles.categoryIcon}
+            />
+            <Text style={styles.categoryText2}>{category.title}</Text>
+          </View>
+        ))}
+    </View>
+
+    {/* Action Button */}
+    <TouchableOpacity style={styles.joinButton}>
+      <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
+    </TouchableOpacity>
+  </View>
+</View>
+
+
+    
+        <view>
+        </view>
+        <View style={styles.checkboxContainer}>
         <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
           <View style={[styles.checkbox, isChecked && styles.checked]}>
             {isChecked && <Text></Text>}
@@ -1219,20 +2143,14 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           ของแอปพลิเคชัน
         </Text>
       </View>  {/* New line */}
-</View>
-
-
-    
-        <view>
-        </view>
      </view>
-   
+
       </ScrollView>
 
       <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
       {/* Submit Button 1 */}
       <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.draftButton}>
+        <TouchableOpacity style={styles.draftButton} onPress={draft}>
            {/*   <Ionicons name="send" size={20} color="#fff" /> */}
           <Text style={styles.draftText}>บันทึกแบบร่าง
           </Text>
@@ -1242,7 +2160,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
 
       {/* Submit Button 2 */}
       <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.submitButton}>
+        <TouchableOpacity style={styles.submitButton} onPress={create}>
         
           {/*   <Ionicons name="send" size={20} color="#fff" /> */}
           <Text style={styles.submitText}>โอเคดีงาม</Text>
@@ -1284,7 +2202,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     marginBottom:10
-    
   },
   imageSection: {
     alignItems: 'center',
@@ -1329,12 +2246,18 @@ const styles = StyleSheet.create({
   textInput: {
     borderWidth:1,
     borderColor: '#e0e0e0',
+   
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#fff',
     fontWeight:"600"
+  },
+  textInputFocused: {
+    borderColor: 'transparent',
+    outlineColor:'#e0e0e0',
+    outlineWidth:1,
   },
   dateContainer: {
     flexDirection: 'row',
@@ -1358,6 +2281,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 14,
     backgroundColor: '#fff',
+  },
+  alignmentIcon: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
   },
   tagsContainer: {
     marginBottom: 20,
@@ -1396,6 +2324,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     minHeight: 80,
     textAlignVertical: 'top',
+    outlineColor:'#e0e0e0'
   },
   attachmentSection: {
     flexDirection: 'row',
@@ -1529,7 +2458,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     borderStyle: 'solid',
     borderRadius: 12,
-    padding: 24,
     alignItems: 'center',
     minHeight: 270,
     backgroundColor:'#E5E7EB',
@@ -1564,9 +2492,10 @@ const styles = StyleSheet.create({
   },
   uploadedImage: {
     width: '100%',
-    height: 120,
+    flex: 1,
     borderRadius: 8,
-    resizeMode:'contain'
+    resizeMode: 'cover',
+    minHeight: 200,
   },
   uploadSubtext: {
     fontSize: 12,
@@ -1648,8 +2577,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     elevation: 2,
     shadowColor: '#000',
-  
-    
     shadowRadius: 2,
     flexWrap: 'wrap',
     alignItems: 'center',
@@ -1661,7 +2588,7 @@ const styles = StyleSheet.create({
     right: 0,                    
     backgroundColor: '#FFFFFF',  
     borderWidth: 1,
-    borderColor: '#D1D5DB',      
+    borderColor: 'black',      
     borderTopWidth: 0,         
     borderBottomLeftRadius: 8,   
     borderBottomRightRadius: 8,
@@ -1731,6 +2658,7 @@ const styles = StyleSheet.create({
     color: '#333',
     fontFamily: 'System', // Supports Thai characters
     minHeight: 200,
+    outlineColor:'#e0e0e0'
   },
   dateInputError: {
     borderColor: '#FF6B6B',
@@ -1798,6 +2726,7 @@ const styles = StyleSheet.create({
     color: '#374151',
     height: 50,
     backgroundColor: '#FFFFFF',
+    outlineColor:'#e0e0e0'
   },
   dropdownItem: {
     paddingHorizontal: 12,
@@ -1814,12 +2743,22 @@ const styles = StyleSheet.create({
   },
   selectedContainer: { 
     marginTop: 10,
-    
-    paddingBottom:120},
+   
+    },
   selectedGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap:5
+    gap:5,
+    
+  },
+  container4: {
+    flex: 4,
+    backgroundColor: 'white',
+    position: 'relative',         
+    zIndex: 1000,
+    maxHeight:120,
+    overflowY:'auto',
+    marginTop:20,
   },
   selectedButton: {
     backgroundColor: '#4F46E51A',
@@ -1839,7 +2778,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   container3: {
-    flex: 1,
+    flex: 4,
     backgroundColor: 'white',
     position: 'relative',         
     zIndex: 1000,               
@@ -1960,6 +2899,315 @@ const styles = StyleSheet.create({
     right: 2,
     bottom: 2,
   },
+  selectedTravelStylesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginVertical: 10,
+    gap: 8, 
+  },
+  inputModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 300,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    flex: 1,
+    marginRight: 8,
+  },
+  modalSubmitButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#007bff',
+    flex: 1,
+    marginLeft: 8,
+  },
+  modalCancelText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  modalSubmitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  
+  card: {
+    backgroundColor: 'white',
+    borderRadius: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+    margin: 16,
+  },
+  imageContainer: {
+    height: 270,
+    position: 'relative',
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
+  },
+  dateBadge: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  dateIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  dateText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#333',
+  },
+  participantBadge: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  participantIcon: {
+    fontSize: 14,
+    marginRight: 4,
+  },
+  participantText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: 'white',
+  },
+  content2: {
+    padding: 16,
+  },
+  tripName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginBottom: 8,
+  },
+  destinationRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 8,
+  },
+  locationIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  destinationContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flex: 1,
+  },
+  destinationText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  description: {
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  tagsContainer2: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 12,
+  },
+  serviceTag: {
+    backgroundColor: '#dbeafe',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  serviceTagText: {
+    color: '#2563eb',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  travelStylesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  categoryItem2: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    marginBottom: 4,
+  },
+  categoryIcon: {
+    width: 14,
+    height: 12,
+    tintColor: '#6366f1',
+    marginRight: 6,
+  },
+  categoryText2: {
+    fontSize: 12,
+    color: '#6366f1',
+    fontWeight: '500',
+  },
+  joinButton: {
+    backgroundColor: '#6366f1',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 9,
+    alignSelf: 'flex-end',
+  },
+  joinButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '400',
+    textAlign: 'center',
+  },
+
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#666',
+  },
+
+  fontDropdownContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    margin: 20,
+    maxHeight: 400,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+    color: '#333',
+  },
+  fontList: {
+    maxHeight: 300,
+  },
+  fontItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    borderRadius: 4,
+    marginBottom: 2,
+  },
+  selectedFontItem: {
+    backgroundColor: '#007AFF',
+  },
+  fontItemText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  selectedFontText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  fontButtonText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 8,
+    elevation: 4,
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  
 });
 
 export default ThaiFormScreen;

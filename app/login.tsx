@@ -46,6 +46,15 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const user = result.user;
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const googleAccessToken = credential?.accessToken;
+      if (googleAccessToken) {
+        await AsyncStorage.setItem('googleAccessToken', googleAccessToken);
+      }
+      const idToken = await user.getIdToken();
+      if (idToken) {
+        await AsyncStorage.setItem('googleIdToken', idToken);
+      }
       
       console.log("Google Sign In success: ", {
         uid: user.uid,
@@ -94,7 +103,12 @@ const Login = () => {
                   await AsyncStorage.setItem('userId', currentUser.uid);
                   router.push('/travel-style');
                   resolve({ message: 'User exists' });
-                } else {
+                } 
+                else if(apiError.response?.status === 400 ){
+                  router.push('/findTrips')
+                }
+                
+                else {
                   console.error("API Error:", apiError.response?.data || apiError.message);
                   reject(apiError);
                 }
