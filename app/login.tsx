@@ -40,7 +40,7 @@ const Login = () => {
     setTimeout(animateProgress, 300);
   }, []);
 
-  const handleWebGoogleSignIn = async () => {
+  const handleWebGoogleSignIn = async (): Promise<any> => {
     const provider = new GoogleAuthProvider();
     
     try {
@@ -48,6 +48,8 @@ const Login = () => {
       const user = result.user;
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const googleAccessToken = credential?.accessToken;
+      
+      // Store tokens
       if (googleAccessToken) {
         await AsyncStorage.setItem('googleAccessToken', googleAccessToken);
       }
@@ -62,73 +64,61 @@ const Login = () => {
         displayName: user.displayName,
       });
       
-      // Use auth state change listener for better reliability
-      return new Promise((resolve, reject) => {
-        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-          if (currentUser && currentUser.uid === user.uid) {
-            unsubscribe(); // Stop listening
-            
-            try {
-              console.log('Auth state confirmed, making API request...');
-              
-              const profileData = {
-                userId: currentUser.uid,
-                profileImageUrl: "N/A",
-                idCardImageUrl: "N/A",
-                portraitImageUrl: "N/A",
-                travelStyles: ["N/A"],
-                nickname: "N/A",
-                lineId: "N/A",
-                fullname: currentUser.displayName || "N/A",
-                facebookUrl: "N/A",
-                email: currentUser.email || "N/A",
-                destinations: ["N/A"],
-                age: -999,
-                phoneNumber: "N/A",
-                gender: "ชาย",
-              };
-              
-              const response = await axiosInstance.post('/users/profile', profileData);
-              
-              if (response.status === 201) {
-                console.log("User Profile Created Successfully", response.data);
-                await AsyncStorage.setItem('userId', response.data.data.userId);
-                router.push('/travel-style');
-                resolve(response.data);
-              }
-            } catch (apiError) {
-              if (axios.isAxiosError(apiError)) {
-                if (apiError.response?.status === 409) {
-                  console.log("User already exists, proceeding...");
-                  await AsyncStorage.setItem('userId', currentUser.uid);
-                  router.push('/travel-style');
-                  resolve({ message: 'User exists' });
-                } 
-                else if(apiError.response?.status === 400 ){
-                  router.push('/findTrips')
-                }
-                
-                else {
-                  console.error("API Error:", apiError.response?.data || apiError.message);
-                  reject(apiError);
-                }
-              } else {
-                console.error("Non-Axios API Error:", apiError);
-                reject(apiError);
-              }
-            }
-          }
-        });
+      // Direct API call without auth state listener
+      try {
+        console.log('Making API request...');
         
-        // Timeout after 10 seconds
-        setTimeout(() => {
-          unsubscribe();
-          reject(new Error('Auth state change timeout'));
-        }, 100000);
-      });
+        const profileData = {
+          userId: user.uid,
+          profileImageUrl: "N/A",
+          idCardImageUrl: "N/A",
+          portraitImageUrl: "N/A",
+          travelStyles: ["N/A"],
+          nickname: "N/A",
+          lineId: "N/A",
+          fullname: user.displayName || "N/A",
+          facebookUrl: "N/A",
+          email: user.email || "N/A",
+          destinations: ["N/A"],
+          age: -999,
+          phoneNumber: "N/A",
+          gender: "ชาย",
+        };
+        
+        const response = await axiosInstance.post('/users/profile', profileData);
+        
+        if (response.status === 201) {
+          console.log("User Profile Created Successfully", response.data);
+          await AsyncStorage.setItem('userId', response.data.data.userId);
+          router.push('/travel-style');
+          return response.data;
+        }
+      } catch (apiError: any) {
+        if (axios.isAxiosError(apiError)) {
+          if (apiError.response?.status === 409) {
+            console.log("User already exists, proceeding...");
+            await AsyncStorage.setItem('userId', user.uid);
+            router.push('/travel-style');
+            return { message: 'User exists' };
+          } else if (apiError.response?.status === 400) {
+            await AsyncStorage.setItem('userId', user.uid);
+            console.log(user.uid);
+            const storedUserId = await AsyncStorage.getItem('userId');
+            console.log(storedUserId);
+            router.push('/findTrips');
+            return { message: 'User profile incomplete' };
+          } else {
+            console.error("API Error:", apiError.response?.data || apiError.message);
+            throw apiError;
+          }
+        } else {
+          console.error("Non-Axios API Error:", apiError);
+          throw apiError;
+        }
+      }
       
-    } catch (error: any) {
-      if (error.code) {
+        } catch (error: any) {
+        if (error?.code) {
         console.error("Firebase Auth Error:", error.code, error.message);
         
         switch (error.code) {

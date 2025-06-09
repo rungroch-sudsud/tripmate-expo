@@ -8,7 +8,6 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  TextInput,
   Alert,
 } from 'react-native';
 import { axiosInstance } from '../lib/axios';
@@ -16,6 +15,8 @@ import {Stack,useRouter} from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {requirements}  from './requirement'
 import axios from 'axios'
+
+
 
 interface TravelStyle {
   id: string;
@@ -116,7 +117,7 @@ const getOwnerInfo = (tripOwner: TripOwner | null | undefined) => {
 
 
 
-const FindTripScreen: React.FC = () => {
+const SavedTripScreen: React.FC = () => {
  
   const [allTrips, setAllTrips] = useState<Trip[]>([]);
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
@@ -129,14 +130,13 @@ const FindTripScreen: React.FC = () => {
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedTripIds, setBookmarkedTripIds] = useState<string[]>([]);
   
-
   const router=useRouter()
-
-
   const handlesavedTrips=async()=>{
     router.push('/savedTrips')
   }
-
+  const handlefindTrips=async()=>{
+    router.push('/findTrips')
+  }
   useEffect(() => {
     const loadUserId = async () => {
       try {
@@ -151,18 +151,41 @@ const FindTripScreen: React.FC = () => {
         console.error('Failed to load userId from AsyncStorage:', error);
       }
     };
-
+    
     loadUserId();
   }, []);
 
-
-  // Load bookmarked trips when userId is available
   useEffect(() => {
-    if (userId) {
-      loadBookmarkedTrips();
-    }
-  }, [userId]);
+    fetchTravelStyles();
+  }, []);
 
+useEffect(() => {
+  if (userId) {
+    loadBookmarkedTrips();
+  }
+}, [userId]);
+
+
+
+useEffect(() => {
+    // Only fetch trips if:
+    // - We have a userId
+    // - We have loaded bookmarks (either with trips or confirmed empty)
+    // - Avoid fetching on initial render when bookmarkedTripIds is still []
+    if (userId && (bookmarkedTripIds.length > 0)) {
+      console.log('Fetching trips for bookmarks:', bookmarkedTripIds);
+      fetchTrips();
+    } else if (userId && bookmarkedTripIds.length === 0) {
+      // Handle the case where user has no bookmarks
+      // Only set empty state if we've actually loaded bookmarks (not initial state)
+      // You might want to add a flag to track if bookmarks have been loaded
+      console.log('No bookmarked trips to fetch');
+      setAllTrips([]);
+      setFilteredTrips([]);
+      setDisplayedTrips([]);
+      setLoading(false);
+    }
+  }, [bookmarkedTripIds, userId]);
   // Function to load all bookmarked trips
   const loadBookmarkedTrips = async () => {
     if (!userId) {
@@ -292,10 +315,91 @@ const FindTripScreen: React.FC = () => {
   };
   const fetchTrips = async (): Promise<void> => {
     try {
+      // First, make sure we have bookmarked trip IDs loaded
+      if (!userId) {
+        console.log('No user ID available');
+        setAllTrips([]);
+        setFilteredTrips([]);
+        setDisplayedTrips([]);
+        return;
+      }
+  
+      // If bookmarkedTripIds is empty, load them first
+      if (bookmarkedTripIds.length === 0) {
+        await loadBookmarkedTrips();
+      }
+  
+      // If still no bookmarked trips, show empty state
+      if (bookmarkedTripIds.length === 0) {
+        console.log('No bookmarked trips found');
+        setAllTrips([]);
+        setFilteredTrips([]);
+        setDisplayedTrips([]);
+        return;
+      }
+  
       const response = await axiosInstance.get<ApiResponse>('/trips');
       
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        console.log('Fetched trips:', response.data.data.length);
+        console.log('Fetched all trips:', response.data.data.length);
+        
+        // Filter to only show bookmarked trips
+        const savedTrips = response.data.data.filter(trip => 
+          bookmarkedTripIds.includes(trip.id)
+        );
+        
+        console.log('Filtered saved trips:', savedTrips.length);
+        console.log('Bookmarked trip IDs:', bookmarkedTripIds);
+        
+        setAllTrips(savedTrips);
+        filterTrips(savedTrips, selectedTravelStyle);
+      } else {
+        setAllTrips([]);
+        setFilteredTrips([]);
+        setDisplayedTrips([]);
+      }
+    } catch (error) {
+      console.error('Error fetching trips:', error);
+      Alert.alert('Error', 'Failed to load saved trips. Please try again.');
+      setAllTrips([]);
+      setFilteredTrips([]);
+      setDisplayedTrips([]);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+  
+  // Optional: Add a more efficient approach if backend supports it
+  const fetchSavedTripsOptimized = async (): Promise<void> => {
+    try {
+      if (!userId) {
+        console.log('No user ID available');
+        setAllTrips([]);
+        setFilteredTrips([]);
+        setDisplayedTrips([]);
+        return;
+      }
+  
+      // Option 1: If your backend supports fetching trips by IDs
+      if (bookmarkedTripIds.length === 0) {
+        await loadBookmarkedTrips();
+      }
+  
+      if (bookmarkedTripIds.length === 0) {
+        console.log('No bookmarked trips found');
+        setAllTrips([]);
+        setFilteredTrips([]);
+        setDisplayedTrips([]);
+        return;
+      }
+  
+      // Send trip IDs as query parameters to get only those trips
+      const tripIdsQuery = bookmarkedTripIds.join(',');
+      const response = await axiosInstance.get<ApiResponse>(`/trips?ids=${tripIdsQuery}`);
+      
+      if (response.data && response.data.data && Array.isArray(response.data.data)) {
+        console.log('Fetched saved trips:', response.data.data.length);
         setAllTrips(response.data.data);
         filterTrips(response.data.data, selectedTravelStyle);
       } else {
@@ -304,8 +408,8 @@ const FindTripScreen: React.FC = () => {
         setDisplayedTrips([]);
       }
     } catch (error) {
-      console.error('Error fetching trips:', error);
-      Alert.alert('Error', 'Failed to load trips. Please try again.');
+      console.error('Error fetching saved trips:', error);
+      Alert.alert('Error', 'Failed to load saved trips. Please try again.');
       setAllTrips([]);
       setFilteredTrips([]);
       setDisplayedTrips([]);
@@ -429,11 +533,7 @@ ${tripDetail.includedServices.length > 0 ?
     }
   };
 
-  const handleTravelStylePress = (styleId: string): void => {
-    console.log('Travel style selected:', styleId);
-    setSelectedTravelStyle(styleId);
-    filterTrips(allTrips, styleId);
-  };
+
 
   const handleJoinTrip = async (trip: Trip) => {
     try {
@@ -465,16 +565,13 @@ ${tripDetail.includedServices.length > 0 ?
   
   
 
-  const handleSearchChange = (text: string): void => {
-    setSearchQuery(text);
-    applySearchFilter(filteredTrips, text);
-  };
+
 
   const handleFloatingButtonPress = (): void => {
     console.log('Floating button pressed');
     Alert.alert('สร้างทริป', 'คุณต้องการสร้างทริปใหม่หรือไม่?');
-    router.push('/createTrip')
     // Navigate to create trip screen
+    router.push('/createTrip')
   };
 
   const onRefresh = (): void => {
@@ -485,46 +582,9 @@ ${tripDetail.includedServices.length > 0 ?
 
 
 
-  useEffect(() => {
-    const loadData = async () => {
-      await Promise.all([
-        fetchTravelStyles(),
-        fetchTrips()
-      ]);
-    };
-    loadData();
-  }, []);
+ 
 
-  const renderTravelStyleItem = (style: TravelStyle, isSelected: boolean) => (
-    <TouchableOpacity
-      key={style.id}
-      style={[
-        styles.categoryItem,
-        isSelected && styles.categoryItemActive
-      ]}
-      onPress={() => handleTravelStylePress(style.id)}
-    >
-      {(style.iconImageUrl || style.activeIconImageUrl) && (
-        <Image
-          source={{ 
-            uri: isSelected && style.activeIconImageUrl 
-              ? style.activeIconImageUrl 
-              : style.iconImageUrl 
-          }}
-          style={[
-            styles.categoryIcon,
-            isSelected && styles.categoryIconActive
-          ]}
-        />
-      )}
-      <Text style={[
-        styles.categoryText,
-        isSelected && styles.categoryTextActive
-      ]}>
-        {style.title}
-      </Text>
-    </TouchableOpacity>
-  );
+
 
 
 
@@ -540,58 +600,8 @@ ${tripDetail.includedServices.length > 0 ?
     return `${start} - ${end}`;
   };
   
-  //Render All Catagories
-  const renderAllCategory = () => (
-    <TouchableOpacity
-      key="all"
-      style={[
-        styles.categoryItem,
-        selectedTravelStyle === 'all' && styles.categoryItemActive
-      ]}
-      onPress={() => handleTravelStylePress('all')}
-    >
-      <Text style={[
-        styles.categoryText,
-        selectedTravelStyle === 'all' && styles.categoryTextActive
-      ]}>
-        ทั้งหมด
-      </Text>
-    </TouchableOpacity>
-  );
 
-  const renderTripCountText = () => (
-    <View style={styles.tripCountContainer}>
-      <Text style={styles.tripCountText}>
-      พบ {displayedTrips.length} ทริป
-      </Text>
-    </View>
-  );
-  const renderSearchBar = () => (
-    <View style={styles.searchContainer}>
-      <View style={styles.searchInputContainer}>
-        <Image 
-          source={require('../assets/images/images/image9.png')} 
-          style={styles.searchIcon}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="ค้นหาชื่อทริป..."
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={handleSearchChange}
-          returnKeyType="search"
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={() => handleSearchChange('')}
-          >
-            <Text style={styles.clearButtonText}>✕</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+
 
   const renderTripCard = (trip: Trip) => {
     const ownerInfo = getOwnerInfo(trip.tripOwner);
@@ -790,7 +800,11 @@ ${tripDetail.includedServices.length > 0 ?
     
     {/* Header */}
     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white'}}>
-      <Text style={styles.headerTitle}>หาเพื่อนเที่ยว</Text>
+    <View style={{display:'flex',flexDirection:'row',flex:0.9,alignItems:'center'}}>
+        <Image source={require('../assets/images/images/image21.png')} style={{ height: 20, 
+          width: 15,marginLeft:5}}/>
+    <Text style={styles.headerTitle}>ทริปที่บันทึกไว้</Text>
+    </View>
       <Image 
         source={require('../assets/images/images/image16.png')} 
         style={{width:18,height:18,flex:0.05}} 
@@ -801,24 +815,9 @@ ${tripDetail.includedServices.length > 0 ?
       />
     </View>
 
-    {/* Travel Styles Categories */}
-    <View style={styles.categoriesContainer}>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesScrollContent}
-      >
-        {renderAllCategory()}
-        {travelStyles.map(style => 
-          renderTravelStyleItem(style, selectedTravelStyle === style.id)
-        )}
-      </ScrollView>
-    </View>
+  
 
-    {/* Search Bar */}
-    {renderSearchBar()}
-    {/* Trip Count */}
-    {renderTripCountText()}
+  
     {/* Trips List */}
     <ScrollView
       style={styles.scrollView}
@@ -852,17 +851,19 @@ ${tripDetail.includedServices.length > 0 ?
         />
         <Text style={{fontSize: 12 }}>หน้าหลัก</Text>
       </View>
+      <TouchableOpacity onPress={handlefindTrips}>
       <View style={{alignItems:'center'}}>
         <Image 
-          source={require('../assets/images/images/image19.png')} 
+          source={require('../assets/images/images/image23.png')} 
           style={{ width: 24, height: 24}} 
         />
         <Text style={{fontSize:12}}>ค้นหา</Text>
       </View>
-   <TouchableOpacity onPress={handlesavedTrips}>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={handlesavedTrips}>
    <View style={{alignItems:'center'}}>
         <Image 
-          source={require('../assets/images/images/image21.png')} 
+          source={require('../assets/images/images/image22.png')} 
           style={{   height: 20, 
             width: 15,}} 
         />
@@ -1185,7 +1186,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 0,
-    outlineColor:'#f5f5f5'
   },
   clearButton: {
     padding: 4,
@@ -1237,4 +1237,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FindTripScreen;
+export default SavedTripScreen;

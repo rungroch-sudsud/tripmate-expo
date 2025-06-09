@@ -1,6 +1,5 @@
 import React, { useState, useEffect,useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-//สร้างโปรไฟล์
 import {
   View,
   Text,
@@ -18,7 +17,7 @@ import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useRoute } from '@react-navigation/native';
 import {axiosInstance} from '../lib/axios'
-import { push } from 'expo-router/build/global-state/routing';
+
 
 
 
@@ -171,49 +170,52 @@ const TravelStyleScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-          <Stack.Screen options={{ headerShown: false }} />
-   
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <FontAwesome name="angle-left" size={24} color="#333" />
-        </TouchableOpacity>
-        <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <>
+    <Stack.Screen 
+      options={{ 
+        headerShown: false,
+        title: '', // Empty title
+        headerTitle: '', // Empty header title
+      }} 
+    />
+      <SafeAreaView style={styles.container}>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <Animated.View 
-            style={[
-              styles.progressFill,
-              {
-                width: progressAnimation.interpolate({
-                  inputRange: [0, 33.33],
-                  outputRange: ['0%', '33.33%'],
-                }),
-              },
-            ]} 
-          />
+        
+        {/* Your existing content */}
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+            <FontAwesome name="angle-left" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
+          <View style={styles.placeholder} />
         </View>
-      </View>
-
-      {/* Content */}
-      <View style={styles.content}>
-        <Text style={styles.title}>
-        เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว
-        </Text>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>กำลังโหลด...</Text>
+  
+        {/* Progress Bar */}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressBar}>
+            <Animated.View 
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnimation.interpolate({
+                    inputRange: [0, 33.33],
+                    outputRange: ['0%', '33.33%'],
+                  }),
+                },
+              ]} 
+            />
           </View>
-        ) : (
+        </View>
+  
+        {/* Content */}
+        <View style={styles.content}>
+          <Text style={styles.title}>
+            เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว
+          </Text>
+  
+          {/* Remove the loading condition from here since we have overlay */}
           <View style={styles.categoriesContainer}>
-            {categories.map((category: Category) => (
+            {categories.map((category) => (
               <TouchableOpacity
                 key={category.id}
                 style={[
@@ -222,18 +224,19 @@ const TravelStyleScreen: React.FC = () => {
                 ]}
                 onPress={() => toggleSelection(category.id)}
               >
-  <Image
-  source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' }}
-  style={{
-    width: 14,
-    height: 12,
-   
-    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
-    
-  }}
-  resizeMode="contain"
-/>
-
+                <Image
+                  source={{ 
+                    uri: selectedItems.includes(category.id) 
+                      ? category.activeIconImageUrl || category.iconImageUrl
+                      : category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?'
+                  }}
+                  style={{
+                    width: 14,
+                    height: 12,
+                    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
+                  }}
+                  resizeMode="contain"
+                />
                 <Text style={[
                   styles.categoryText,
                   selectedItems.includes(category.id) && styles.selectedText
@@ -243,34 +246,46 @@ const TravelStyleScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
-        )}
-      </View>
-
-      {/* Bottom Button */}
-      <View style={styles.bottomContainer}>
-        <TouchableOpacity 
-          style={[
-            styles.continueButton,
-            selectedItems.length === 0 && styles.disabledButton
-          ]}
-          disabled={selectedItems.length === 0}
-          onPress={handleContinue}
-        >
-          <Text style={[
-            styles.continueButtonText,
-            selectedItems.length === 0 && styles.disabledButtonText
-          ]}>
-            ยืนยันและดำเนินการต่อ
-          </Text>
-          <Ionicons 
-            name="arrow-forward" 
-            size={20} 
-            color={selectedItems.length === 0 ? '#ccc' : '#fff'} 
-            style={styles.buttonIcon}
-          />
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+        </View>
+  
+        {/* Bottom Button */}
+        <View style={styles.bottomContainer}>
+          <TouchableOpacity 
+            style={[
+              styles.continueButton,
+              selectedItems.length === 0 && styles.disabledButton
+            ]}
+            disabled={selectedItems.length === 0}
+            onPress={handleContinue}
+          >
+            <Text style={[
+              styles.continueButtonText,
+              selectedItems.length === 0 && styles.disabledButtonText
+            ]}>
+              ยืนยันและดำเนินการต่อ
+            </Text>
+            <Ionicons 
+              name="arrow-forward" 
+              size={20} 
+              color={selectedItems.length === 0 ? '#ccc' : '#fff'} 
+              style={styles.buttonIcon}
+            />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+  
+      {/* Full Screen Loading Overlay */}
+      {loading && (
+        
+        <View style={styles.loadingOverlay}>
+          
+          <View style={styles.loadingContent}>
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text style={styles.loadingText}>กำลังโหลด...</Text>
+          </View>
+        </View>
+      )}
+    </>
   );
 };
 
@@ -399,6 +414,31 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#6366f1',
     borderRadius: 2,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000, // Ensure it's on top
+  },
+  loadingContent: {
+    backgroundColor: 'white',
+    padding: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5, // For Android shadow
   },
 });
 

@@ -1678,13 +1678,13 @@ const [tempLinkText, setTempLinkText] = useState('');
      <View style={styles.dateContainer}>
 
     
-     <View style={{flex:0.40,flexDirection:'row',alignItems:'center',backgroundColor:'#E5E7EB',height:40,paddingHorizontal:4,borderRadius:8}}>
+     <View style={{flex:0.40,flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:40,paddingHorizontal:4,borderRadius:8}}>
      <Image
         source={require('../assets/images/images/image11.png')} // Replace with your image path
         style={{height:16,width:16,marginHorizontal:3}}
         resizeMode="contain"
       />
-      <TextInput style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'#e0e0e0'}}
+      <TextInput style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'white',backgroundColor:'#F9FAFBFF'}}
       placeholder=''
       value={maxParticipant!=''?maxParticipant.toString():''}
       onChangeText={handleMaxParticipant}
@@ -1696,7 +1696,7 @@ const [tempLinkText, setTempLinkText] = useState('');
     {/* Price Per Person */}
     <Text style={{marginLeft:2,marginBottom:6}}>ราคาต่อคน
     </Text>
-     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'#E5E7EB',height:45,borderRadius:8,justifyContent:'space-between',marginBottom:30}}>
+     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:45,borderRadius:8,justifyContent:'space-between',marginBottom:30}}>
      <Image
         source={require('../assets/images/images/image12.png')} // Replace with your image path
         style={{height:16,width:16,marginHorizontal:3}}
@@ -1789,60 +1789,149 @@ const [tempLinkText, setTempLinkText] = useState('');
       </View>
 
   
-  {/* Destination */}
-      <View style={styles.container4}>
+
+{/* Destination */}
+<View style={{
+  backgroundColor: '#fff',
+  position: 'relative',
+  zIndex: 1000,
+  marginBottom: dropdownOpen ? 220 : 20, // Dynamic margin based on dropdown state
+  marginTop:10
+}}>
   <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
     <View>
       {dropdownOpen ? (
-    
         <TextInput
-          style={styles.input}
+          style={{
+            borderWidth: 1,
+            borderColor: '#D1D5DB',
+            borderRadius: 8,
+            paddingHorizontal: 12,
+            paddingVertical: 12,
+            fontSize: 16,
+            fontFamily: 'Inter_400Regular',
+            lineHeight: 24,
+            color: '#374151',
+            height: 50,
+            backgroundColor: '#FFFFFF',
+          }}
           placeholder="ค้นหาสถานที่"
           value={searchText}
           onChangeText={setSearchText}
           autoFocus={true}
         />
       ) : (
-        <Text style={styles.input}><Image source={require('../assets/images/images/image9.png')} style={{width:16,height:16,}}/>{' '} ค้นหาสถานที่</Text>
+        <Text style={{
+          borderWidth: 1,
+          borderColor: '#D1D5DB',
+          borderRadius: 8,
+          paddingHorizontal: 12,
+          paddingVertical: 12,
+          fontSize: 16,
+          fontFamily: 'Inter_400Regular',
+          lineHeight: 24,
+          color: '#374151',
+          height: 50,
+          backgroundColor: '#FFFFFF',
+        }}>
+          <Image
+            source={require('../assets/images/images/image9.png')}
+            style={{ width: 16, height: 16 }}
+          />
+          {' '} ค้นหาสถานที่
+        </Text>
       )}
     </View>
   </TouchableOpacity>
 
   {dropdownOpen && (
-    <View style={styles.dropdown}>
+    <View style={{
+      position: 'absolute', // Position absolutely to avoid pushing content down
+      top: 55, // Position just below the input (50px height + 5px margin)
+      left: 0,
+      right: 0,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#999',
+      borderRadius: 6,
+      maxHeight: 200,
+      zIndex: 1001, // Higher z-index than parent
+      shadowColor: '#000', // Add shadow for better visibility
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 5, // For Android shadow
+    }}>
       {loading ? (
-        <ActivityIndicator size="small" />
+        <View style={{ padding: 20, alignItems: 'center' }}>
+          <ActivityIndicator size="small" />
+        </View>
       ) : (
-        <FlatList
-        style={{display:'contents',position:'fixed'}}
-          data={filteredDestinations} // Use filtered data
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => addDestination(item)}
-            >
-              <Text>{item}</Text>
-            </TouchableOpacity>
+        <ScrollView style={{ maxHeight: 200 }}>
+          {filteredDestinations.length > 0 ? (
+            filteredDestinations.map((item, index) => (
+              <TouchableOpacity
+                key={index}
+                style={{
+                  padding: 12,
+                  borderBottomWidth: index < filteredDestinations.length - 1 ? 1 : 0,
+                  borderBottomColor: '#f0f0f0',
+                }}
+                onPress={() => addDestination(item)}
+              >
+                <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <Text style={{
+              padding: 12,
+              textAlign: 'center',
+              color: '#9CA3AF',
+              fontSize: 14,
+            }}>
+              ไม่พบสถานที่ที่ค้นหา
+            </Text>
           )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>ไม่พบสถานที่ที่ค้นหา</Text>
-          }
-        />
+        </ScrollView>
       )}
     </View>
   )}
 
-  <View style={styles.selectedContainer}>
-    <View style={styles.selectedGrid}>
-      {selected.map(dest => (
+  {/* Selected destinations */}
+  <View style={{ 
+    marginTop: 20,
+    marginBottom: 10,
+  }}>
+    <View style={{
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    }}>
+      {selected.map((dest, index) => (
         <TouchableOpacity
-          key={dest}
-          style={styles.selectedButton}
+          key={index}
+          style={{
+            backgroundColor: '#4F46E51A',
+            borderWidth: 1,
+            paddingHorizontal: 8,
+            paddingTop: 7,
+            borderRadius: 9999,
+            margin: 5,
+            borderColor: '#4F46E5',
+            minWidth: 84.09,
+            height: 38,
+            alignItems: 'center',
+          }}
           onPress={() => removeDestination(dest)}
         >
-          <Text style={styles.selectedButtonText}>
-            {dest} <Text style={{fontSize: 16}}>×</Text>
+          <Text style={{
+            color: '#4F46E5',
+            fontFamily: 'Inter_400Regular',
+            fontSize: 14,
+          }}>
+            {dest} <Text style={{ fontSize: 16 }}>×</Text>
           </Text>
         </TouchableOpacity>
       ))}
@@ -1852,7 +1941,7 @@ const [tempLinkText, setTempLinkText] = useState('');
 
 
        {/* Description Field */}
-       <View style={styles.fieldContainer}>
+       <View style={{marginBottom:20,marginTop:-20}}>
             <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
             <TextInput
               style={styles.textArea}
@@ -2227,7 +2316,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
-
   },
   fieldContainer: {
     marginBottom: 20,
@@ -2360,7 +2448,7 @@ const styles = StyleSheet.create({
     borderRadius:5,
     height:30,
     paddingHorizontal:4,
-    backgroundColor:"#E5E7EB",
+    backgroundColor:"#F9FAFBFF",
     marginHorizontal:5
     
   },
