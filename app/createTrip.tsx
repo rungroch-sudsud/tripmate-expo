@@ -24,7 +24,7 @@ import StarterKit from '@tiptap/starter-kit';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {Calendar} from 'react-native-calendars'
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MAX_WORDS = 40;
 interface Service {
@@ -356,6 +356,13 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     selectedOptions: [] as string[],
     attachments: 0,
   });
+
+
+const handleBack=async()=>{
+  router.back()
+  
+}
+
 
  // For services
 const toggleServiceCheckbox = (id: string) => {
@@ -1111,11 +1118,13 @@ const [tempLinkText, setTempLinkText] = useState('');
           categories: categories.length,
           hasImage: !!pickedFile2
         });
-    
+        const accessToken = await AsyncStorage.getItem('googleAccessToken');
+        const idToken = await AsyncStorage.getItem('googleIdToken');
         // Send request using axios
         const response = await axiosInstance.post('/trips', requestFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
+             Authorization: `Bearer ${idToken}`
           },
           timeout: 60000, // Increased timeout to 60 seconds
           maxContentLength: Infinity,
@@ -1488,7 +1497,7 @@ const [tempLinkText, setTempLinkText] = useState('');
       {/* Header */}
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <Ionicons name="chevron-back" size={24} color="#000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>

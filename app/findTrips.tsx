@@ -17,6 +17,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {requirements}  from './requirement'
 import axios from 'axios'
 
+
+
 interface TravelStyle {
   id: string;
   title: string;
@@ -435,26 +437,75 @@ ${tripDetail.includedServices.length > 0 ?
     filterTrips(allTrips, styleId);
   };
 
-  const handleJoinTrip = async (trip: Trip) => {
+  
+  const handleJoinTrip = async (trip: Trip): Promise<void> => {
     try {
       console.log('Join trip:', trip.id);
-  
+      
       // Retrieve the access token
-      const accessToken = await AsyncStorage.getItem('accessToken');
+      const accessToken = await AsyncStorage.getItem('googleAccessToken');
       const idToken = await AsyncStorage.getItem('googleIdToken');
       console.log('Access Token:', accessToken);
       console.log('ID Token:', idToken);
-  
-         const  response = await axiosInstance.post(
-            `${requirements.baseURL}/trips/join/${trip.id}`
+      
+      if (!accessToken && !idToken) {
+        console.error('No access token or ID token found');
+        return;
+      }
+      
+      const bodyParameters = {}; // Empty payload
+      
+      // Try using the ID token first if available
+      if (idToken) {
+        try {
+          const config = {
+            headers: {
+              Authorization: `Bearer ${idToken}`
+            }
+          };
+          
+          const response = await axiosInstance.post(
+            `${requirements.baseURL}/trips/join/${trip.id}`,
+            bodyParameters,
+            config
           );
+          
           console.log('Response with ID Token:', response.data);
-          return;
+          router.push(`/stramChat?tripId=${trip.id}`)
+          return; // Success, so exit
         } catch (err) {
           console.warn('Failed with ID Token, trying access token:', err);
+        
           // Fall back to accessToken
         }
-}
+      }
+      
+      // Fallback to using the access token
+      if (accessToken) {
+        const config = {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        };
+        
+        const response = await axiosInstance.post(
+          `${requirements.baseURL}/trips/join/${trip.id}`,
+          bodyParameters,
+          config
+        );
+        
+        console.log('Response with Access Token:', response.data);
+        router.push(`/stramChat?tripId=${trip.id}`)
+      }
+      
+    } catch (error) {
+      console.error('Error joining trip:', error);
+    }
+  };
+  
+  
+
+
   
     
   

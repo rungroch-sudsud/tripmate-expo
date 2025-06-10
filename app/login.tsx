@@ -105,6 +105,10 @@ const Login = () => {
             console.log(user.uid);
             const storedUserId = await AsyncStorage.getItem('userId');
             console.log(storedUserId);
+            console.log(googleAccessToken);
+            console.log(idToken);
+            
+            
             router.push('/findTrips');
             return { message: 'User profile incomplete' };
           } else {
