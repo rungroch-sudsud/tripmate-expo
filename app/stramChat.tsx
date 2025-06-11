@@ -7,6 +7,8 @@ import {
   MessageInput,
   MessageList,
   Thread,
+  TypingContextValue,
+  TypingIndicator,
   LoadingIndicator,
 } from 'stream-chat-react';
 import type { Channel as StreamChannel } from 'stream-chat';
@@ -15,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { axiosInstance } from '../lib/axios';
 import 'stream-chat-react/dist/css/v2/index.css';
+import {requirements} from './requirement'
 
 interface TripParticipant {
   userId: string;
@@ -32,8 +35,10 @@ interface Trip {
   tripOwnerId: string;
 }
 
-// Constants
-const STREAM_API_KEY = 'mrffbdmcu86b';
+
+
+
+
 const MAX_DISPLAYED_AVATARS = 3;
 const DEFAULT_AVATAR = 'https://via.placeholder.com/40x40/cccccc/666666?text=👤';
 
@@ -191,6 +196,7 @@ export default function TripGroupChat() {
   const params = useLocalSearchParams();
   const tripId = params.tripId as string;
 
+
   // State
   const [client, setClient] = useState<StreamChat | null>(null);
   const [channel, setChannel] = useState<StreamChannel | null>(null);
@@ -199,7 +205,8 @@ export default function TripGroupChat() {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+const [showReactions, setShowReactions] = useState(false);
+const [messageReactions, setMessageReactions] = useState({});
   // Refs for cleanup
   const isMountedRef = useRef(true);
   const clientRef = useRef<StreamChat | null>(null);
@@ -309,7 +316,7 @@ export default function TripGroupChat() {
         setCurrentUser(user);
 
         // Initialize Stream Chat
-        chatClient = StreamChat.getInstance(STREAM_API_KEY);
+        chatClient = StreamChat.getInstance(requirements.stream_api_key);
         clientRef.current = chatClient;
         
         // Disconnect any existing connection
@@ -417,7 +424,7 @@ export default function TripGroupChat() {
   }, []);
 
   const handleBack = useCallback(() => {
-    router.back();
+    router.push('/channelList')
   }, [router]);
 
   const handleRetry = useCallback(() => {
@@ -428,18 +435,25 @@ export default function TripGroupChat() {
   }, [router]);
 
   // Memoized message component
-  const MessageComponent = useCallback((props: any) => {
-    if (!props.message) {
-      return <View style={{ height: 1 }} />;
-    }
+  const MessageComponent = useMemo(() => {
+    const Component = (props) => {
+      if (!props.message) {
+        return <View style={{ height: 1 }} />;
+      }
+      
+      return (
+        <CustomMessage
+          message={props.message}
+          participants={participants}
+          currentUser={currentUser}
+        />
+      );
+    };
     
-    return (
-      <CustomMessage
-        message={props.message}
-        participants={participants}
-        currentUser={currentUser}
-      />
-    );
+    // Helpful for debugging
+    Component.displayName = 'MessageComponent';
+    
+    return Component;
   }, [participants, currentUser]);
 
   // Error handling with better UX
@@ -498,8 +512,8 @@ export default function TripGroupChat() {
               tripName={trip.name}
               onBack={handleBack}
             />
-            <MessageList 
 
+            <MessageList 
             />
             <MessageInput />
           </Window>

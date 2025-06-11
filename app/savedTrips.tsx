@@ -240,19 +240,22 @@ useEffect(() => {
       console.error('User not authenticated');
       return;
     }
-
+  
     const isCurrentlyBookmarked = bookmarkedTripIds.includes(trip.id);
     
+    // Optimistic update - update UI immediately
+    if (isCurrentlyBookmarked) {
+      setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
+    } else {
+      setBookmarkedTripIds(prev => [...prev, trip.id]);
+    }
+  
     try {
-      setLoading(true);
-      
       if (isCurrentlyBookmarked) {
         // Remove bookmark
         const response = await axiosInstance.delete(`/bookmarks/${trip.id}`);
         
         if (response.status === 200) {
-          // Update local state
-          setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
           console.log(`Removed bookmark for trip: ${trip.id} by user: ${userId}`);
         }
       } else {
@@ -260,12 +263,19 @@ useEffect(() => {
         const response = await axiosInstance.post(`/bookmarks/${trip.id}`);
         
         if (response.status === 201) {
-          // Update local state
-          setBookmarkedTripIds(prev => [...prev, trip.id]);
           console.log(`Added bookmark for trip: ${trip.id} by user: ${userId}`);
         }
       }
     } catch (error) {
+      // Revert the optimistic update on error
+      if (isCurrentlyBookmarked) {
+        // Was bookmarked, restore it
+        setBookmarkedTripIds(prev => [...prev, trip.id]);
+      } else {
+        // Wasn't bookmarked, remove it again
+        setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
+      }
+      
       console.error('Failed to toggle bookmark:', error);
       
       // Handle specific error cases
@@ -278,8 +288,8 @@ useEffect(() => {
           console.error('Bookmark not found');
         }
       }
-    } finally {
-      setLoading(false);
+      
+      // TODO: Show error toast/alert to user here
     }
   };
 
@@ -680,25 +690,23 @@ ${tripDetail.includedServices.length > 0 ?
   
   }}
 >
-<TouchableOpacity 
-      style={{ alignSelf: 'center' }} 
-      onPress={() => handleBookmarkToggle(trip)}
-      disabled={loading} // Disable button while API call is in progress
-    >
-      <Image
-        source={
-          isTripBookmarked(trip.id)
-            ? require('../assets/images/images/image22.png') // Saved/bookmarked icon
-            : require('../assets/images/images/image21.png') // Unsaved icon
-        }
-        style={{ 
-          alignSelf: 'center', 
-          height: 20, 
-          width: 15,
-          opacity: loading ? 0.5 : 1 // Visual feedback when loading
-        }}
-      />
-    </TouchableOpacity>
+<TouchableOpacity        
+  style={{ alignSelf: 'center' }}        
+  onPress={() => handleBookmarkToggle(trip)}
+>       
+  <Image         
+    source={           
+      isTripBookmarked(trip.id)             
+        ? require('../assets/images/images/image22.png') // Saved/bookmarked icon             
+        : require('../assets/images/images/image21.png') // Unsaved icon         
+    }         
+    style={{            
+      alignSelf: 'center',            
+      height: 20,            
+      width: 15,         
+    }}       
+  />     
+</TouchableOpacity>
 
 </View>
 

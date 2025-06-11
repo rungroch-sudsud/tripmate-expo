@@ -219,32 +219,46 @@ const FindTripScreen: React.FC = () => {
       console.error('User not authenticated');
       return;
     }
-
+  
     const isCurrentlyBookmarked = bookmarkedTripIds.includes(trip.id);
     
+    // Optimistic update - update UI immediately
+    if (isCurrentlyBookmarked) {
+      setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
+    } else {
+      setBookmarkedTripIds(prev => [...prev, trip.id]);
+    }
+  
     try {
-      setLoading(true);
-      
       if (isCurrentlyBookmarked) {
         // Remove bookmark
         const response = await axiosInstance.delete(`/bookmarks/${trip.id}`);
         
         if (response.status === 200) {
-          // Update local state
-          setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
           console.log(`Removed bookmark for trip: ${trip.id} by user: ${userId}`);
+        } else {
+          throw new Error('Failed to remove bookmark');
         }
       } else {
         // Add bookmark
         const response = await axiosInstance.post(`/bookmarks/${trip.id}`);
         
         if (response.status === 201) {
-          // Update local state
-          setBookmarkedTripIds(prev => [...prev, trip.id]);
           console.log(`Added bookmark for trip: ${trip.id} by user: ${userId}`);
+        } else {
+          throw new Error('Failed to add bookmark');
         }
       }
     } catch (error) {
+      // Revert the optimistic update on error
+      if (isCurrentlyBookmarked) {
+        // Was bookmarked, restore it
+        setBookmarkedTripIds(prev => [...prev, trip.id]);
+      } else {
+        // Wasn't bookmarked, remove it again
+        setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
+      }
+      
       console.error('Failed to toggle bookmark:', error);
       
       // Handle specific error cases
@@ -257,8 +271,8 @@ const FindTripScreen: React.FC = () => {
           console.error('Bookmark not found');
         }
       }
-    } finally {
-      setLoading(false);
+      
+      // TODO: Show error toast/alert to user here
     }
   };
 
@@ -297,9 +311,10 @@ const FindTripScreen: React.FC = () => {
       const response = await axiosInstance.get<ApiResponse>('/trips');
       
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        console.log('Fetched trips:', response.data.data.length);
-        setAllTrips(response.data.data);
-        filterTrips(response.data.data, selectedTravelStyle);
+        const publishedTrips=response.data.data.filter(trip=>trip.status=="published")
+        console.log('Fetched Published trips:', publishedTrips.length);
+        setAllTrips(publishedTrips);
+        filterTrips(publishedTrips, selectedTravelStyle);
       } else {
         setAllTrips([]);
         setFilteredTrips([]);
@@ -669,7 +684,7 @@ ${tripDetail.includedServices.length > 0 ?
           
           {/* Date Badge - Top Left */}
           <View style={styles.dateBadge}>
-            <Text style={styles.dateIcon}>📅</Text>
+            <Image source={require('../assets/images/images/image25.png')} style={{width:10.5,height:12,marginRight:10}}/ >
             <Text style={styles.dateText}>
               {formatDateRange(trip.startDate, trip.endDate)}
             </Text>
@@ -677,7 +692,7 @@ ${tripDetail.includedServices.length > 0 ?
           
           {/* Max Participant Badge - Top Right */}
           <View style={styles.participantBadge}>
-            <Text style={styles.participantIcon}>👥</Text>
+          <Image source={require('../assets/images/images/image26.png')} style={{width:15,height:12,marginRight:10}}/ >
             <Text style={styles.participantText}>
               ต้องการ {trip.maxParticipants} คน
             </Text>
@@ -696,7 +711,7 @@ ${tripDetail.includedServices.length > 0 ?
     {trip.destinations.length > 0 && (
       <View style={styles.destinationRow}>
         <Image 
-          source={require('../assets/images/images/image13.png')} 
+          source={require('../assets/images/images/image24.png')} 
           style={{ width: 10.5, height: 14, marginRight: 10 }} 
         />
         <View style={styles.destinationContainer}>
@@ -721,25 +736,23 @@ ${tripDetail.includedServices.length > 0 ?
   
   }}
 >
-<TouchableOpacity 
-      style={{ alignSelf: 'center' }} 
-      onPress={() => handleBookmarkToggle(trip)}
-      disabled={loading} // Disable button while API call is in progress
-    >
-      <Image
-        source={
-          isTripBookmarked(trip.id)
-            ? require('../assets/images/images/image22.png') // Saved/bookmarked icon
-            : require('../assets/images/images/image21.png') // Unsaved icon
-        }
-        style={{ 
-          alignSelf: 'center', 
-          height: 20, 
-          width: 15,
-          opacity: loading ? 0.5 : 1 // Visual feedback when loading
-        }}
-      />
-    </TouchableOpacity>
+<TouchableOpacity        
+  style={{ alignSelf: 'center' }}        
+  onPress={() => handleBookmarkToggle(trip)}
+>       
+  <Image         
+    source={           
+      isTripBookmarked(trip.id)             
+        ? require('../assets/images/images/image22.png') // Saved/bookmarked icon             
+        : require('../assets/images/images/image21.png') // Unsaved icon         
+    }         
+    style={{            
+      alignSelf: 'center',            
+      height: 20,            
+      width: 15,         
+    }}       
+  />     
+</TouchableOpacity>
 
 </View>
 
@@ -821,7 +834,7 @@ ${tripDetail.includedServices.length > 0 ?
       onPress={handleFloatingButtonPress}
       activeOpacity={0.8}
     >
-      <Text style={styles.floatingButtonIcon}>+</Text>
+    <Image source={require('../assets/images/images/image27.png')} style={{height:21,width:21}}/>
     </TouchableOpacity>
   );
 
@@ -943,7 +956,9 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'left',
     paddingVertical: 16,
-    marginLeft:10
+    marginLeft:10,
+    fontFamily: 'Inter',
+    fontWeight:500
   },
   scrollView: {
     flex: 1,
@@ -1153,10 +1168,11 @@ const styles = StyleSheet.create({
     color: '#6b7280',
   },
   joinButton: {
-    backgroundColor: '#6366f1',
+    backgroundColor: '#29C4AF',
     paddingHorizontal: 20,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius:8,
+    color:'#FFFFFF'
   },
   joinButtonText: {
     color: 'white',
@@ -1174,10 +1190,12 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    backgroundColor:'#FFFFFF'
   },
   categoriesScrollContent: {
     paddingHorizontal: 16,
     gap: 12,
+    backgroundColor:'#FFFFFF'
   },
   categoryItem: {
     flexDirection: 'row',
@@ -1185,14 +1203,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: '#e9ecef',
+    borderColor: '#D1D5DB',
+    color:'#374151',
     gap: 8,
   },
   categoryItemActive: {
-    backgroundColor: '#6366f1',
-    borderColor: '#6366f1',
+    backgroundColor: '#29C4AF',
+    borderColor: '#29C4AF',
   },
   categoryIcon: {
     width: 20,
@@ -1256,7 +1275,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#29C4AF',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,

@@ -1259,13 +1259,11 @@ const [tempLinkText, setTempLinkText] = useState('');
         // Add destinations - handle as JSON string or individual entries based on backend expectation
         if (selected.length > 0) {
           // Option 1: As JSON string (if backend expects JSON)
-          //requestFormData.append('destinations', JSON.stringify(selected));
-          selected.forEach((destination) => {
-            requestFormData.append('destinations', destination);
-          });
+          requestFormData.append('destinations', selected);
+          
           // Option 2: As individual entries (uncomment if backend expects this)
-           //selected.forEach((destination: string, index: number) => {
-           // requestFormData.append(`destinations[${index}]`, destination);
+          // selected.forEach((destination: string, index: number) => {
+          //   requestFormData.append(`destinations[${index}]`, destination);
           // });
         }
         
@@ -1275,14 +1273,12 @@ const [tempLinkText, setTempLinkText] = useState('');
         // Add included services
         if (selectedServices.length > 0) {
           // Option 1: As JSON string
-         // requestFormData.append('includedServices', JSON.stringify(selectedServices));
-         selectedServices.forEach((service) => {
-          requestFormData.append('includedServices', service);
-        });
+          requestFormData.append('includedServices', selectedServices);
+          
           // Option 2: As individual entries (uncomment if needed)
           // selectedServices.forEach((service: string, index: number) => {
-           // requestFormData.append(`includedServices[${index}]`, service);
-           //});
+          //   requestFormData.append(`includedServices[${index}]`, service);
+          // });
         }
         
         requestFormData.append('detail', editorState.content || '');
@@ -1290,12 +1286,12 @@ const [tempLinkText, setTempLinkText] = useState('');
         // Add travel styles
         if (travelStyleIds.length > 0) {
           // Option 1: As JSON string
-          requestFormData.append('travelStyles', JSON.stringify(travelStyleIds));
+          requestFormData.append('travelStyles', travelStyleIds);
           
           // Option 2: As individual entries (uncomment if needed)
-           travelStyleIds.forEach((styleId: string, index: number) => {
-             requestFormData.append(`travelStyles[${index}]`, styleId);
-           });
+          // travelStyleIds.forEach((styleId: string, index: number) => {
+          //   requestFormData.append(`travelStyles[${index}]`, styleId);
+          // });
         }
         
         requestFormData.append('groupAtmosphere', formData.description || '');
@@ -1350,11 +1346,13 @@ const [tempLinkText, setTempLinkText] = useState('');
           categories: categories.length,
           hasImage: !!pickedFile2
         });
-    
+        const accessToken = await AsyncStorage.getItem('googleAccessToken');
+        const idToken = await AsyncStorage.getItem('googleIdToken');
         // Send request using axios
         const response = await axiosInstance.post('/trips', requestFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
+             Authorization: `Bearer ${idToken}`
           },
           timeout: 60000, // Increased timeout to 60 seconds
           maxContentLength: Infinity,
@@ -1422,7 +1420,6 @@ const [tempLinkText, setTempLinkText] = useState('');
       } finally {
         setUploading(false);
       }
-       
     }
     const resetForm = () => {
       console.log("Resetted");
