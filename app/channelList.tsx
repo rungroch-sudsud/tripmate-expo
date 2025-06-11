@@ -13,7 +13,8 @@ import {
 import { useRouter } from 'expo-router';
 import { StreamChat } from 'stream-chat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {axiosInstance} from '../lib/axios'; // Update this path
+import {axiosInstance} from '../lib/axios'; 
+import {requirements} from './requirement'
 
 interface JoinedTripChannel {
   id: string;
@@ -30,7 +31,7 @@ interface JoinedTripChannel {
   }>;
 }
 
-const STREAM_API_KEY = 'mrffbdmcu86b';
+
 const DEFAULT_AVATAR = 'https://via.placeholder.com/40x40/cccccc/666666?text=👤';
 const MAX_DISPLAYED_AVATARS = 3;
 
@@ -77,7 +78,7 @@ export default function ChannelList() {
   // Initialize Stream Chat client
   const initializeClient = useCallback(async (user: any) => {
     try {
-      const chatClient = StreamChat.getInstance(STREAM_API_KEY);
+      const chatClient = StreamChat.getInstance(requirements.stream_api_key);
       
       // Disconnect any existing connection
       if (chatClient.userID && chatClient.userID !== user.id) {
