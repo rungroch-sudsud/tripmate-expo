@@ -307,9 +307,21 @@ const FindTripScreen: React.FC = () => {
     }
   };
   const fetchTrips = async (): Promise<void> => {
+    const accessToken = await AsyncStorage.getItem('googleAccessToken');
+   
+    console.log("GOOGLE TOKEN",accessToken);
+    
+    const config = {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
+      }
+    };
     try {
-      const response = await axiosInstance.get<ApiResponse>('/trips');
-      
+      const response = await axiosInstance.get(`${requirements.baseURL}/trips`,
+        config
+       
+      );
+     
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
         const publishedTrips=response.data.data.filter(trip=>trip.status=="published")
         console.log('Fetched Published trips:', publishedTrips.length);
@@ -331,6 +343,7 @@ const FindTripScreen: React.FC = () => {
       setRefreshing(false);
     }
   };
+
   const filterTrips = (trips: Trip[], styleId: string): void => {
     console.log('Filtering trips for style:', styleId);
     console.log('Total trips to filter:', trips.length);

@@ -52,6 +52,7 @@
     "react-native-image-picker": "^8.2.1",
     "react-native-pell-rich-editor": "^1.8.8",
     "react-native-reanimated": "~3.17.4",
+    "react-native-render-html": "^6.3.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-vector-icons": "^10.2.0",

@@ -25,6 +25,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import  'react-native-render-html'
 
 const MAX_WORDS = 40;
 interface Service {
@@ -55,9 +56,7 @@ type PickedFile = {
       activeIconImageUrl?: string;
     }[];
   }
-  interface TravelStyleResponse {
-    data: Category[];
-  }
+ 
   
   interface ServicesResponse {
     data: {
@@ -682,17 +681,7 @@ const [tempLinkText, setTempLinkText] = useState('');
     }));
   };
 
-  const insertCheckList = () => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + '\n☐ ' + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
+
 
 
   const handleLinkSubmit = () => {
@@ -749,9 +738,6 @@ const [tempLinkText, setTempLinkText] = useState('');
   };
 
   // Insert image function - Web compatible
-  const insertImage = () => {
-    setShowImageUrlInput(true);
-  };
 
   const handleImageUrlSubmit = (imageUrl: string) => {
     const cursor = editorState.selectionStart;
@@ -811,10 +797,7 @@ const [tempLinkText, setTempLinkText] = useState('');
   // Clear formatting
  
 
-  // Get word count
-  const getWordCount = () => {
-    return editorState.content.trim().split(/\s+/).filter(word => word.length > 0).length;
-  };
+
 
   useEffect(() => {
     console.log('Enhanced Thai Form Screen initialized');
@@ -832,20 +815,7 @@ const [tempLinkText, setTempLinkText] = useState('');
       return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
     }
   };
-  const CalendarIcon = ({ color = '#6366F1' }) => (
-    <View style={[styles.calendarIcon, { backgroundColor: color }]}>
-      <View style={styles.calendarTop}>
-        <View style={styles.calendarHook} />
-        <View style={styles.calendarHook} />
-      </View>
-      <View style={styles.calendarBody}>
-        <View style={styles.calendarDot} />
-        <View style={styles.calendarDot} />
-        <View style={styles.calendarDot} />
-        <View style={styles.calendarDot} />
-      </View>
-    </View>
-  );
+
 
   
   const validateDate = (dateString: string): boolean => {
@@ -967,235 +937,11 @@ const [tempLinkText, setTempLinkText] = useState('');
           setLoading(false);
         });
     }, []);
-    const draft = async (): Promise<void> => {
-      try {
-        console.log("🚀 Starting trip creation...");
-        
-        // Validation - check if required fields are filled
-        if (!formData2.name || !formData.startDate || !formData.endDate || 
-            selected.length === 0 || !maxParticipant || !pricePerPerson || 
-            categories.length === 0) {
-          Alert.alert('Error', 'Please fill in all required fields');
-          return;
-        }
-    
-        setUploading(true);
-        setResponseMessage(null);
-    
-        // Improved date formatting with validation
-        const formatDate = (dateStr: string): string => {
-          try {
-            let date: Date;
-        
-            if (dateStr.includes('/')) {
-              const [day, month, year] = dateStr.split('/');
-              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            } else {
-              date = new Date(dateStr);
-            }
-        
-            if (isNaN(date.getTime())) {
-              throw new Error(`Invalid date: ${dateStr}`);
-            }
-        
-            // Return in YYYY-MM-DD format
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-            const day = String(date.getDate()).padStart(2, '0');
-        
-            return `${year}-${month}-${day}`;
-          } catch (error) {
-            console.error('Date formatting error:', error);
-            throw new Error(`Invalid date format: ${dateStr}`);
-          }
-        };
-        
-    
-        // Extract IDs from category objects
-        const travelStyleIds: string[] = categories.map((category: any) => category.id);
-    
-        // Create FormData for multipart request (renamed to avoid conflict)
-        const requestFormData = new FormData();
-    
-        // Add all trip data to FormData
-        requestFormData.append('name', formData2.name.trim());
-        
-        try {
-          requestFormData.append('startDate', formatDate(formData.startDate));
-          requestFormData.append('endDate', formatDate(formData.endDate));
-        } catch (dateError) {
-          Alert.alert('Error', 'Invalid date format. Please check your dates.');
-          return;
-        }
-        
-        // Add destinations - handle as JSON string or individual entries based on backend expectation
-        if (selected.length > 0) {
-          // Option 1: As JSON string (if backend expects JSON)
-          requestFormData.append('destinations', selected);
-          
-          // Option 2: As individual entries (uncomment if backend expects this)
-          // selected.forEach((destination: string, index: number) => {
-          //   requestFormData.append(`destinations[${index}]`, destination);
-          // });
-        }
-        
-        requestFormData.append('maxParticipants', maxParticipant.toString());
-        requestFormData.append('pricePerPerson', pricePerPerson.toString());
-        
-        // Add included services
-        if (selectedServices.length > 0) {
-          // Option 1: As JSON string
-          requestFormData.append('includedServices', selectedServices);
-          
-          // Option 2: As individual entries (uncomment if needed)
-          // selectedServices.forEach((service: string, index: number) => {
-          //   requestFormData.append(`includedServices[${index}]`, service);
-          // });
-        }
-        
-        requestFormData.append('detail', editorState.content || '');
-        
-        // Add travel styles
-        if (travelStyleIds.length > 0) {
-          // Option 1: As JSON string
-          requestFormData.append('travelStyles', travelStyleIds);
-          
-          // Option 2: As individual entries (uncomment if needed)
-          // travelStyleIds.forEach((styleId: string, index: number) => {
-          //   requestFormData.append(`travelStyles[${index}]`, styleId);
-          // });
-        }
-        
-        requestFormData.append('groupAtmosphere', formData.description || '');
-        requestFormData.append('status', 'draft');
-        
-        // TEMPORARY: Add tripOwnerId for testing
-        requestFormData.append('tripOwnerId', 'Q5zdE5tOTUb6qaZddlFgngpqxOk2');
-    
-        // Improved image file handling
-        if (pickedFile2) {
-          console.log("📷 Adding image to request...", {
-            name: pickedFile2.name,
-            type: pickedFile2.type,
-            size: pickedFile2.size || 'unknown'
-          });
-          
-          try {
-            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
-              // Convert base64 to Blob
-              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
-              const blob = await response.blob();
-              requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
-            } else if (pickedFile2.uri) {
-              // For React Native, create proper file object
-              const fileObj = {
-                uri: pickedFile2.uri,
-                type: pickedFile2.type || 'image/jpeg',
-                name: pickedFile2.name || 'image.jpg',
-              } as any;
-              
-              requestFormData.append('tripCoverImageFile', fileObj);
-            } else {
-              console.warn('⚠️ No valid image data found');
-            }
-          } catch (imageError) {
-            console.error('Image processing error:', imageError);
-            Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
-          }
-        }
-    
-        console.log("📤 Sending trip creation request...");
-        
-        // Log FormData contents for debugging (remove in production)
-        console.log("📋 Request data summary:", {
-          name: formData2.name,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          destinations: selected.length,
-          maxParticipants: maxParticipant,
-          pricePerPerson: pricePerPerson,
-          services: selectedServices.length,
-          categories: categories.length,
-          hasImage: !!pickedFile2
-        });
-        const accessToken = await AsyncStorage.getItem('googleAccessToken');
-        const idToken = await AsyncStorage.getItem('googleIdToken');
-        // Send request using axios
-        const response = await axiosInstance.post('/trips', requestFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-             Authorization: `Bearer ${idToken}`
-          },
-          timeout: 60000, // Increased timeout to 60 seconds
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-    
-        console.log("✅ Trip created successfully:", response.data);
-        
-        setResponseMessage(`Success: Trip "${response.data.name}" created successfully!`);
-        Alert.alert(
-          'Success', 
-          `Trip "${response.data.name}" has been created successfully!`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form after user acknowledges success
-                resetForm();
-                // Optionally navigate back
-                // navigation.goBack();
-              }
-            }
-          ]
-        );
-    
-      } catch (error: unknown) {
-        console.error('🔴 Trip creation error:', error);
-        
-        let errorMessage = 'Failed to create trip';
-        let debugInfo = '';
-        
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as any;
-          console.error('Server Error Response:', axiosError.response?.data);
-          console.error('Server Error Status:', axiosError.response?.status);
-          console.error('Server Error Headers:', axiosError.response?.headers);
-          
-          const serverMessage = axiosError.response?.data?.message;
-          const statusCode = axiosError.response?.status;
-          
-          if (serverMessage) {
-            errorMessage = serverMessage;
-          } else {
-            errorMessage = `Server Error (${statusCode})`;
-          }
-          
-          debugInfo = `Status: ${statusCode}`;
-        } else if (error && typeof error === 'object' && 'request' in error) {
-          console.error('Network Error:', (error as any).request);
-          errorMessage = 'Network error. Please check your connection.';
-        } else if (error instanceof Error) {
-          console.error('General Error:', error.message);
-          errorMessage = error.message || 'Unknown error occurred';
-        }
-        
-        setResponseMessage(`Error: ${errorMessage}`);
-        
-        // Show more detailed error in development
-        const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
-        const displayMessage = isDevelopment && debugInfo 
-          ? `${errorMessage}\n\n${debugInfo}` 
-          : errorMessage;
-        
-        Alert.alert('Trip Creation Failed', displayMessage);
-      } finally {
-        setUploading(false);
-      }
-       
-    }
+   
+
+    type StatusType = 'published' | 'draft';
     //Submit
-    const create = async (): Promise<void> => {
+    const create = async (status:StatusType): Promise<void> => {
       try {
         console.log("🚀 Starting trip creation...");
         
@@ -1295,10 +1041,10 @@ const [tempLinkText, setTempLinkText] = useState('');
         }
         
         requestFormData.append('groupAtmosphere', formData.description || '');
-        requestFormData.append('status', 'published');
-        
+        requestFormData.append('status', status);
+        const userId=await AsyncStorage.getItem('userId')
         // TEMPORARY: Add tripOwnerId for testing
-        requestFormData.append('tripOwnerId', 'Q5zdE5tOTUb6qaZddlFgngpqxOk2');
+        requestFormData.append('tripOwnerId', userId);
     
         // Improved image file handling
         if (pickedFile2) {
@@ -2245,7 +1991,7 @@ const [tempLinkText, setTempLinkText] = useState('');
       <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
       {/* Submit Button 1 */}
       <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.draftButton} onPress={draft}>
+        <TouchableOpacity style={styles.draftButton} onPress={()=>create("draft")}>
            {/*   <Ionicons name="send" size={20} color="#fff" /> */}
           <Text style={styles.draftText}>บันทึกแบบร่าง
           </Text>
@@ -2255,7 +2001,7 @@ const [tempLinkText, setTempLinkText] = useState('');
 
       {/* Submit Button 2 */}
       <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.submitButton} onPress={create}>
+        <TouchableOpacity style={styles.submitButton} onPress={()=>create("published")}>
         
           {/*   <Ionicons name="send" size={20} color="#fff" /> */}
           <Text style={styles.submitText}>โอเคดีงาม</Text>
