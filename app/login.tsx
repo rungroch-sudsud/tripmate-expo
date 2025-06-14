@@ -190,7 +190,7 @@ const Login = () => {
         </View>
 
         {/* App Name */}
-        <Text style={styles.appName}>TripBuddy</Text>
+        <Text style={styles.appName}>TripMate</Text>
         
         {/* Subtitle */}
         <Text style={styles.subtitle}>หาเพื่อนเที่ยวที่ใช้ในสไตล์คุณ</Text>

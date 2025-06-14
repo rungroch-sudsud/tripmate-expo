@@ -139,6 +139,12 @@ const FindTripScreen: React.FC = () => {
     router.push('/savedTrips')
   }
 
+  const handleProfile=async()=>{
+     console.log(userId);
+     router.push(`/profile?userId=${userId}`)
+     
+  }
+
   useEffect(() => {
     const loadUserId = async () => {
       try {
@@ -946,13 +952,15 @@ ${tripDetail.includedServices.length > 0 ?
         <Text style={{fontSize:12}}>บันทึก</Text>
       </View>
    </TouchableOpacity>
-      <View style={{alignItems:'center'}}>
+     <TouchableOpacity onPress={handleProfile}>
+     <View style={{alignItems:'center'}}>
         <Image 
           source={require('../assets/images/images/image20.png')} 
           style={{width: 24, height: 24 }} 
         />
         <Text style={{fontSize:12}}>โปรไฟล์</Text>
       </View>
+     </TouchableOpacity>
     </View>
   </View>
   );

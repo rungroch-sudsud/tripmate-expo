@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState,useEffect,useRef, use } from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 import { Animated} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -18,7 +18,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router,Stack } from 'expo-router';
+import { router,Stack,useLocalSearchParams } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
 import axios from 'axios'
 interface Category {
@@ -100,9 +100,10 @@ const ProfileForm: React.FC = () => {
     const [selectedItems, setSelectedItems] = useState<string[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+    const [user, setUser] = useState(null);
 
-
-    
+    const params=useLocalSearchParams()
+    const userId=params.userId
 
 
     const fetchTravelStyles = async (): Promise<void> => {
@@ -417,10 +418,44 @@ const ProfileForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-
-
-
+  ///////////////////////////////////
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axiosInstance.get(`/users/profile/${userId}`)
+      console.log(response.data.data);
+      setUser(response.data.data)
+      // Consider setting the data to state here instead of just logging
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  }
   
+
+
+  useEffect(() => {
+    if (userId) {
+      fetchUserProfile()
+    }
+  }, [userId])
+  ///////////////////
+
+
+  useEffect(() => {
+    console.log("User Details Updated: ", user);
+    if (user) {
+      setFormData(prevData => ({
+        ...prevData,
+        fullName: user.fullname || '',
+        nickname:user.nickname || '',
+        email:user.email || '',
+        age: user.age ? user.age.toString() : '', 
+        gender:user.gender ,
+        facebookUrl:user.facebookUrl,
+        lineId:user.lineId,
+      }))
+      setSelected(user.destinations || []);
+    }
+  }, [user]) 
   
 
   const removeSelectedInterest = (interest: string): void => {
@@ -632,13 +667,14 @@ const ProfileForm: React.FC = () => {
       }
     })
     console.log("Profile updated successfully:", profileResponse.data);
+    router.push('/findTrips')
    }catch(error){
     console.error("Error Updating User Profile: ",error);
     
    }
     try{
       uploadImageWithFetch()
-      router.push('/createTrip')
+      router.push('/findTrips')
     }catch(error){
       console.error("Error uploading Profile Image: ",error);
       
@@ -690,12 +726,14 @@ const ProfileForm: React.FC = () => {
     style={styles.profileImageContainer}
     onPress={pickImage}
   >
-    <Image 
-      source={
-        imageFile ? { uri: imageFile.uri } : { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }
-      }
-      style={styles.profileImage}
-    />
+    <Image
+  source={
+    imageFile?.uri ? { uri: imageFile.uri } :  // Show picked image first
+    user?.profileImageUrl ? { uri: user.profileImageUrl } :
+    { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }
+  }
+  style={styles.profileImage}
+/>
     <View style={styles.cameraButton}>
     <Image
         source={require('../assets/images/images/image6.png')} 
@@ -955,7 +993,7 @@ const ProfileForm: React.FC = () => {
               </View>
             )}
   <View>
-    <Text>DD</Text>
+
   </View>
 <View style={styles.container}>
   <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>

@@ -359,7 +359,6 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
 const handleBack=async()=>{
   router.back()
-  
 }
 
 
@@ -2076,7 +2075,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom:4
-
   },
   requiredText: {
     fontSize: 12,
