@@ -17,11 +17,17 @@ import { FontAwesome } from '@expo/vector-icons';
 import { useRouter,Stack } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
 import axios from 'axios'
+import {useFonts} from 'expo-font'
 
 WebBrowser.maybeCompleteAuthSession();
 
 
 const Login = () => {
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+  });
     const router = useRouter();
   const progressAnimation = useRef(new Animated.Value(0)).current;
 
@@ -141,6 +147,13 @@ const Login = () => {
       throw error;
     }
   };
+
+
+
+  const term=()=>{
+    console.log("Term");
+    
+  }
   
   
 
@@ -150,6 +163,10 @@ const Login = () => {
    // console.log('Back button pressed');
    router.push('/')
   };
+  if (!fontsLoaded) {
+    return <Text>Loading...</Text>;
+  }
+
 
   return (
     
@@ -193,7 +210,7 @@ const Login = () => {
         <Text style={styles.appName}>TripMate</Text>
         
         {/* Subtitle */}
-        <Text style={styles.subtitle}>หาเพื่อนเที่ยวที่ใช้ในสไตล์คุณ</Text>
+        <Text style={styles.subtitle}>หาเพื่อนเที่ยวที่ใช่ในสไตล์คุณ</Text>
 
         {/* Google Sign In Button */}
         <TouchableOpacity style={styles.googleButton} onPress={handleWebGoogleSignIn}>
@@ -212,20 +229,18 @@ const Login = () => {
   numberOfLines={1}
   style={{
     fontSize: 14,
-    color: '#999999',
+    color: '#6B7280',
     textAlign: 'center',
     flexShrink: 1,
+    fontFamily:'InterTight-Regular'
   }}
 >
   เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
 </Text>
 {'\n'}{'\n'}{'\n'}{'\n'}
-<Text>การเข้าสู่ระบบเป็นการยอมรับ 
- </Text>{' '}
-          <Text style={styles.linkText}>นโยบายความเป็นส่วนตัว</Text> 
-          {'\n'}
-          และ{' '}
-          <Text style={styles.linkText}>ข้อกําหนดการใช้งาน</Text> และ ของเรา
+<Text style={{fontFamily:"InterTight-Regular",fontSize:12,color:"#6B7280"}}>การเข้าสู่ระบบเป็นการยอมรับ 
+ </Text>
+          <TouchableOpacity onPress={term}><Text style={styles.linkText}>นโยบาย ความเป็นส่วนตัวข้อกำหนดการใช้งาน</Text></TouchableOpacity> และ ของเรา
         </Text>
       </View>
     </SafeAreaView>
@@ -242,10 +257,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-  
-   
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    fontFamily:"InterTight-Bold"
   },
   backButton: {
     width: 30,
@@ -260,11 +274,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   headerText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333333',
     flex: 1,
-    textAlign: 'center'
+     fontStyle:'normal',
+    textAlign: 'center',
+    fontSize:18,
+    fontWeight:500,
+    color:'#1F2937'
   },
   placeholder: {
     width: 50,
@@ -294,23 +309,26 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   logo: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4285F4',
+    width: 96,
+    height: 96,
+    borderRadius: 9999,
+    backgroundColor: '#3B82F6',
   },
   appName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontFamily:"InterTight-SemiBold",
     color: '#333333',
     marginBottom: 8,
 
+
   },
   subtitle: {
-    fontSize: 16,
-    color: '#666666',
+    
+    fontFamily:"InterTight-Regular",
     marginBottom: 60,
     textAlign: 'center',
+    color:"#6B7280",
+    fontSize:14
   
   },
   googleButton: {
@@ -330,6 +348,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    width:350,
+    height:58
   },
   googleButtonContent: {
     flexDirection: 'row',
@@ -349,22 +369,24 @@ const styles = StyleSheet.create({
     color: '#4285f4',
   },
   googleButtonText: {
-    color: '#3c4043',
-    fontSize: 18,
-    fontWeight: '500',
+    color: '#374151',
+    fontSize: 16,
+    fontFamily:'InterTight-SemiBold',
+    lineHeight:16,
   
   },
   termsText: {
-    fontSize: 15,
-    color: '#999999',
+    fontSize: 12,
+    color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 12,
     paddingHorizontal: 20,
   
   },
   linkText: {
-    color: '#4285F4',
-    textDecorationLine: 'underline',
+    color: '#3B82F6',
+    fontFamily:'InterTight-Regular',
+    fontSize:12
 
   },
 });

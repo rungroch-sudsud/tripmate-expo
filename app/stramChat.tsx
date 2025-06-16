@@ -121,6 +121,23 @@ const CustomChannelHeader: React.FC<{
   );
 });
 
+const CustomMessageList: React.FC<{
+  participants: TripParticipant[];
+  currentUser: any;
+}> = ({ participants, currentUser }) => {
+  return (
+    <MessageList
+      Message={(props) => (
+        <CustomMessage
+          message={props.message}
+          participants={participants}
+          currentUser={currentUser}
+        />
+      )}
+    />
+  );
+};
+
 // Custom Message Component with improved error handling
 const CustomMessage: React.FC<{
   message: any;
@@ -213,6 +230,9 @@ const CustomMessage: React.FC<{
     </View>
   );
 });
+
+
+
 
 const TripDetailsCard: React.FC<{ 
   trip: Trip; 
@@ -725,7 +745,10 @@ const [showTripDetails, setShowTripDetails] = useState(true);
             onToggle={handleToggleTripDetails}
             isVisible={showTripDetails}
           />
-
+           <CustomMessageList 
+              participants={participants}
+              currentUser={currentUser}
+            />
           <MessageList />
           <MessageInput />
         </Window>

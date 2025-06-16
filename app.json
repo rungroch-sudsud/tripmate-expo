@@ -37,6 +37,16 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "fonts": [
+      "./assets/fonts/InterTight-Regular.ttf",
+      "./assets/fonts/InterTight-Medium.ttf",
+      "./assets/fonts/InterTight-SemiBold.ttf",
+      "./assets/fonts/InterTight-Bold.ttf",
+      "./assets/fonts/InterTight-Black.ttf",
+      "./assets/fonts/InterTight-ExtraBold.ttf",
+      "./assets/fonts/InterTight-Light.ttf",
+      "./assets/fonts/SpaceMono-Regular.ttf"
+    ]
   }
 }

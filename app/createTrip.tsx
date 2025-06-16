@@ -1,4 +1,4 @@
-import React, { useState,useEffect,useRef } from 'react';
+import React, { useState,useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,6 @@ import {
   ScrollView,
   StyleSheet,
   SafeAreaView,
-  FlatList,
   Image,
   Alert,
   ActivityIndicator
@@ -18,14 +17,10 @@ import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../lib/axios'
 import '@expo-google-fonts/inter'
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import  'react-native-render-html'
+import {useFonts} from 'expo-font'
 
 const MAX_WORDS = 40;
 interface Service {
@@ -64,281 +59,22 @@ type PickedFile = {
       title: string;
     }[];
   }
- //RIch Editor
-// TypeScript Interfaces
-interface FormatState {
-  bold: boolean;
-  italic: boolean;
-  underline: boolean;
-  fontSize: number;
-  textColor: string;
-  backgroundColor: string;
-  textAlign: 'left' | 'center' | 'right' | 'justify';
-  fontFamily: string;
-  
-}
-
-interface EditorState {
-  content: string;
-  format: FormatState;
-  selectionStart: number;
-  selectionEnd: number;
-}
-
-interface ToolbarButtonProps {
-  title: string;
-  isActive: boolean;
-  onPress: () => void;
-  style?: any;
-  icon?: string;
-}
-
-interface ColorPickerProps {
-  visible: boolean;
-  onClose: () => void;
-  onColorSelect: (color: string) => void;
-  currentColor: string;
-}
-
-interface FontSizePickerProps {
-  visible: boolean;
-  onClose: () => void;
-  onSizeSelect: (size: number) => void;
-  currentSize: number;
-}
-
-interface InputModalProps {
-  visible: boolean;
-  title: string;
-  placeholder: string;
-  onClose: () => void;
-  onSubmit: (text: string) => void;
-}
 
 
-
-// Color Picker Component
-const ColorPicker: React.FC<ColorPickerProps> = ({ 
-  visible, 
-  onClose, 
-  onColorSelect, 
-  currentColor 
-}) => {
-  const colors = [
-    '#000000', '#FF0000', '#00FF00', '#0000FF', '#FFFF00',
-    '#FF00FF', '#00FFFF', '#FFA500', '#800080', '#008000',
-    '#808080', '#FFC0CB', '#A52A2A', '#800000', '#008080'
-  ];
-
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.colorPickerContainer}>
-          <Text style={styles.modalTitle}>เลือกสี</Text>
-          <View style={styles.colorGrid}>
-            {colors.map((color) => (
-              <TouchableOpacity
-                key={color}
-                style={[
-                  styles.colorOption,
-                  { backgroundColor: color },
-                  currentColor === color && styles.selectedColor
-                ]}
-                onPress={() => {
-                  onColorSelect(color);
-                  onClose();
-                }}
-              />
-            ))}
-          </View>
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <Text style={styles.modalCloseText}>ปิด</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-const LinkInputModal = ({
-  visible,
-  onClose,
-  url,
-  setUrl,
-  linkText,
-  setLinkText,
-  onSubmit
-}: {
-  visible: boolean;
-  onClose: () => void;
-  url: string;
-  setUrl: (url: string) => void;
-  linkText: string;
-  setLinkText: (text: string) => void;
-  onSubmit: () => void;
-}) => {
-  return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>Insert Link</Text>
-          <TextInput
-            placeholder="URL (https://example.com)"
-            value={url}
-            onChangeText={setUrl}
-            style={styles.input}
-          />
-          <TextInput
-            placeholder="Display Text (optional)"
-            value={linkText}
-            onChangeText={setLinkText}
-            style={styles.input}
-          />
-          <View style={styles.modalActions}>
-            <TouchableOpacity onPress={onClose}>
-              <Text style={{ color: 'red' }}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onSubmit}>
-              <Text style={{ color: 'blue',}}>Insert</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-// Input Modal Component
-const InputModal: React.FC<InputModalProps> = ({ 
-  visible, 
-  title, 
-  placeholder, 
-  onClose, 
-  onSubmit 
-}) => {
-  const [inputText, setInputText] = useState('');
-
-  const handleSubmit = () => {
-    if (inputText.trim()) {
-      onSubmit(inputText.trim());
-      setInputText('');
-      onClose();
-    }
-  };
-
-  const handleClose = () => {
-    setInputText('');
-    onClose();
-  };
-
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.modalOverlay}>
-        <View style={styles.inputModalContainer}>
-          <Text style={styles.modalTitle}>{title}</Text>
-          <TextInput
-            style={styles.modalInput}
-            placeholder={placeholder}
-            value={inputText}
-            onChangeText={setInputText}
-            autoFocus
-            onSubmitEditing={handleSubmit}
-          />
-          <View style={styles.modalButtons}>
-            <TouchableOpacity style={styles.modalCancelButton} onPress={handleClose}>
-              <Text style={styles.modalCancelText}>ยกเลิก</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.modalSubmitButton} onPress={handleSubmit}>
-              <Text style={styles.modalSubmitText}>ตกลง</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-const FontSizePicker: React.FC<FontSizePickerProps> = ({ 
-  visible, 
-  onClose, 
-  onSizeSelect, 
-  currentSize 
-}) => {
-  const fontSizes = [
-    { label: 'เล็ก', size: 12 },
-    { label: 'ปกติ', size: 16 },
-    { label: 'ใหญ่', size: 18 },
-    { label: 'ใหญ่มาก', size: 24 },
-    { label: 'หัวข้อ', size: 32 }
-  ];
-
-  return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.fontSizeContainer}>
-          <Text style={styles.modalTitle}>เลือกขนาดตัวอักษร</Text>
-          {fontSizes.map((item) => (
-            <TouchableOpacity
-              key={item.size}
-              style={[
-                styles.fontSizeOption,
-                currentSize === item.size && styles.selectedFontSize
-              ]}
-              onPress={() => {
-                onSizeSelect(item.size);
-                onClose();
-              }}
-            >
-              <Text style={[styles.fontSizeText, { fontSize: item.size }]}>
-                {item.label} ({item.size}px)
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <TouchableOpacity style={styles.modalCloseButton} onPress={onClose}>
-            <Text style={styles.modalCloseText}>ปิด</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
-// Enhanced Toolbar Button Component
-const ToolbarButton: React.FC<ToolbarButtonProps> = ({ 
-  title, 
-  isActive, 
-  onPress, 
-  style,
-  icon 
-}) => (
-  <TouchableOpacity
-    style={[
-      styles.toolbarButton,
-      isActive && styles.activeButton,
-      style
-    ]}
-    onPress={onPress}
-  >
-    <Text style={[
-      styles.toolbarButtonText,
-      isActive && styles.activeButtonText
-    ]}>
-      {icon || title}
-    </Text>
-  </TouchableOpacity>
-);
-
-
- //Rich Editor//
 
 const ThaiFormScreen = () => {
  
+      
 
-
-// Available fonts array
+  const [fontsLoaded] = useFonts({
+    'InterTight-Black': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+  });
 
     const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
     const [selfieError, setSelfieError] = useState(false);
-     
+    const [isFocused, setIsFocused] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -354,6 +90,7 @@ const [showEndDatePicker, setShowEndDatePicker] = useState(false);
     description: '',
     selectedOptions: [] as string[],
     attachments: 0,
+    details:''
   });
 
 
@@ -530,279 +267,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     fetchTravelStyles();
   }, []);
 
-  //Rich Editor
-  const [editorState, setEditorState] = useState<EditorState>({
-    content: '',
-    format: {
-      bold: false,
-      italic: false,
-      underline: false,
-      fontSize: 16,
-      textColor: '#000000',
-      backgroundColor: '#ffffff',
-      textAlign: 'left',
-      fontFamily: 'System', 
-    },
-    selectionStart: 0,
-    selectionEnd: 0,
-    images: [] // Add this to store image data
-  });
-  const [isFocused, setIsFocused] = useState(false);
-
-  const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showFontSizePicker, setShowFontSizePicker] = useState(false);
-  const [showUrlInput, setShowUrlInput] = useState(false);
-  const [showLinkTextInput, setShowLinkTextInput] = useState(false);
-  const [showLinkInputModal, setShowLinkInputModal] = useState(false);
-const [tempUrl, setTempUrl] = useState('');
-const [tempLinkText, setTempLinkText] = useState('');
-
-  const [showImageUrlInput, setShowImageUrlInput] = useState(false);
-  
-  const [textInputRef, setTextInputRef] = useState<TextInput | null>(null);
-  const [listCounter, setListCounter] = useState(1);
-  const [showFontDropdown, setShowFontDropdown] = useState(false);
-  const FontDropdown = () => (
-    <Modal
-      visible={showFontDropdown}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setShowFontDropdown(false)}
-    >
-      <TouchableOpacity 
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setShowFontDropdown(false)}
-      >
-        <View style={styles.fontDropdownContainer}>
-          <Text style={styles.dropdownTitle}>Select Font</Text>
-          <ScrollView style={styles.fontList}>
-            {fontFamilies.map((font) => (
-              <TouchableOpacity
-                key={font.value}
-                style={[
-                  styles.fontItem,
-                  editorState.format.fontFamily === font.value && styles.selectedFontItem
-                ]}
-                onPress={() => changeFontFamily(font.value)}
-              >
-                <Text 
-                  style={[
-                    styles.fontItemText,
-                    { fontFamily: font.value },
-                    editorState.format.fontFamily === font.value && styles.selectedFontText
-                  ]}
-                >
-                  {font.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-  const fontFamilies = [
-    { name: 'Default', value: 'System' },
-    { name: 'Arial', value: 'Arial' },
-    { name: 'Times New Roman', value: 'Times New Roman' },
-    { name: 'Helvetica', value: 'Helvetica' },
-    { name: 'Georgia', value: 'Georgia' },
-    { name: 'Verdana', value: 'Verdana' },
-    { name: 'Courier New', value: 'Courier New' },
-    { name: 'Trebuchet MS', value: 'Trebuchet MS' },
-    { name: 'Comic Sans MS', value: 'Comic Sans MS' },
-    { name: 'Impact', value: 'Impact' },
-  ];
-  const changeFontFamily = (fontFamily: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, fontFamily }
-    }));
-    setShowFontDropdown(false);
-  };  
-  // Format toggle functions
-  const toggleBold = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, bold: !prev.format.bold }
-    }));
-  };
-
-  const toggleItalic = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, italic: !prev.format.italic }
-    }));
-  };
-
-  const toggleUnderline = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, underline: !prev.format.underline }
-    }));
-  };
-
-  const changeTextAlign = () => {
-    const alignments: Array<'left' | 'center' | 'right' | 'justify'> = ['left', 'center', 'right', 'justify'];
-    const currentIndex = alignments.indexOf(editorState.format.textAlign);
-    const nextIndex = (currentIndex + 1) % alignments.length;
-    
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, textAlign: alignments[nextIndex] }
-    }));
-  };
-
-  // Enhanced list functions
-  const insertBulletList = () => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + '\n• ' + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-
-  const insertNumberedList = () => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `\n${listCounter}. ` + afterCursor;
-    
-    setListCounter(prev => prev + 1);
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-
-
-
-
-  const handleLinkSubmit = () => {
-    const url = tempUrl.trim();
-    const linkText = tempLinkText.trim() || tempUrl;
-  
-    if (!url) {
-      // You might show an alert/toast here: "URL is required"
-      return;
-    }
-  
-    const { selectionStart, content } = editorState;
-    const beforeCursor = content.substring(0, selectionStart);
-    const afterCursor = content.substring(selectionStart);
-    const markdownLink = `[${linkText}](${url})`;
-    const newContent = `${beforeCursor}${markdownLink}${afterCursor}`;
-  
-    setEditorState((prev) => ({
-      ...prev,
-      content: newContent,
-      selectionStart: selectionStart + markdownLink.length,
-      selectionEnd: selectionStart + markdownLink.length,
-    }));
-  
-    // Reset modal fields and close modal
-    setTempUrl('');
-    setTempLinkText('');
-    setShowLinkInputModal(false);
-  };
-  
-
-  // Insert link function - Web compatible
-  const insertLink = () => {
-    setShowLinkInputModal(true);
-  };
-
-  const handleUrlSubmit = (url: string) => {
-    setTempUrl(url);
-    setShowLinkTextInput(true);
-  };
-
-  const handleLinkTextSubmit = (linkText: string) => {
-    const displayText = linkText || tempUrl;
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `[${displayText}](${tempUrl})` + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-    setTempUrl('');
-  };
-
-  // Insert image function - Web compatible
-
-  const handleImageUrlSubmit = (imageUrl: string) => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `\n[รูปภาพ: ${imageUrl}]\n` + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-
-  const handleContentChange = (text: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      content: text,
-    }));
-  };
-
-  const handleSelectionChange = (event: any) => {
-    const { start, end } = event.nativeEvent.selection;
-    setEditorState(prev => ({
-      ...prev,
-      selectionStart: start,
-      selectionEnd: end
-    }));
-  };
-
-  const onColorSelect = (color: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, textColor: color }
-    }));
-  };
-
-  const onFontSizeSelect = (size: number) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, fontSize: size }
-    }));
-  };
-
-  // Dynamic text style based on format state
-  const getTextStyle = () => {
-    return {
-      fontWeight: editorState.format.bold ? 'bold' as 'bold' : 'normal' as 'normal',
-      fontStyle: editorState.format.italic ? 'italic' as 'italic' : 'normal' as 'normal',
-      textDecorationLine: editorState.format.underline ? 'underline' as 'underline' : 'none' as 'none',
-      fontSize: editorState.format.fontSize,
-      color: editorState.format.textColor,
-      textAlign: editorState.format.textAlign,
-      fontFamily: editorState.format.fontFamily === 'System' ? undefined : editorState.format.fontFamily,
-    };
-  };
-
-  // Clear formatting
- 
-
-
-
-  useEffect(() => {
-    console.log('Enhanced Thai Form Screen initialized');
-  }, []);
-//Rich Editor ///
-
   const formatDateInput = (text: string): string => {
     const cleaned = text.replace(/\D/g, '');
     
@@ -914,7 +378,7 @@ const [tempLinkText, setTempLinkText] = useState('');
         setSelected([...selected, dest]);
       }
       setDropdownOpen(false);
-      setSearchText(''); // Clear search when selecting
+      setSearchText(''); 
     }
     const filteredDestinations = destinations.filter(dest =>
       dest.toLowerCase().includes(searchText.toLowerCase())
@@ -948,14 +412,12 @@ const [tempLinkText, setTempLinkText] = useState('');
         if (!formData2.name || !formData.startDate || !formData.endDate || 
             selected.length === 0 || !maxParticipant || !pricePerPerson || 
             categories.length === 0) {
-          Alert.alert('Error', 'Please fill in all required fields');
           return;
         }
     
         setUploading(true);
         setResponseMessage(null);
-    
-        // Improved date formatting with validation
+  
         const formatDate = (dateStr: string): string => {
           try {
             let date: Date;
@@ -984,13 +446,13 @@ const [tempLinkText, setTempLinkText] = useState('');
         };
         
     
-        // Extract IDs from category objects
+     
         const travelStyleIds: string[] = categories.map((category: any) => category.id);
     
-        // Create FormData for multipart request (renamed to avoid conflict)
+ 
         const requestFormData = new FormData();
     
-        // Add all trip data to FormData
+      
         requestFormData.append('name', formData2.name.trim());
         
         try {
@@ -1001,51 +463,41 @@ const [tempLinkText, setTempLinkText] = useState('');
           return;
         }
         
-        // Add destinations - handle as JSON string or individual entries based on backend expectation
+     
         if (selected.length > 0) {
-          // Option 1: As JSON string (if backend expects JSON)
-          requestFormData.append('destinations', selected);
           
-          // Option 2: As individual entries (uncomment if backend expects this)
-          // selected.forEach((destination: string, index: number) => {
-          //   requestFormData.append(`destinations[${index}]`, destination);
-          // });
+          requestFormData.append('destinations', selected);
+         
         }
         
         requestFormData.append('maxParticipants', maxParticipant.toString());
         requestFormData.append('pricePerPerson', pricePerPerson.toString());
         
-        // Add included services
+      
         if (selectedServices.length > 0) {
-          // Option 1: As JSON string
+   
           requestFormData.append('includedServices', selectedServices);
           
-          // Option 2: As individual entries (uncomment if needed)
-          // selectedServices.forEach((service: string, index: number) => {
-          //   requestFormData.append(`includedServices[${index}]`, service);
-          // });
+     
+          
         }
         
-        requestFormData.append('detail', editorState.content || '');
-        
-        // Add travel styles
+        requestFormData.append('detail', formData.details || '');
+     
         if (travelStyleIds.length > 0) {
-          // Option 1: As JSON string
+         
           requestFormData.append('travelStyles', travelStyleIds);
           
-          // Option 2: As individual entries (uncomment if needed)
-          // travelStyleIds.forEach((styleId: string, index: number) => {
-          //   requestFormData.append(`travelStyles[${index}]`, styleId);
-          // });
+        
         }
         
         requestFormData.append('groupAtmosphere', formData.description || '');
         requestFormData.append('status', status);
         const userId=await AsyncStorage.getItem('userId')
-        // TEMPORARY: Add tripOwnerId for testing
+     
         requestFormData.append('tripOwnerId', userId);
     
-        // Improved image file handling
+    
         if (pickedFile2) {
           console.log("📷 Adding image to request...", {
             name: pickedFile2.name,
@@ -1055,12 +507,12 @@ const [tempLinkText, setTempLinkText] = useState('');
           
           try {
             if (pickedFile2.isBase64 && pickedFile2.base64Data) {
-              // Convert base64 to Blob
+          
               const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
               const blob = await response.blob();
               requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
             } else if (pickedFile2.uri) {
-              // For React Native, create proper file object
+          
               const fileObj = {
                 uri: pickedFile2.uri,
                 type: pickedFile2.type || 'image/jpeg',
@@ -1079,7 +531,7 @@ const [tempLinkText, setTempLinkText] = useState('');
     
         console.log("📤 Sending trip creation request...");
         
-        // Log FormData contents for debugging (remove in production)
+    
         console.log("📋 Request data summary:", {
           name: formData2.name,
           startDate: formData.startDate,
@@ -1093,35 +545,19 @@ const [tempLinkText, setTempLinkText] = useState('');
         });
         const accessToken = await AsyncStorage.getItem('googleAccessToken');
         const idToken = await AsyncStorage.getItem('googleIdToken');
-        // Send request using axios
+
         const response = await axiosInstance.post('/trips', requestFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
              Authorization: `Bearer ${idToken}`
           },
-          timeout: 60000, // Increased timeout to 60 seconds
+          timeout: 60000,
           maxContentLength: Infinity,
           maxBodyLength: Infinity,
         });
     
         console.log("✅ Trip created successfully:", response.data);
-        
-        setResponseMessage(`Success: Trip "${response.data.name}" created successfully!`);
-        Alert.alert(
-          'Success', 
-          `Trip "${response.data.name}" has been created successfully!`,
-          [
-            {
-              text: 'OK',
-              onPress: () => {
-                // Reset form after user acknowledges success
-                resetForm();
-                // Optionally navigate back
-                // navigation.goBack();
-              }
-            }
-          ]
-        );
+        router.push('/findTrips')
     
       } catch (error: unknown) {
         console.error('🔴 Trip creation error:', error);
@@ -1155,7 +591,7 @@ const [tempLinkText, setTempLinkText] = useState('');
         
         setResponseMessage(`Error: ${errorMessage}`);
         
-        // Show more detailed error in development
+       
         const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
         const displayMessage = isDevelopment && debugInfo 
           ? `${errorMessage}\n\n${debugInfo}` 
@@ -1172,7 +608,7 @@ const [tempLinkText, setTempLinkText] = useState('');
     };
     const insertImage2 = async () => {
       try {
-        // For React Native CLI
+    
         const options = {
           mediaType: 'photo',
           quality: 0.8,
@@ -1180,58 +616,14 @@ const [tempLinkText, setTempLinkText] = useState('');
           maxHeight: 1000,
         };
     
-        launchImageLibrary(options, (response) => {
-          if (response.assets && response.assets[0]) {
-            const imageUri = response.assets[0].uri;
-            insertImageIntoEditor(imageUri);
-          }
-        });
-    
-        // For Expo (alternative approach)
-        /*
-        const result = await ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 0.8,
-        });
-    
-        if (!result.canceled) {
-          insertImageIntoEditor(result.assets[0].uri);
-        }
-        */
+      
+      
       } catch (error) {
         console.error('Error picking image:', error);
       }
     };
     
-    const insertImageIntoEditor = (imageUri) => {
-      const { start, end } = editorState.selection;
-      const content = editorState.content;
-      
-      // Create image placeholder/marker in text
-      const imageMarker = `[IMAGE:${imageUri}]`;
-      
-      const newContent = 
-        content.slice(0, start) + 
-        imageMarker + 
-        content.slice(end);
-    
-      setEditorState(prev => ({
-        ...prev,
-        content: newContent,
-        images: [...(prev.images || []), { uri: imageUri, position: start }]
-      }));
-    
-      // Move cursor after inserted image
-      setTimeout(() => {
-        if (textInputRef) {
-          textInputRef.setNativeProps({
-            selection: { start: start + imageMarker.length, end: start + imageMarker.length }
-          });
-        }
-      }, 100);
-    };
+
 
     
   return (
@@ -1268,7 +660,7 @@ const [tempLinkText, setTempLinkText] = useState('');
                   <View style={styles.personIcon}>
                     <Image
                       source={require('../assets/images/images/image3.png')}
-                      style={{ height: 27, width: 27,tintColor:"#9CA3AF" }}
+                      style={{ height: 27, width: 27,tintColor:"#9CA3AF"}}
                       resizeMode="contain"
                     />
                   </View>
@@ -1303,13 +695,17 @@ const [tempLinkText, setTempLinkText] = useState('');
 
 
           {/* Date Fields */}
+          <Text style={{marginHorizontal:20,marginBottom:10, fontWeight: '500',
+    color: '#333',
+    fontFamily:'InterTight-Regular',
+    fontSize:16}}>วันที่เริ่มต้น</Text>
           <View style={styles.dateContainer}>
-  <View style={styles.dateField}>
-    <Text style={styles.dateLabel}>วันที่เริ่มต้น</Text>
+
+          <Image source={require('../assets/images/images/image25.png')} style={{width:14,height:16,marginHorizontal:10}}/>
     <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
+      
       <TextInput
         style={[
-          styles.dateInput,
           formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
         ]}
         value={formData.startDate}
@@ -1325,14 +721,11 @@ const [tempLinkText, setTempLinkText] = useState('');
         pointerEvents="none"
       />
     </TouchableOpacity>
-  </View>
-  
-  <View style={styles.dateField}>
-    <Text style={styles.dateLabel}>วันที่สิ้นสุด</Text>
+     <Text style={{marginRight:40,marginLeft:-20,fontSize:20,fontWeight:'500'}}>-</Text>
     <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
       <TextInput
         style={[
-          styles.dateInput,
+         
           formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
         ]}
         value={formData.endDate}
@@ -1348,7 +741,7 @@ const [tempLinkText, setTempLinkText] = useState('');
         pointerEvents="none"
       />
     </TouchableOpacity>
-  </View>
+
 
   {/* Start Date Calendar Modal */}
   <Modal
@@ -1424,36 +817,36 @@ const [tempLinkText, setTempLinkText] = useState('');
   </Modal>
 </View>
 {/* Max Participants */}
-      <Text style={{marginLeft:2,marginBottom:6}}>จํานวนคน
-      </Text>
-     <View style={styles.dateContainer}>
-
-    
-     <View style={{flex:0.40,flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:40,paddingHorizontal:4,borderRadius:8}}>
+      <Text style={{marginHorizontal:20,marginBottom:6, fontWeight: '500',
+    color: '#333',
+    fontFamily:'InterTight-Regular',
+    fontSize:16}}>จํานวนคน</Text>
+  
+     <View style={{width:'45%',flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:40,paddingHorizontal:4,borderRadius:8,marginHorizontal:20,marginBottom:20}}>
      <Image
-        source={require('../assets/images/images/image11.png')} // Replace with your image path
-        style={{height:16,width:16,marginHorizontal:3}}
+        source={require('../assets/images/images/image11.png')} 
+        style={{height:16,width:16,marginHorizontal:3,}}
         resizeMode="contain"
       />
-      <TextInput style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'white',backgroundColor:'#F9FAFBFF'}}
+      <TextInput style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'white',backgroundColor:'#F9FAFBFF',flex:0.45}}
       placeholder=''
       value={maxParticipant!=''?maxParticipant.toString():''}
       onChangeText={handleMaxParticipant}
       keyboardType='numeric'
       />
-      <Text style={{marginLeft:3}}>คน</Text>
+      <Text style={{marginLeft:3,flex:0.2, fontFamily:'InterTight-Regular'}}>คน</Text>
      </View>
-     </View>
+    
     {/* Price Per Person */}
-    <Text style={{marginLeft:2,marginBottom:6}}>ราคาต่อคน
+    <Text style={{marginHorizontal:20,marginBottom:6,fontWeight: '500', color: '#333', fontFamily:'InterTight-Regular',fontSize:16}}>ราคาต่อคน
     </Text>
-     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:45,borderRadius:8,justifyContent:'space-between',marginBottom:30}}>
+     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:45,borderRadius:8,justifyContent:'space-between',marginBottom:30,marginHorizontal:20}}>
      <Image
-        source={require('../assets/images/images/image12.png')} // Replace with your image path
+        source={require('../assets/images/images/image12.png')} 
         style={{height:16,width:16,marginHorizontal:3}}
         resizeMode="contain"
       />
-      <Text style={{marginLeft:5,marginRight:10,width:100}}>ราคาต่อคน
+      <Text style={{marginLeft:5,marginRight:10,width:'100%',fontWeight: '500', color: '#333', fontFamily:'InterTight-Regular',fontSize:16}}>ราคาต่อคน
       </Text>
        <TextInput style={{width:'100%',height:'70%',paddingHorizontal:5,outlineColor:'#e0e0e0'}}
       placeholder=''
@@ -1461,7 +854,7 @@ const [tempLinkText, setTempLinkText] = useState('');
       onChangeText={handlepricePerPerson}
       keyboardType='numeric'
       />
-      <Text style={{marginHorizontal:5}}>คน</Text>
+      <Text style={{marginHorizontal:5,fontWeight: '500', color: '#333', fontFamily:'InterTight-Regular',fontSize:16}}>คน</Text>
      </View>
 
 
@@ -1472,7 +865,8 @@ const [tempLinkText, setTempLinkText] = useState('');
 
   <View style={styles.checkboxContainer}>
   {services.map(service => (
-  <View key={service.id} style={styles.checkboxRow}>
+    
+  <TouchableOpacity key={service.id} style={styles.checkboxRow} onPress={() => toggleServiceCheckbox(service.id)}>
     <TouchableOpacity
       style={styles.checkbox}
       onPress={() => toggleServiceCheckbox(service.id)}
@@ -1485,7 +879,7 @@ const [tempLinkText, setTempLinkText] = useState('');
       />
     </TouchableOpacity>
     <Text style={styles.checkboxText}>{service.title}</Text>
-  </View>
+  </TouchableOpacity>
 ))}
 
   </View>
@@ -1597,8 +991,8 @@ const [tempLinkText, setTempLinkText] = useState('');
 
   {dropdownOpen && (
     <View style={{
-      position: 'absolute', // Position absolutely to avoid pushing content down
-      top: 55, // Position just below the input (50px height + 5px margin)
+      position: 'absolute', 
+      top: 55, 
       left: 0,
       right: 0,
       backgroundColor: '#FFFFFF',
@@ -1606,8 +1000,8 @@ const [tempLinkText, setTempLinkText] = useState('');
       borderColor: '#999',
       borderRadius: 6,
       maxHeight: 200,
-      zIndex: 1001, // Higher z-index than parent
-      shadowColor: '#000', // Add shadow for better visibility
+      zIndex: 1001, 
+      shadowColor: '#000',
       shadowOffset: {
         width: 0,
         height: 2,
@@ -1691,187 +1085,60 @@ const [tempLinkText, setTempLinkText] = useState('');
 </View>
 
 
-       {/* Description Field */}
-       <View style={{marginBottom:20,marginTop:-20}}>
-            <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
-            <TextInput
-              style={styles.textArea}
-              multiline
-              numberOfLines={4}
-              value={formData.description}
-              onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-              placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
-            />
-          </View>
-      {/*RIch Editor */}
+       {/* Group Atmosphere Field */}
+<View style={{marginBottom:20,marginTop:-20}}>
+  <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
+  <View style={{position:'relative'}}>
+    <TextInput
+      style={styles.textArea}
+      multiline
+      numberOfLines={4}
+      value={formData.description}
+      onChangeText={(text) => {
+        const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+        if (words.length <= 100) {
+          setFormData(prev => ({ ...prev, description: text }));
+        }
+      }}
+      placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
+    />
+    <Text style={styles.wordCountText}>
+      {formData.description.trim().split(/\s+/).filter(word => word.length > 0).length}/100
+    </Text>
+  </View>
+</View>
+      
       <View style={styles.container3}>
       {/* Header */}
     
         <Text style={styles.label}>รายละเอียดทั่วไป</Text>
-       
-      
-      {/* Toolbar - Only tools from image */}
-      <View style={styles.toolbar}>
-        {/* Font Size Dropdown */}
-        <TouchableOpacity
-  style={styles.toolButton}
-  onPress={() => setShowFontDropdown(true)}
->
-  <Text style={styles.fontButtonText}>Font</Text>
-</TouchableOpacity>
-
-<FontDropdown />
-        {/* Format Buttons */}
-        <ToolbarButton
-          title="B"
-          isActive={editorState.format.bold}
-          onPress={toggleBold}
-          style={styles.formatButton}
-        />
-        
-        <ToolbarButton
-          title="I"
-          isActive={editorState.format.italic}
-          onPress={toggleItalic}
-          style={[styles.formatButton, styles.italicButton]}
-        />
-        
-        <ToolbarButton
-          title="U"
-          isActive={editorState.format.underline}
-          onPress={toggleUnderline}
-          style={[styles.formatButton, styles.underlineButton]}
-        />
-        
-        {/* Numbered List */}
-        <ToolbarButton
-          title="1."
-          isActive={false}
-          onPress={insertNumberedList}
-          style={styles.listButton}
-        />
-        
-        {/* Bullet List */}
-        <ToolbarButton
-          title="•"
-          isActive={false}
-          onPress={insertBulletList}
-          style={styles.listButton}
-        />
-        
-        {/* Text Alignment */}
-        <TouchableOpacity
-          style={styles.toolButton}
-          onPress={changeTextAlign}
-        >
-          <Text style={styles.alignmentIcon}>≡</Text>
-        </TouchableOpacity>
-        
-        {/* Link Button */}
-        <TouchableOpacity
-          style={styles.toolButton}
-          onPress={insertLink}
-        >
-          <Text style={styles.toolButtonText}>🔗</Text>
-        </TouchableOpacity>
-        
-        {/* Image Button */}
-        <TouchableOpacity
-          style={styles.toolButton}
-          onPress={insertImage2}
-        >
-          <Text style={styles.toolButtonText}>🖼️</Text>
-        </TouchableOpacity>
-        
-        {/* Text Format (Tx) */}
-        <TouchableOpacity
-          style={styles.toolButton}
-          onPress={() => setShowColorPicker(true)}
-        >
-          <Text style={styles.textFormatIcon}>T</Text>
-          <Text style={styles.textFormatX}>×</Text>
-        </TouchableOpacity>
-        
-      </View>
+     
       
       {/* Text Editor */}
-      <ScrollView style={styles.editorContainer}>
         <TextInput
-          ref={(ref) => setTextInputRef(ref)}
-          style={[styles.textEditor, getTextStyle()]}
-          multiline={true}
-          placeholder="เขียนรายละเอียดทั่วไปของคุณ..."
-          placeholderTextColor="#999"
-          value={editorState.content}
-          onChangeText={handleContentChange}
-          onSelectionChange={handleSelectionChange}
-          textAlignVertical="top"
+        style={styles.textArea}
+        multiline
+        numberOfLines={4}
+        value={formData.details}
+        onChangeText={(text)=>setFormData(prev=>({...prev,details:text}))}
+        placeholder='เขียนรายละเอียดทริปของคุณ...'
+        
         />
-      </ScrollView>
+   
 
-       {/*Link MOdal */}
+ 
 
-       <LinkInputModal
-    visible={showLinkInputModal}
-    onClose={() => {
-      setShowLinkInputModal(false);
-      setTempUrl('');
-      setTempLinkText('');
-    }}
-    url={tempUrl}
-    setUrl={setTempUrl}
-    linkText={tempLinkText}
-    setLinkText={setTempLinkText}
-    onSubmit={handleLinkSubmit}
-  />
+   
 
-      {/* Input Modals */}
-      <InputModal
-        visible={showUrlInput}
-        title="เพิ่มลิงก์"
-        placeholder="กรุณาใส่ URL (เช่น https://example.com)"
-        onClose={() => setShowUrlInput(false)}
-        onSubmit={handleUrlSubmit}
-      />
 
-      <InputModal
-        visible={showLinkTextInput}
-        title="ข้อความลิงก์"
-        placeholder="กรุณาใส่ข้อความที่จะแสดง"
-        onClose={() => {
-          setShowLinkTextInput(false);
-          setTempUrl('');
-        }}
-        onSubmit={handleLinkTextSubmit}
-      />
 
-      <InputModal
-        visible={showImageUrlInput}
-        title="เพิ่มรูปภาพ"
-        placeholder="กรุณาใส่ URL ของรูปภาพ"
-        onClose={() => setShowImageUrlInput(false)}
-        onSubmit={handleImageUrlSubmit}
-      />
 
-      {/* Color and Font Size Modals */}
-      <ColorPicker
-        visible={showColorPicker}
-        onClose={() => setShowColorPicker(false)}
-        onColorSelect={onColorSelect}
-        currentColor={editorState.format.textColor}
-      />
-
-      <FontSizePicker
-        visible={showFontSizePicker}
-        onClose={() => setShowFontSizePicker(false)}
-        onSizeSelect={onFontSizeSelect}
-        currentSize={editorState.format.fontSize}
-      />
+  
     </View>
          </View>
         
       
-     <view style={{marginLeft:20,marginRight:20}}>
+     <View style={{marginLeft:20,marginRight:20}}>
       <Text style={{fontWeight:600,}}>ตัวอย่างโพสต์
       </Text>
      <View style={styles.card}>
@@ -1926,13 +1193,11 @@ const [tempLinkText, setTempLinkText] = useState('');
 
     {/* Description */}
     {formData.description && (
-      <Text style={styles.description}>{formData.description}</Text>
+      <Text style={styles.description} numberOfLines={1} ellipsizeMode='tail'>{formData.description}</Text>
     )}
 
-    {/* Editor Content */}
-    {editorState.content && (
-      <Text style={styles.description}>{editorState.content}</Text>
-    )}
+    
+  
 
     {/* Services Tags */}
     <View style={styles.tagsContainer2}>
@@ -1969,8 +1234,7 @@ const [tempLinkText, setTempLinkText] = useState('');
 
 
     
-        <view>
-        </view>
+     
         <View style={styles.checkboxContainer}>
         <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
           <View style={[styles.checkbox, isChecked && styles.checked]}>
@@ -1982,8 +1246,8 @@ const [tempLinkText, setTempLinkText] = useState('');
           <Text style={styles.linkText}>นโยบายและข้อตกลง</Text>
           ของแอปพลิเคชัน
         </Text>
-      </View>  {/* New line */}
-     </view>
+      </View>  
+     </View>
 
       </ScrollView>
 
@@ -2000,7 +1264,7 @@ const [tempLinkText, setTempLinkText] = useState('');
 
       {/* Submit Button 2 */}
       <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.submitButton} onPress={()=>create("published")}>
+        <TouchableOpacity style={[styles.submitButton,!isChecked && styles.disabledButton]} onPress={isChecked?()=>create("published"):undefined} disabled={!isChecked}>
         
           {/*   <Ionicons name="send" size={20} color="#fff" /> */}
           <Text style={styles.submitText}>โอเคดีงาม</Text>
@@ -2032,11 +1296,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily:'Inter_500Medium',
     color: '#1F2937',
     flex: 1,
     textAlign: 'center',
-
+    fontWeight:700,
+    fontFamily:'InterTight-Black',
     marginLeft:-20
   },
   content: {
@@ -2070,27 +1334,35 @@ const styles = StyleSheet.create({
   },
   fieldContainer: {
     marginBottom: 20,
+    marginHorizontal:20
   },
   label: {
     fontWeight: '500',
     color: '#333',
-    marginBottom:4
+    marginBottom:4,
+    fontFamily:'InterTight-Regular',
+    fontSize:16
   },
   requiredText: {
     fontSize: 12,
     color: '#666',
     marginBottom: 8,
   },
+  disabledButton: {
+    opacity: 0.5, 
+    backgroundColor: '#4285f4', 
+  },
   textInput: {
     borderWidth:1,
     borderColor: '#e0e0e0',
-   
+    marginTop:5,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#fff',
-    fontWeight:"600"
+    fontWeight:500,
+    fontFamily:'InterTight-SemiBold'
   },
   textInputFocused: {
     borderColor: 'transparent',
@@ -2101,6 +1373,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    height:50,
+    marginHorizontal:20,
+    alignItems:'center'
   },
   dateField: {
     flex: 0.48,
@@ -2112,8 +1390,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   dateInput: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
@@ -2184,6 +1460,7 @@ const styles = StyleSheet.create({
   },
   checkboxSection: {
     marginBottom: 30,
+    marginHorizontal:20
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -2300,11 +1577,12 @@ const styles = StyleSheet.create({
     minHeight: 270,
     backgroundColor:'#E5E7EB',
     verticalAlign:'middle',
-    marginBottom:12
+    marginBottom:30,
+    justifyContent:'center',
+    marginHorizontal:20
 
   },
   uploadPlaceholder: {
-    marginTop:46,
     alignItems: 'center',
     verticalAlign:'middle'
   },
@@ -2319,7 +1597,7 @@ const styles = StyleSheet.create({
     borderRadius: 9999,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 5,
+   
   },
   uploadText: {
     fontSize: 14,
@@ -2336,11 +1614,11 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   uploadSubtext: {
-    fontSize: 12,
-    fontFamily:'Inter_400Regular',
+    fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: 12,
+    fontFamily:'InterTight-Regular',
   },
   title: {
     fontSize: 16,
@@ -3045,7 +2323,17 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     marginTop: 8,
   },
-  
+  wordCountText: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
 });
 
 export default ThaiFormScreen;

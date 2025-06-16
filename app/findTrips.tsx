@@ -16,7 +16,7 @@ import {Stack,useRouter} from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {requirements}  from './requirement'
 import axios from 'axios'
-
+import {useFonts} from 'expo-font'
 
 
 interface TravelStyle {
@@ -109,8 +109,8 @@ const getOwnerInfo = (tripOwner: TripOwner | null | undefined) => {
     profileImageUrl: tripOwner.profileImageUrl && tripOwner.profileImageUrl !== 'N/A' 
       ? tripOwner.profileImageUrl 
       : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
-    displayName: tripOwner.nickname && tripOwner.nickname !== 'N/A' 
-      ? tripOwner.nickname 
+    displayName: tripOwner.fullname && tripOwner.fullname !== 'N/A' 
+      ? tripOwner.fullname 
       : tripOwner.fullname || 'ไม่ระบุชื่อ',
     age: tripOwner.age && tripOwner.age > 0 ? `${tripOwner.age} ปี` : 'ไม่ระบุอายุ'
   };
@@ -130,6 +130,11 @@ const FindTripScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedTripIds, setBookmarkedTripIds] = useState<string[]>([]);
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+  });
   
 
   const router=useRouter()
@@ -409,8 +414,6 @@ const FindTripScreen: React.FC = () => {
   const handleTripPress = async (trip: Trip): Promise<void> => {
     console.log('Trip pressed:', trip.id);
     
-    // Show loading indicator
-    Alert.alert('กำลังโหลด...', 'กำลังดึงรายละเอียดทริป', [], { cancelable: false });
     
     try {
       const tripDetail = await fetchTripDetail(trip.id);
@@ -649,6 +652,12 @@ ${tripDetail.includedServices.length > 0 ?
       <Text style={styles.tripCountText}>
       พบ {displayedTrips.length} ทริป
       </Text>
+      <View style={{flex:0.1,backgroundColor:'#E5E7EB',justifyContent:'center',alignItems:'center',width:32,height:34,borderRadius:6}}>
+            <Image source={require('../assets/images/images/image29.png')} style={{width:16,height:16}}/>
+      </View>
+      <View style={{flex:0.1,backgroundColor:'#FFFFFF',justifyContent:'center',alignItems:'center',width:34,height:34,borderRadius:6,borderWidth:1,borderColor:'#E5E7EB',marginLeft:5}}>
+            <Image source={require('../assets/images/images/image30.png')} style={{width:16,height:20}}/>
+      </View>
     </View>
   );
   const renderSearchBar = () => (
@@ -660,7 +669,7 @@ ${tripDetail.includedServices.length > 0 ?
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="ค้นหาชื่อทริป..."
+          placeholder="ค้นหาจุดหมายปลายทาง หรือ สไตล์เที่ยว"
           placeholderTextColor="#999"
           value={searchQuery}
           onChangeText={handleSearchChange}
@@ -747,7 +756,7 @@ ${tripDetail.includedServices.length > 0 ?
   style={{
     flex: 0.1,
     alignItems: 'flex-end',
-    justifyContent: 'center', // This ensures the content (image) is centered.
+    justifyContent: 'center', 
     backgroundColor: '#E5E7EB',
     borderRadius: 9999,
     height: 40,
@@ -872,7 +881,7 @@ ${tripDetail.includedServices.length > 0 ?
     <Stack.Screen options={{ headerShown: false }} />
     
     {/* Header */}
-    <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white'}}>
+    <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white',marginLeft:16,marginRight:16}}>
       <Text style={styles.headerTitle}>หาเพื่อนเที่ยว</Text>
       <Image 
         source={require('../assets/images/images/image16.png')} 
@@ -880,7 +889,7 @@ ${tripDetail.includedServices.length > 0 ?
       />
       <Image 
         source={require('../assets/images/images/image17.png')} 
-        style={{width:15.75,height:18,flex:0.05,marginHorizontal:15}} 
+        style={{width:15.75,height:18,flex:0.05,marginLeft:10}} 
       />
     </View>
 
@@ -927,38 +936,38 @@ ${tripDetail.includedServices.length > 0 ?
     {renderFloatingButton()}
 
     {/* Bottom Navigation */}
-    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',paddingVertical:10}}>
+    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',paddingVertical:10,borderTopWidth:1,borderTopColor:'#E5E7EB'}}>
       <View style={{ alignItems: 'center'}}>
         <Image 
           source={require('../assets/images/images/image18.png')} 
-          style={{ width: 24, height: 24}} 
+          style={{ width: 24, height: 24,marginBottom:10}} 
         />
-        <Text style={{fontSize: 12 }}>หน้าหลัก</Text>
+        <Text style={{fontSize: 12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline' }}>หน้าหลัก</Text>
       </View>
       <View style={{alignItems:'center'}}>
         <Image 
           source={require('../assets/images/images/image19.png')} 
-          style={{ width: 24, height: 24}} 
+          style={{ width: 24, height: 24,marginBottom:10,tintColor:'#29C4AF'}} 
         />
-        <Text style={{fontSize:12}}>ค้นหา</Text>
+        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#29C4AF',alignItems:'baseline'}}>ค้นหา</Text>
       </View>
    <TouchableOpacity onPress={handlesavedTrips}>
    <View style={{alignItems:'center'}}>
         <Image 
           source={require('../assets/images/images/image21.png')} 
-          style={{   height: 20, 
+          style={{   height: 20, marginBottom:10,
             width: 15,}} 
         />
-        <Text style={{fontSize:12}}>บันทึก</Text>
+        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline'}}>บันทึก</Text>
       </View>
    </TouchableOpacity>
      <TouchableOpacity onPress={handleProfile}>
      <View style={{alignItems:'center'}}>
         <Image 
           source={require('../assets/images/images/image20.png')} 
-          style={{width: 24, height: 24 }} 
+          style={{width: 24, height: 24 ,marginBottom:10}} 
         />
-        <Text style={{fontSize:12}}>โปรไฟล์</Text>
+        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline'}}>โปรไฟล์</Text>
       </View>
      </TouchableOpacity>
     </View>
@@ -969,7 +978,7 @@ ${tripDetail.includedServices.length > 0 ?
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: 'white',
   },
   headerTitle: {
     flex:0.9,
@@ -977,9 +986,9 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     textAlign: 'left',
     paddingVertical: 16,
-    marginLeft:10,
-    fontFamily: 'Inter',
-    fontWeight:500
+    fontWeight:500,
+    lineHeight:18,
+    fontFamily:'InterTight-SemiBold',
   },
   scrollView: {
     flex: 1,
@@ -1036,12 +1045,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#FFFFFFE5',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    height:24,
+    borderWidth:1,
+    borderColor:'#E5E7EB'
   },
   dateIcon: {
     fontSize: 14,
@@ -1050,18 +1062,20 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#333',
+    color: '#1F2937',
+    fontFamily:'InterTight-SemiBold'
   },
   participantBadge: {
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: '#6366f1',
+    backgroundColor: '#4F46E5E5',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: 8,
     flexDirection: 'row',
     alignItems: 'center',
+    height:24
   },
   participantIcon: {
     fontSize: 14,
@@ -1070,7 +1084,8 @@ const styles = StyleSheet.create({
   participantText: {
     fontSize: 12,
     fontWeight: '500',
-    color: 'white',
+    color: '#FFFFFF',
+    fontFamily:'InterTight-SemiBold'
   },
   statusBadge: {
     position: 'absolute',
@@ -1091,8 +1106,10 @@ const styles = StyleSheet.create({
   },
   tripName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    lineHeight:18,
+    fontFamily:'InterTight-SemiBold',
+    fontWeight: 500,
+    color: '#1F2937',
     marginBottom: 8,
   },
   destinationRow: {
@@ -1111,13 +1128,18 @@ const styles = StyleSheet.create({
   },
   destinationText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#4B5563',
+    fontWeight:400,
+    lineHeight:14,
+    fontFamily:'InterTight-Regular'
   },
   description: {
     fontSize: 14,
-    color: '#4b5563',
+    color: '#4B5563',
     lineHeight: 20,
     marginBottom: 8,
+    fontWeight:400,
+    fontFamily:'InterTight-Regular'
   },
   atmosphere: {
     fontSize: 14,
@@ -1125,6 +1147,7 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: 20,
     marginBottom: 8,
+    fontFamily:'InterTight-Regular'
   },
   priceContainer: {
     flexDirection: 'row',
@@ -1133,6 +1156,7 @@ const styles = StyleSheet.create({
   },
   priceLabel: {
     fontSize: 14,
+    fontFamily:'InterTight-Regular',
     color: '#6b7280',
     marginRight: 8,
   },
@@ -1140,6 +1164,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#059669',
+    fontFamily:'InterTight-Regular'
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -1147,17 +1172,19 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   serviceTag: {
-    backgroundColor: '#dbeafe',
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 16,
+    borderRadius: 6,
     marginRight: 8,
     marginBottom: 4,
+    height:24
   },
   serviceTagText: {
-    color: '#2563eb',
+    color: '#2563EB',
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '400',
+   fontFamily:'InterTight-Regular'
   },
   bottomRow: {
     flexDirection: 'row',
@@ -1181,12 +1208,14 @@ const styles = StyleSheet.create({
   },
   ownerName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontWeight: '500',
+    color: '#1F2937',
+    fontFamily:'InterTight-SemiBold',
   },
   ownerAge: {
     fontSize: 12,
     color: '#6b7280',
+    fontFamily:'InterTight-SemiBold',
   },
   joinButton: {
     backgroundColor: '#29C4AF',
@@ -1196,9 +1225,11 @@ const styles = StyleSheet.create({
     color:'#FFFFFF'
   },
   joinButtonText: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+    fontFamily:'InterTight-Regular'
+
   },
   participantsInfo: {
     alignItems: 'center',
@@ -1206,12 +1237,13 @@ const styles = StyleSheet.create({
   participantsText: {
     fontSize: 12,
     color: '#6b7280',
+    fontFamily:'InterTight-SemiBold',
   },
   categoriesContainer: {
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    backgroundColor:'#FFFFFF'
+    backgroundColor:'#FFFFFF',
   },
   categoriesScrollContent: {
     paddingHorizontal: 16,
@@ -1223,12 +1255,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 9999,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#D1D5DB',
     color:'#374151',
     gap: 8,
+    height:34,
   },
   categoryItemActive: {
     backgroundColor: '#29C4AF',
@@ -1244,8 +1277,10 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#6c757d',
+    fontWeight: '400',
+    color: '#374151',
+    fontFamily:'InterTight-SemiBold',
+    
   },
   categoryTextActive: {
     color: '#ffffff',
@@ -1258,7 +1293,7 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 44,
@@ -1274,9 +1309,11 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: '#ADAEBC',
     paddingVertical: 0,
-    outlineColor:'#f5f5f5'
+    outlineColor:'#f5f5f5',
+    lineHeight:24,
+    fontFamily:'InterTight-Regular'
   },
   clearButton: {
     padding: 4,
@@ -1319,12 +1356,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#fff',
-    flexDirection:'row'
+    flexDirection:'row',
+    alignItems:'center'
   },
   tripCountText: {
     fontSize: 14,
-    color: '#666',
-    fontWeight: '600',
+    flex:0.8,
+    color: '#1F2937',
+    fontFamily:'InterTight-SemiBold'
   },
 });
 
