@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginBottom: 4,
-      fontFamily:'InterTight-Regular'
+    fontFamily:'InterTight-Regular'
   },
   destinationRow: {
     flexDirection: 'row',
@@ -384,11 +384,13 @@ const styles = StyleSheet.create({
   locationIcon: {
     fontSize: 14,
     marginRight: 4,
+    fontFamily:'InterTight-Regular'
   },
   destinationText: {
     fontSize: 14,
     color: '#666',
     flex: 1,
+    fontFamily:'InterTight-Regular'
   },
   bookmarkButton: {
     padding: 4,
@@ -411,6 +413,8 @@ const styles = StyleSheet.create({
     color: '#555',
     lineHeight: 20,
     flex: 1,
+      fontFamily:'InterTight-Regular',
+      fontStyle:'italic'
   },
   expandButton: {
     marginLeft: 4,
@@ -420,12 +424,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#007AFF',
     fontWeight: '500',
+      fontFamily:'InterTight-Regular'
   },
   description: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
     marginBottom: 12,
+      fontFamily:'InterTight-Regular'
   },
   priceContainer: {
     flexDirection: 'row',
@@ -436,11 +442,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginRight: 8,
+      fontFamily:'InterTight-Regular'
   },
   priceValue: {
     fontSize: 16,
     fontWeight: 'bold',
     color: '#29C4AF',
+      fontFamily:'InterTight-Regular'
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -459,6 +467,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#1976D2',
     fontWeight: '500',
+      fontFamily:'InterTight-Regular'
   },
   bottomRow: {
     flexDirection: 'row',
@@ -485,11 +494,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#333',
+      fontFamily:'InterTight-Regular'
   },
   ownerAge: {
     fontSize: 12,
     color: '#666',
     marginTop: 2,
+      fontFamily:'InterTight-Regular'
   },
   joinButton: {
     backgroundColor: '#29C4AF',
@@ -500,7 +511,8 @@ const styles = StyleSheet.create({
   joinButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+    fontFamily:'InterTight-Regular'
   },
   participantsInfo: {
     borderTopWidth: 1,
@@ -522,6 +534,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#666',
     textAlign: 'center',
+      fontFamily:'InterTight-Regular'
   },
 });
 
