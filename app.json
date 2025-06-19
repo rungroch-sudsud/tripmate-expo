@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "tripmate-expo3",
-    "slug": "tripmate-expo3",
+    "name": "tripmate",
+    "slug": "tripmate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "tripmateexpo3",
+    "scheme": "tripmate",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -33,6 +33,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "8afd5c98-c61d-4c63-8a9a-094bd43bc60d"
+      }
     }
   }
 }
