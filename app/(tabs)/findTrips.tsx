@@ -18,7 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {requirements}  from '../requirement'
 import axios from 'axios'
 import {useFonts} from 'expo-font'
-
+import TripCard from './TripCard'
 
 interface TravelStyle {
   id: string;
@@ -426,60 +426,7 @@ const FindTripScreen: React.FC = () => {
     setDisplayedTrips(searchResults);
   };
   const handleTripPress = async (trip: Trip): Promise<void> => {
-    console.log('Trip pressed:', trip.id);
-    
-    
-    try {
-      const tripDetail = await fetchTripDetail(trip.id);
-      
-      if (tripDetail) {
-        // Dismiss loading alert
-        Alert.alert('', '', [], { cancelable: true });
-        
-        // Format trip details for display
-        const ownerInfo = getOwnerInfo(tripDetail.tripOwner);
-        const formattedDate = formatDateRange(tripDetail.startDate, tripDetail.endDate);
-        
-        const tripDetailsMessage = `
-🌟 ${tripDetail.name}
-
-📅 วันที่: ${formattedDate}
-📍 จุดหมาย: ${tripDetail.destinations.join(', ')}
-👥 ผู้เข้าร่วม: ${tripDetail.participants.length}/${tripDetail.maxParticipants} คน
-💰 ราคา: ${tripDetail.pricePerPerson.toLocaleString()} ฿/คน
-
-👤 เจ้าของทริป: ${ownerInfo.displayName} (${ownerInfo.age})
-
-📝 รายละเอียด:
-${tripDetail.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}
-
-🎯 บรรยากาศกลุ่ม:
-${tripDetail.groupAtmosphere || 'ไม่ระบุ'}
-
-${tripDetail.includedServices.length > 0 ? 
-  `🎯 บริการที่รวม:\n${tripDetail.includedServices.map(service => `• ${service}`).join('\n')}` : 
-  ''}
-        `.trim();
-
-        Alert.alert(
-          'รายละเอียดทริป',
-          tripDetailsMessage,
-          [
-            {
-              text: 'ปิด',
-              style: 'cancel'
-            },
-            {
-              text: 'สนใจเข้าร่วม',
-              onPress: () => handleJoinTrip(tripDetail)
-            }
-          ]
-        );
-      }
-    } catch (error) {
-      // Dismiss loading alert and show error
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถโหลดรายละเอียดทริปได้');
-    }
+    console.log('Trip pressed:', trip);
   };
 
   const handleTravelStylePress = (styleId: string): void => {
@@ -701,174 +648,7 @@ ${tripDetail.includedServices.length > 0 ?
     </View>
   );
 
-  const renderTripCard = (trip: Trip) => {
-    const ownerInfo = getOwnerInfo(trip.tripOwner);
 
-
-
-
-    return (
-      <TouchableOpacity
-        key={trip.id}
-        style={styles.card}
-        onPress={() => handleTripPress(trip)}
-      >
-        {/* Header Image Container */}
-        <View style={styles.imageContainer}>
-          {trip.tripCoverImageUrl ? (
-            <Image
-              source={{ uri: trip.tripCoverImageUrl }}
-              style={styles.backgroundImage}
-            />
-          ) : (
-            <View style={styles.placeholderImage} />
-          )}
-          
-          {/* Date Badge - Top Left */}
-          <View style={styles.dateBadge}>
-            <Image source={require('../assets/images/images/images/image25.png')} style={{width:10.5,height:12,marginRight:10}}/ >
-            <Text style={styles.dateText}>
-              {formatDateRange(trip.startDate, trip.endDate)}
-            </Text>
-          </View>
-          
-          {/* Max Participant Badge - Top Right */}
-          <View style={styles.participantBadge}>
-          <Image source={require('../assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:10}}/ >
-            <Text style={styles.participantText}>
-              ต้องการ {trip.maxParticipants} คน
-            </Text>
-          </View>
-        </View>
-
-        {/* Content Below Image */}
-        <View style={styles.content}>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
-  {/* Left Side: Trip Info */}
-  <View style={{ flex: 0.9 }}>
-    {/* Trip Name */}
-    <Text style={styles.tripName}>{trip.name}</Text>
-
-    {/* Destinations */}
-    {trip.destinations.length > 0 && (
-      <View style={styles.destinationRow}>
-        <Image 
-          source={require('../assets/images/images/images/image24.png')} 
-          style={{ width: 10.5, height: 14, marginRight: 10 }} 
-        />
-        <View style={styles.destinationContainer}>
-          <Text style={styles.destinationText}>
-            {trip.destinations.join(', ')}
-          </Text>
-        </View>
-      </View>
-    )}
-  </View>
-
-  {/* Right Side: Extra Info */}
-  <View 
-  style={{
-    flex: 0.1,
-    alignItems: 'flex-end',
-    justifyContent: 'center', 
-    backgroundColor: '#E5E7EB',
-    borderRadius: 9999,
-    height: 40,
-    width: 40,
-  
-  }}
->
-<TouchableOpacity        
-  style={{ alignSelf: 'center' }}        
-  onPress={() => handleBookmarkToggle(trip)}
->       
-  <Image         
-    source={           
-      isTripBookmarked(trip.id)             
-        ? require('../assets/images/images/images/image22.png') // Saved/bookmarked icon             
-        : require('../assets/images/images/images/image21.png') // Unsaved icon         
-    }         
-    style={{            
-      alignSelf: 'center',            
-      height: 20,            
-      width: 15,         
-    }}       
-  />     
-</TouchableOpacity>
-
-</View>
-
-</View>
-
-
-          {/* Description */}
-          {trip.detail && (
-            <Text style={styles.description} numberOfLines={2}>
-              {trip.detail}
-            </Text>
-          )}
-
-          {/* Group Atmosphere */}
-          {trip.groupAtmosphere && (
-            <Text style={styles.atmosphere} numberOfLines={2}>
-              {trip.groupAtmosphere}
-            </Text>
-          )}
-
-          {/* Price */}
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceLabel}>ราคา:</Text>
-            <Text style={styles.priceValue}>
-              {trip.pricePerPerson.toLocaleString()} ฿/คน
-            </Text>
-          </View>
-
-          {/* Services Tags */}
-          {trip.includedServices.length > 0 && (
-            <View style={styles.tagsContainer}>
-              {trip.includedServices.map((service, index) => (
-                <View key={index} style={styles.serviceTag}>
-                  <Text style={styles.serviceTagText}>#{service}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* Bottom Row - Owner & Join Button */}
-          <View style={styles.bottomRow}>
-            <View style={styles.ownerInfo}>
-              <Image
-                source={{ uri: ownerInfo.profileImageUrl }}
-                style={styles.ownerAvatar}
-              />
-              <View style={styles.ownerDetails}>
-                <Text style={styles.ownerName}>
-                  {ownerInfo.displayName}
-                </Text>
-                <Text style={styles.ownerAge}>
-                  {ownerInfo.age}
-                </Text>
-              </View>
-            </View>
-
-            <TouchableOpacity
-              style={styles.joinButton}
-              onPress={() => handleJoinTrip(trip)}
-            >
-              <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Participants Count */}
-          <View style={styles.participantsInfo}>
-            <Text style={styles.participantsText}>
-              ผู้เข้าร่วม: {trip.participants.length}/{trip.maxParticipants} คน
-            </Text>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  };
 
   const renderFloatingButton = () => (
     <TouchableOpacity
@@ -944,7 +724,16 @@ ${tripDetail.includedServices.length > 0 ?
           </Text>
         </View>
       ) : (
-        displayedTrips.map(trip => renderTripCard(trip))
+        displayedTrips.map(trip => (
+          <TripCard
+          key={trip.id}
+          trip={trip}
+          isBookmarked={isTripBookmarked(trip.id)}
+          onBookmarkToggle={handleBookmarkToggle}
+          onTripPress={handleTripPress}
+          onJoinTrip={handleJoinTrip}
+          />
+        ))
       )}
     </ScrollView>
 

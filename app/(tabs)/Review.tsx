@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams,Stack } from 'expo-router';
 import { axiosInstance } from '../lib/axios';
 
 interface UserProfile {
@@ -186,6 +186,7 @@ const ReviewScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+       <Stack.Screen options={{ headerShown: false }} />
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 

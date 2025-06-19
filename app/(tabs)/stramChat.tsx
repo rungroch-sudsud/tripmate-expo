@@ -11,7 +11,7 @@ import {
   useMessageContext,
   useChatContext
 } from 'stream-chat-react';
-
+import TripCard  from './TripCard'
 import type { Channel as StreamChannel } from 'stream-chat';
 import { useRouter, useLocalSearchParams, router,Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -747,7 +747,7 @@ const [showTripDetails, setShowTripDetails] = useState(true);
   }, []);
 
   const handleBack = useCallback(() => {
-    router.push('/channelList')
+    router.push('/findTrips')
   }, [router]);
 
   const handleRetry = useCallback(() => {
@@ -790,6 +790,29 @@ const [showTripDetails, setShowTripDetails] = useState(true);
       ]
     );
   }, [handleRetry, handleBack]);
+
+
+  const handleJoinTrip = async (trip) => {
+    console.log("DDDDDDDD");
+    // Add your join trip logic here
+  };
+  
+  const handleTripPress = async (trip) => {
+    console.log("DDDDDDDD");
+    // Add your trip press logic here
+  };
+  
+  const handleBookmarkToggle = async (trip) => {
+    console.log("DDDDDDDD");
+    // Add your bookmark logic here
+  };
+  
+  const isTripBookmarked = (tripId) => {
+    console.log("DDDDDDDD");
+    // Return true/false based on bookmark status
+    return false; // or your bookmark logic
+  };
+
 
   if (loading) {
     return (
@@ -839,13 +862,14 @@ const [showTripDetails, setShowTripDetails] = useState(true);
           />
           
           {/* NEW: Trip Details Section */}
-          <TripDetailsCard
-            trip={trip}
-            travelStyles={travelStyles}
-            services={services}
-            onToggle={handleToggleTripDetails}
-            isVisible={showTripDetails}
-          />
+          <TripCard
+  key={trip.id}
+  trip={trip}
+  isBookmarked={isTripBookmarked(trip.id)}
+  onBookmarkToggle={handleBookmarkToggle}
+  onTripPress={handleTripPress}
+  onJoinTrip={handleJoinTrip}
+/>
            <MessageList Message={ProductionCustomMessage} />
           <MessageInput/>
         </Window>

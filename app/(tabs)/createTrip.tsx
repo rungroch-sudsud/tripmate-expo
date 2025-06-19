@@ -20,7 +20,7 @@ import '@expo-google-fonts/inter'
 import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useFonts} from 'expo-font'
-
+import TripCard from './TripCard'
 const MAX_WORDS = 40;
 interface Service {
   id: string;
@@ -499,23 +499,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
   
   const [formData2, setFormData2] = useState({ name: '' });
 
-  const formatDateRange = (start: string, end: string): string => {
-    const [sd, sm, sy] = start.split('/').map(Number); // dd/mm/yyyy
-    const [ed, em, ey] = end.split('/').map(Number);
-  
-    if (!sd || !sm || !sy || !ed || !em || !ey) return '';
-  
-    if (sy === ey && sm === em) {
-      // Same month & year: 01-05/06/2025
-      return `${sd}-${ed}/${pad(sm)}/${sy}`;
-    } else if (sy === ey) {
-      // Same year, different months: 29/05-02/06/2025
-      return `${pad(sd)}/${pad(sm)}-${pad(ed)}/${pad(em)}/${sy}`;
-    } else {
-      // Different years: 29/12/2024-02/01/2025
-      return `${pad(sd)}/${pad(sm)}/${sy}-${pad(ed)}/${pad(em)}/${ey}`;
-    }
-  };
+
   
   const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
   
@@ -803,7 +787,78 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       );
     };
     
+    const [userInfo, setUserInfo] = useState(null);
+    const getUserInfo = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        const response = await axiosInstance.get(`/users/profile/${userId}`);
+        console.log(response.data.data);
+        setUserInfo(response.data.data);
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      }
+    };
+  
+    useEffect(() => {
+      getUserInfo();
+    }, []);
 
+    const convertDate = (dateStr: string) => {
+      if (!dateStr) return new Date().toISOString();
+      const [day, month, year] = dateStr.split('/');
+      const date = new Date(`${month}/${day}/${year}`);
+      return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+    };
+
+    const createTripFromFormData = () => {
+      const trip = {
+        id: 'preview-trip', 
+        name: formData2.name,
+        destinations: selected, 
+        startDate: convertDate(formData.startDate),
+        endDate: convertDate(formData.endDate),
+        maxParticipants: parseInt(maxParticipant) || 0,
+        participants: [], 
+        pricePerPerson: pricePerPerson, 
+        detail: formData.details,
+        groupAtmosphere: formData.description, 
+        includedServices: services
+          .filter(service => isServiceChecked(service.id))
+          .map(service => service.title),
+        travelStyles: categories
+          .filter(category => selectedItems.includes(category.id))
+          .map(category => category.title),
+        tripCoverImageUrl: pickedFile2?.uri,
+        tripOwner: {
+          id: userInfo?.userId || 'current-user',
+          displayName: userInfo?.fullname || 'ผู้สร้างทริป',
+          firstName: userInfo?.fullname?.split(' ')[0] || '',
+          lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
+          profileImageUrl: userInfo?.profileImageUrl || 'https://via.placeholder.com/40',
+          age: userInfo?.age,
+          travelStyles: userInfo?.travelStyles || [],
+          fullname: userInfo?.fullname || 'ผู้สร้างทริป'
+        },
+        fullname: formData2.name || 'ชื่อทริป'
+      };
+      
+      return trip;
+    };
+ 
+    const handleBookmarkToggle = (trip) => {
+    
+      console.log('Bookmark toggled for trip:', trip.id);
+    };
+  
+    const handleTripPress = (trip) => {
+   
+      console.log('Trip pressed:', trip.id);
+    };
+  
+    const handleJoinTrip = (trip) => {
+  
+      console.log('Join trip pressed:', trip.id);
+    };
 
     
   return (
@@ -851,7 +906,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     </View>
   )}
 </TouchableOpacity>
-{/* <ErrorMessage error={errors.coverImage} /> */}
+ <ErrorMessage error={errors.coverImage} /> 
 
 
 {/* Trip Name Field with Character Count */}
@@ -891,7 +946,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     {formData2.name.length}/50
   </Text>
 </View>
-{/* <ErrorMessage error={errors.tripName} /> */}
+ <ErrorMessage error={errors.tripName} /> 
 
 
 
@@ -960,8 +1015,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     />
   </TouchableOpacity>
 </View>
-{/* <ErrorMessage error={errors.startDate} />
-<ErrorMessage error={errors.endDate} /> */}
+<View style={{display:'flex',flexDirection:'row',justifyContent:'space-between'}}>
+<ErrorMessage error={errors.startDate} />
+<ErrorMessage error={errors.endDate} /> 
+</View>
+ 
 
 
 
@@ -1003,41 +1061,44 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
 </Modal>
 
   {/* End Date Calendar Modal */}
-  <Modal
-    visible={showEndDatePicker}
-    transparent={true}
-    animationType="fade"
-    onRequestClose={() => setShowEndDatePicker(false)}
-  >
-    <View style={styles.modalOverlay}>
-      <View style={styles.calendarContainer}>
-        <View style={styles.calendarHeader}>
-          <Text style={styles.calendarTitle}>เลือกวันที่สิ้นสุด</Text>
-          <TouchableOpacity
-            onPress={() => setShowEndDatePicker(false)}
-            style={styles.closeButton}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        <Calendar
-          onDayPress={handleEndDateSelect}
-          markedDates={{
-            [formatDateToCalendar(formData.endDate)]: {
-              selected: true,
-              selectedColor: '#007AFF'
-            }
-          }}
-          theme={{
-            selectedDayBackgroundColor: '#007AFF',
-            todayTextColor: '#007AFF',
-            arrowColor: '#007AFF',
-          }}
-          minDate={formData.startDate ? formatDateToCalendar(formData.startDate) : undefined}
-        />
+
+<Modal
+  visible={showEndDatePicker}
+  transparent={true}
+  animationType="fade"
+  onRequestClose={() => setShowEndDatePicker(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.calendarContainer}>
+      <View style={styles.calendarHeader}>
+        <Text style={styles.calendarTitle}>เลือกวันที่สิ้นสุด</Text>
+        <TouchableOpacity
+          onPress={() => setShowEndDatePicker(false)}
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
       </View>
+      <Calendar
+        onDayPress={handleEndDateSelect}
+        markedDates={{
+          [formatDateToCalendar(formData.endDate)]: {
+            selected: true,
+            selectedColor: '#007AFF'
+          }
+        }}
+        theme={{
+          selectedDayBackgroundColor: '#007AFF',
+          todayTextColor: '#007AFF',
+          arrowColor: '#007AFF',
+        }}
+        // Set the minimum date for end date based on the selected start date
+        minDate={formData.startDate ? formatDateToCalendar(formData.startDate) : undefined}
+      />
     </View>
-  </Modal>
+  </View>
+</Modal>
+
 </View>
 
 {/* Max Participants with Error */}
@@ -1069,26 +1130,31 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     style={{ height: 16, width: 16, marginHorizontal: 3 }}
     resizeMode="contain"
   />
-  <TextInput
-    style={{
-      width: 100,
-      height: '80%',
-      paddingHorizontal: 5,
-      outlineColor: 'white',
-      backgroundColor: '#F9FAFBFF',
-      flex: 0.45
-    }}
-    placeholder=''
-    value={maxParticipant != '' ? maxParticipant.toString() : ''}
-    onChangeText={(text) => {
+<TextInput
+  style={{
+    width: 100,
+    height: '80%',
+    paddingHorizontal: 5,
+    outlineColor: 'white',
+    backgroundColor: '#F9FAFBFF',
+    flex: 0.45
+  }}
+  placeholder=''
+  value={maxParticipant !== '' ? maxParticipant.toString() : ''}
+  onChangeText={(text) => {
+    if (text && parseInt(text) <= 15) {
       handleMaxParticipant(text);
-      if (errors.maxParticipants) clearError('maxParticipants');
-    }}
-    keyboardType='numeric'
-  />
+    } else if (text === '') {
+      handleMaxParticipant(text); // Allow clearing the input
+    }
+    if (errors.maxParticipants) clearError('maxParticipants');
+  }}
+  keyboardType='numeric'
+/>
+
   <Text style={{ marginLeft: 3, flex: 0.2, fontFamily: 'InterTight-Regular' }}>คน</Text>
 </View>
-{/* <ErrorMessage error={errors.maxParticipants} /> */}
+ <ErrorMessage error={errors.maxParticipants} /> 
 
     
     {/* Price Per Person with Error */}
@@ -1146,7 +1212,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     fontSize: 16
   }}>บาท</Text>
 </View>
-{/* <ErrorMessage error={errors.pricePerPerson} /> */}
+ <ErrorMessage error={errors.pricePerPerson} /> 
 
 
   {/* Services with Error */}
@@ -1181,11 +1247,12 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     ))}
   </View>
 </View>
-{/* <ErrorMessage error={errors.services} /> */}
+ <ErrorMessage error={errors.services} /> 
 
        {/* Travel Styles with Error */}
 <View style={styles.content}>
   <Text style={styles.label}>สไตล์การเที่ยว</Text>
+  <ErrorMessage error={errors.travelStyles} />
   {loading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#6366f1" />
@@ -1235,7 +1302,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
   backgroundColor: '#fff',
   position: 'relative',
   zIndex: 1000,
-  marginBottom: dropdownOpen ? 220 : 20, // Dynamic margin based on dropdown state
+  marginBottom: dropdownOpen ? 220 : 30, // Dynamic margin based on dropdown state
   marginTop:10,
   marginHorizontal:20
 }}>
@@ -1379,11 +1446,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     </View>
   </View>
 </View>
-{/* <ErrorMessage error={errors.destinations} /> */}
+ <ErrorMessage error={errors.destinations} /> 
 
 
 {/* Group Atmosphere with Character Count */}
-<View style={{ marginBottom: 20, marginTop: -20, marginHorizontal: 20 }}>
+<View style={{ marginBottom: 30, marginTop: -20, marginHorizontal: 20 }}>
   <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
   <View style={{ position: 'relative' }}>
     <TextInput
@@ -1415,7 +1482,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       {formData.description.length}/100
     </Text>
   </View>
-</View>
+</View><ErrorMessage error={errors.atmosphere}/>
       
       {/* General Details with Error */}
 <View style={styles.container3}>
@@ -1435,110 +1502,26 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     placeholder='เขียนรายละเอียดทริปของคุณ...'
   />
 </View>
- {/* <ErrorMessage error={errors.details} /> */}
+<ErrorMessage error={errors.details} /> 
+ 
         
         
       
-     <View style={{marginLeft:20,marginRight:20}}>
+    
       <Text style={{fontWeight:600,}}>ตัวอย่างโพสต์
       </Text>
-     <View style={styles.card}>
-  {/* Header Image Container */}
-  <View style={styles.imageContainer}>
-    {pickedFile2 ? (
-      <Image source={{ uri: pickedFile2.uri }} style={styles.backgroundImage} />
-    ) : (
-      <View style={styles.placeholderImage} />
-    )}
-    
-    {/* Date Badge - Top Left */}
-    {formData.startDate && formData.endDate && (
-      <View style={styles.dateBadge}>
-        <Text style={styles.dateIcon}>📅</Text>
-        <Text style={styles.dateText}>
-          {formatDateRange(formData.startDate, formData.endDate)}
-        </Text>
-      </View>
-    )}
-    
-    {/* Max Participant Badge - Top Right */}
-    {maxParticipant && (
-      <View style={styles.participantBadge}>
-        <Image source={require('../assets/images/images/images/image14.png')} style={{width:15,height:12,marginRight:3}} />
-        <Text style={styles.participantText}>ต้องการ {maxParticipant} คน</Text>
-      </View>
-    )}
-  </View>
-
-  {/* Content Below Image */}
-  <View style={styles.content2}>
-    {/* Trip Name */}
-    {formData2.name && (
-      <Text style={styles.tripName}>{formData2.name}</Text>
-    )}
-
-    {/* Destinations */}
-    {selected.length > 0 && (
-      <View style={styles.destinationRow}>
-       
-
-        <View style={styles.destinationContainer}>
-          {selected.map((dest, index) => (
-            <Text key={dest} style={styles.destinationText}>
-              {dest}{index < selected.length - 1 ? ', ' : ''}
-            </Text>
-          ))}
-        </View>
-      </View>
-    )}
-
-    {/* Description */}
-    {formData.description && (
-      <Text style={styles.description} numberOfLines={1} ellipsizeMode='tail'>{formData.description}</Text>
-    )}
-
-{formData.details && (
-      <Text style={styles.description}>{formData.details}</Text>
-    )}
-
-    
-  
-
-    {/* Services Tags */}
-    <View style={styles.tagsContainer2}>
-      {services.map(service =>
-        isServiceChecked(service.id) ? (
-          <View key={service.id} style={styles.serviceTag}>
-            <Text style={styles.serviceTagText}>#{service.title}</Text>
-          </View>
-        ) : null
+      {userInfo && (
+        <TripCard
+          trip={createTripFromFormData()}
+          isBookmarked={false} // Set based on your bookmark state
+          onBookmarkToggle={handleBookmarkToggle}
+          onTripPress={handleTripPress}
+          onJoinTrip={handleJoinTrip}
+        />
       )}
-    </View>
-
-    {/* Travel Styles */}
-    <View style={styles.travelStylesContainer}>
-      {categories
-        .filter(category => selectedItems.includes(category.id))
-        .map(category => (
-          <View key={category.id} style={styles.categoryItem2}>
-            <Image
-              source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30' }}
-              style={styles.categoryIcon}
-            />
-            <Text style={styles.categoryText2}>{category.title}</Text>
-          </View>
-        ))}
-    </View>
-
-    {/* Action Button */}
-    <TouchableOpacity style={styles.joinButton}>
-      <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
-    </TouchableOpacity>
-  </View>
-</View>
 
 
-    
+<View style={{marginLeft:20,marginRight:20}}>
      
         <View style={styles.checkboxContainer}>
         <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
@@ -2209,10 +2192,8 @@ const styles = StyleSheet.create({
   },
   container3: {
     flex: 4,
-    backgroundColor: 'white',
-    position: 'relative',         
-    zIndex: 1000,   
-    marginHorizontal:20            
+    backgroundColor: 'white',        
+    marginHorizontal:20,         
   },
   modalOverlay: {
     flex: 1,
@@ -2656,6 +2637,7 @@ const styles = StyleSheet.create({
     marginTop: -30,
     marginHorizontal: 20,
     fontFamily: 'InterTight-Regular',
+    marginBottom:30
   },
   inputError: {
     borderColor: '#EF4444',
