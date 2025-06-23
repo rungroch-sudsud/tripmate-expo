@@ -9,6 +9,7 @@ import {
   NativeSyntheticEvent,
 } from 'react-native';
 import {useFonts} from 'expo-font'
+
 // Types
 interface Trip {
   id: string;
@@ -26,6 +27,7 @@ interface Trip {
   tripCoverImageUrl?: string;
   tripOwner: TripOwner;
   fullname: string;
+  tripOwnerId: string; // Added this field that you're checking in handleTripPress
 }
 
 interface TripOwner {
@@ -87,6 +89,7 @@ const TripCard: React.FC<TripCardProps> = ({
   const toggleText = () => {
     setIsExpanded(!isExpanded);
   };
+  
   const [fontsLoaded] = useFonts({
     'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
   });
@@ -99,18 +102,20 @@ const TripCard: React.FC<TripCardProps> = ({
     }
   };
 
-  // Handle card press
+  // Handle card press - This is the main change
   const handleCardPress = () => {
     onTripPress(trip);
   };
 
   // Handle bookmark press
-  const handleBookmarkPress = () => {
+  const handleBookmarkPress = (e: any) => {
+    e.stopPropagation(); // Prevent card press when bookmark is pressed
     onBookmarkToggle(trip);
   };
 
   // Handle join trip press
-  const handleJoinPress = () => {
+  const handleJoinPress = (e: any) => {
+    e.stopPropagation(); // Prevent card press when join button is pressed
     onJoinTrip(trip);
   };
 
@@ -118,6 +123,7 @@ const TripCard: React.FC<TripCardProps> = ({
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.7}
+      onPress={handleCardPress} // Added this line
     >
       {/* Header Image Container */}
       <View style={styles.imageContainer}>
@@ -170,13 +176,12 @@ const TripCard: React.FC<TripCardProps> = ({
 
           <TouchableOpacity
             style={styles.bookmarkButton}
-            onPress={handleBookmarkPress}
+            onPress={handleBookmarkPress} // Updated to use the new handler
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View style={styles.bookmarkIcon}>
               {isBookmarked ? <Image source={require('../assets/images/images/images/image22.png')} style={{width:12,height:16,tintColor:'#29C4AF'}}/> : <Image source={require('../assets/images/images/images/image21.png')} style={{width:12,height:16}}  />}
             </View>
-          
           </TouchableOpacity>
         </View>
 
@@ -259,7 +264,7 @@ const TripCard: React.FC<TripCardProps> = ({
 
           <TouchableOpacity
             style={styles.joinButton}
-            onPress={handleJoinPress}
+            onPress={handleJoinPress} // Updated to use the new handler
             activeOpacity={0.8}
           >
             <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>

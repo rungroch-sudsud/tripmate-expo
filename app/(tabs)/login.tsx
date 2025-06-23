@@ -1,66 +1,146 @@
-import React, {useRef, useEffect,useState} from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as WebBrowser from 'expo-web-browser';
-import * as Google from 'expo-auth-session/providers/google';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '../app/firebaseConfig.js';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup,getAuth } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { Animated } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { useRouter,Stack } from 'expo-router';
-import {axiosInstance} from '../lib/axios'
-import axios from 'axios'
-import {useFonts} from 'expo-font'
+import { useRouter, Stack } from 'expo-router';
+import { axiosInstance } from '../lib/axios';
+import axios from 'axios';
+import { useFonts } from 'expo-font';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const STORAGE_KEYS = {
+  GOOGLE_ID_TOKEN: 'googleIdToken',
+  GOOGLE_ACCESS_TOKEN: 'googleAccessToken',
+  USER_ID: 'userId',
+};
+
+const API_STATUS = {
+  SUCCESS: 201,
+  CONFLICT: 409,
+  BAD_REQUEST: 400,
+};
+
+const AUTH_ERRORS = {
+  POPUP_CLOSED: 'auth/popup-closed-by-user',
+  POPUP_BLOCKED: 'auth/popup-blocked',
+  NETWORK_ERROR: 'auth/network-request-failed',
+  TOO_MANY_REQUESTS: 'auth/too-many-requests',
+};
+
 const Login = () => {
+  // State management
   const [fontsLoaded] = useFonts({
     'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
   });
-    const router = useRouter();
-  const progressAnimation = useRef(new Animated.Value(0)).current;
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const auth = getAuth();
 
-  useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (user) => {
-      if (user) {
-        const idToken = await user.getIdToken();  
-        if (idToken) {
-          await AsyncStorage.setItem('googleIdToken', idToken);
-        }
-  
-        const googleAccessToken = await AsyncStorage.getItem('googleAccessToken');
-        if (googleAccessToken) {
-          await AsyncStorage.setItem('googleAccessToken', googleAccessToken);
-        }
-  
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const router = useRouter();
+  const progressAnimation = useRef(new Animated.Value(0)).current;
+  const authInstance = getAuth();
+
+  // Utility functions
+  const clearStoredTokens = useCallback(async () => {
+    try {
+      await Promise.all([
+        AsyncStorage.removeItem(STORAGE_KEYS.GOOGLE_ID_TOKEN),
+        AsyncStorage.removeItem(STORAGE_KEYS.GOOGLE_ACCESS_TOKEN),
+        AsyncStorage.removeItem(STORAGE_KEYS.USER_ID),
+      ]);
+    } catch (error) {
+      console.warn('Failed to clear stored tokens:', error);
+    }
+  }, []);
+
+  const storeUserTokens = useCallback(async (user, googleAccessToken) => {
+    try {
+      const promises = [AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid)];
       
-        await AsyncStorage.setItem('userId', user.uid);
-        const userId=await AsyncStorage.getItem('userId')
-        console.log(userId);
-        
-        
-        setIsAuthenticated(true);
-        router.push('/findTrips');  
-      } else {
-   
-        setIsAuthenticated(false);
+      if (googleAccessToken) {
+        promises.push(AsyncStorage.setItem(STORAGE_KEYS.GOOGLE_ACCESS_TOKEN, googleAccessToken));
       }
-    });
-  
-    return unsubscribe; 
-  }, [auth, router]);
-  
+
+      const idToken = await user.getIdToken();
+      if (idToken) {
+        promises.push(AsyncStorage.setItem(STORAGE_KEYS.GOOGLE_ID_TOKEN, idToken));
+      }
+
+      await Promise.all(promises);
+      return true;
+    } catch (error) {
+      console.error('Failed to store user tokens:', error);
+      return false;
+    }
+  }, []);
+
+  const showErrorAlert = useCallback((title, message, retry = null) => {
+    Alert.alert(
+      title,
+      message,
+      [
+        { text: 'ตกลง', style: 'default' },
+        ...(retry ? [{ text: 'ลองใหม่', onPress: retry, style: 'default' }] : []),
+      ]
+    );
+  }, []);
+
+  // Auth state listener with improved error handling
+  useEffect(() => {
+    let isMounted = true;
+
+    const unsubscribe = authInstance.onAuthStateChanged(
+      async (user) => {
+        if (!isMounted) return;
+
+        try {
+          if (user) {
+            const tokenStored = await storeUserTokens(user, null);
+            if (tokenStored) {
+              setIsAuthenticated(true);
+              router.push('/findTrips');
+            } else {
+              throw new Error('Failed to store user tokens');
+            }
+          } else {
+            setIsAuthenticated(false);
+            await clearStoredTokens();
+          }
+        } catch (error) {
+          console.error('Auth state change error:', error);
+          setError('เกิดข้อผิดพลาดในการยืนยันตัวตน');
+        }
+      },
+      (error) => {
+        if (!isMounted) return;
+        console.error('Auth state listener error:', error);
+        setError('เกิดข้อผิดพลาดในระบบยืนยันตัวตน');
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, [authInstance, router, storeUserTokens, clearStoredTokens]);
+
+  // Progress animation
   useEffect(() => {
     const animateProgress = () => {
       Animated.timing(progressAnimation, {
@@ -70,139 +150,210 @@ const Login = () => {
       }).start();
     };
 
-    setTimeout(animateProgress, 300);
+    const timer = setTimeout(animateProgress, 300);
+    return () => clearTimeout(timer);
+  }, [progressAnimation]);
+
+  // API call with retry logic
+  const createUserProfile = useCallback(async (user, googleAccessToken) => {
+    const profileData = {
+      userId: user.uid,
+      profileImageUrl: "N/A",
+      idCardImageUrl: "N/A",
+      portraitImageUrl: "N/A",
+      travelStyles: ["N/A"],
+      nickname: "N/A",
+      lineId: "N/A",
+      fullname: user.displayName || "N/A",
+      facebookUrl: "N/A",
+      email: user.email || "N/A",
+      destinations: ["N/A"],
+      age: -999,
+      phoneNumber: "N/A",
+      gender: "ชาย",
+    };
+
+    try {
+      const response = await axiosInstance.post('/users/profile', profileData, {
+        timeout: 10000, // 10 second timeout
+      });
+
+      if (response.status === API_STATUS.SUCCESS) {
+        console.log("User Profile Created Successfully", response.data);
+        await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, response.data.data.userId);
+        return { success: true, route: '/travel-style' };
+      }
+    } catch (apiError) {
+      if (axios.isAxiosError(apiError)) {
+        switch (apiError.response?.status) {
+          case API_STATUS.CONFLICT:
+            console.log("User already exists, proceeding...");
+            await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+            return { success: true, route: '/travel-style' };
+          
+          case API_STATUS.BAD_REQUEST:
+            console.log("User profile incomplete, proceeding...");
+            await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+            return { success: true, route: '/travel-style' };
+          
+          default:
+            console.error("API Error:", apiError.response?.data || apiError.message);
+            throw new Error(`API Error: ${apiError.response?.status || 'Unknown'}`);
+        }
+      } else {
+        console.error("Non-Axios API Error:", apiError);
+        throw apiError;
+      }
+    }
   }, []);
 
-  const handleWebGoogleSignIn = async (): Promise<any> => {
-    const provider = new GoogleAuthProvider();
-    
+  // Main Google Sign In function with comprehensive error handling
+  const handleWebGoogleSignIn = useCallback(async () => {
+    if (isLoading) return;
+
+    setIsLoading(true);
+    setError(null);
+
     try {
-      const result = await signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+
+      const result = await Promise.race([
+        signInWithPopup(authInstance, provider),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Sign-in timeout')), 30000)
+        )
+      ]);
+
       const user = result.user;
       const credential = GoogleAuthProvider.credentialFromResult(result);
       const googleAccessToken = credential?.accessToken;
-      
+
       // Store tokens
-      if (googleAccessToken) {
-        await AsyncStorage.setItem('googleAccessToken', googleAccessToken);
+      const tokenStored = await storeUserTokens(user, googleAccessToken);
+      if (!tokenStored) {
+        throw new Error('Failed to store authentication tokens');
       }
-      const idToken = await user.getIdToken();
-      if (idToken) {
-        await AsyncStorage.setItem('googleIdToken', idToken);
-      }
-      
-      console.log("Google Sign In success: ", {
+
+      console.log("Google Sign In success:", {
         uid: user.uid,
         email: user.email,
         displayName: user.displayName,
       });
-      
-      // Direct API call without auth state listener
-      try {
-        console.log('Making API request...');
-        
-        const profileData = {
-          userId: user.uid,
-          profileImageUrl: "N/A",
-          idCardImageUrl: "N/A",
-          portraitImageUrl: "N/A",
-          travelStyles: ["N/A"],
-          nickname: "N/A",
-          lineId: "N/A",
-          fullname: user.displayName || "N/A",
-          facebookUrl: "N/A",
-          email: user.email || "N/A",
-          destinations: ["N/A"],
-          age: -999,
-          phoneNumber: "N/A",
-          gender: "ชาย",
-        };
-        
-        const response = await axiosInstance.post('/users/profile', profileData);
-        
-        if (response.status === 201) {
-          console.log("User Profile Created Successfully", response.data);
-          await AsyncStorage.setItem('userId', response.data.data.userId);
-          router.push('/travel-style');
-          return response.data;
-        }
-      } catch (apiError: any) {
-        if (axios.isAxiosError(apiError)) {
-          if (apiError.response?.status === 409) {
-            console.log("User already exists, proceeding...");
-            await AsyncStorage.setItem('userId', user.uid);
-            router.push('/travel-style');
-            return { message: 'User exists' };
-          } else if (apiError.response?.status === 400) {
-            await AsyncStorage.setItem('userId', user.uid);
-            console.log(user.uid);
-            const storedUserId = await AsyncStorage.getItem('userId');
-            console.log(storedUserId);
-            console.log(googleAccessToken);
-            console.log(idToken);
-            
-            
-            router.push('/travel-style');
-            return { message: 'User profile incomplete' };
-          } else {
-            console.error("API Error:", apiError.response?.data || apiError.message);
-            throw apiError;
+
+      // Create user profile with retry logic
+      let profileResult;
+      let attempts = 0;
+      const maxAttempts = 3;
+
+      while (attempts < maxAttempts) {
+        try {
+          profileResult = await createUserProfile(user, googleAccessToken);
+          break;
+        } catch (profileError) {
+          attempts++;
+          console.warn(`Profile creation attempt ${attempts} failed:`, profileError);
+          
+          if (attempts === maxAttempts) {
+            throw profileError;
           }
-        } else {
-          console.error("Non-Axios API Error:", apiError);
-          throw apiError;
+          
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
         }
       }
+
+      if (profileResult?.success) {
+        router.push(profileResult.route);
+      } else {
+        throw new Error('Failed to create user profile');
+      }
+
+    } catch (error) {
+      console.error("Sign In Process Failed:", error);
       
-        } catch (error: any) {
-        if (error?.code) {
-        console.error("Firebase Auth Error:", error.code, error.message);
-        
+      // Handle specific Firebase Auth errors
+      if (error?.code) {
         switch (error.code) {
-          case 'auth/popup-closed-by-user':
-            console.log("User cancelled sign-in");
+          case AUTH_ERRORS.POPUP_CLOSED:
+            setError('การเข้าสู่ระบบถูกยกเลิก');
             break;
-          case 'auth/popup-blocked':
-            console.log("Popup was blocked by browser");
+          case AUTH_ERRORS.POPUP_BLOCKED:
+            showErrorAlert(
+              'Popup ถูกบล็อก',
+              'กรุณาอนุญาต popup ในเบราว์เซอร์แล้วลองใหม่',
+              () => handleWebGoogleSignIn()
+            );
+            break;
+          case AUTH_ERRORS.NETWORK_ERROR:
+            setError('ไม่สามารถเชื่อมต่ออินเทอร์เน็ตได้');
+            break;
+          case AUTH_ERRORS.TOO_MANY_REQUESTS:
+            setError('มีการพยายามเข้าสู่ระบบมากเกินไป กรุณารอสักครู่แล้วลองใหม่');
             break;
           default:
-            console.error("Authentication failed:", error.message);
+            setError('เกิดข้อผิดพลาดในการเข้าสู่ระบบ กรุณาลองใหม่');
         }
+      } else if (error.message === 'Sign-in timeout') {
+        setError('การเข้าสู่ระบบใช้เวลานานเกินไป กรุณาลองใหม่');
       } else {
-        console.error("Sign In Process Failed:", error);
+        setError('เกิดข้อผิดพลาดที่ไม่คาดคิด กรุณาลองใหม่');
       }
-      throw error;
+
+      // Clear any partial auth state
+      await clearStoredTokens();
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, [isLoading, authInstance, storeUserTokens, createUserProfile, router, clearStoredTokens, showErrorAlert]);
 
+  // Retry mechanism
+  const handleRetry = useCallback(() => {
+    if (retryCount < 3) {
+      setRetryCount(prev => prev + 1);
+      setError(null);
+      handleWebGoogleSignIn();
+    } else {
+      showErrorAlert(
+        'ลองใหม่มากเกินไป',
+        'กรุณารอสักครู่แล้วลองใหม่ หรือติดต่อทีมสนับสนุน'
+      );
+    }
+  }, [retryCount, handleWebGoogleSignIn, showErrorAlert]);
 
+  const handleTerms = useCallback(() => {
+    console.log("Terms pressed");
+    // Add navigation to terms page
+  }, []);
 
-  const term=()=>{
-    console.log("Term");
-    
-  }
-  
-  
+  const handleBackPress = useCallback(() => {
+    router.push('/');
+  }, [router]);
 
-
-  const handleBackPress = () => {
-    // Handle back button press
-   // console.log('Back button pressed');
-   router.push('/')
-  };
+  // Loading state
   if (!fontsLoaded) {
-    return <Text>Loading...</Text>;
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#6366f1" />
+          <Text style={styles.loadingText}>กำลังโหลด...</Text>
+        </View>
+      </SafeAreaView>
+    );
   }
-
 
   return (
-    
     <SafeAreaView style={styles.container}>
-     
-     <Stack.Screen options={{ headerShown: false, tabBarStyle: { display: 'none' }, }} />
+      <Stack.Screen options={{ headerShown: false, tabBarStyle: { display: 'none' } }} />
+      
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBackPress}>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={handleBackPress}
+          disabled={isLoading}
+        >
           <FontAwesome name="angle-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerText}>เข้าสู่ระบบ</Text>
@@ -239,35 +390,49 @@ const Login = () => {
         {/* Subtitle */}
         <Text style={styles.subtitle}>หาเพื่อนเที่ยวที่ใช่ในสไตล์คุณ</Text>
 
+        {/* Error Message */}
+        {error && (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            {retryCount < 3 && (
+              <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+                <Text style={styles.retryButtonText}>ลองใหม่</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+
         {/* Google Sign In Button */}
-        <TouchableOpacity style={styles.googleButton} onPress={handleWebGoogleSignIn}>
+        <TouchableOpacity 
+          style={[styles.googleButton, isLoading && styles.disabledButton]} 
+          onPress={handleWebGoogleSignIn}
+          disabled={isLoading}
+        >
           <View style={styles.googleButtonContent}>
-            <View style={styles.googleIconContainer}>
-              <Text style={styles.googleIcon}>G</Text>
-            </View>
-            <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#374151" />
+            ) : (
+              <>
+                <View style={styles.googleIconContainer}>
+                  <Text style={styles.googleIcon}>G</Text>
+                </View>
+                <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>
+              </>
+            )}
           </View>
         </TouchableOpacity>
 
         {/* Terms and Privacy */}
         <Text style={styles.termsText}>
-          
-          <Text
-  numberOfLines={1}
-  style={{
-    fontSize: 14,
-    color: '#6B7280',
-    textAlign: 'center',
-    flexShrink: 1,
-    fontFamily:'InterTight-Regular'
-  }}
->
-  เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
-</Text>
-{'\n'}{'\n'}{'\n'}{'\n'}
-<Text style={{fontFamily:"InterTight-Regular",fontSize:12,color:"#6B7280"}}>การเข้าสู่ระบบเป็นการยอมรับ 
- </Text>
-          <TouchableOpacity onPress={term}><Text style={styles.linkText}>นโยบาย ความเป็นส่วนตัวข้อกำหนดการใช้งาน</Text></TouchableOpacity> และ ของเรา
+          <Text style={styles.descriptionText}>
+            เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
+          </Text>
+          {'\n\n\n\n'}
+          <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ </Text>
+          <TouchableOpacity onPress={handleTerms}>
+            <Text style={styles.linkText}>นโยบายความเป็นส่วนตัวและข้อกำหนดการใช้งาน</Text>
+          </TouchableOpacity>
+          <Text style={styles.termsBaseText}> ของเรา</Text>
         </Text>
       </View>
     </SafeAreaView>
@@ -279,41 +444,47 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    fontFamily: 'InterTight-Regular',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
+ 
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    fontFamily:"InterTight-Bold"
   },
   backButton: {
-    width: 30,
-    height: 30,
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: -5,
-  },
-  backArrow: {
-    fontSize: 20,
-    color: '#333333',
-    fontWeight: '600',
+    borderRadius: 20,
   },
   headerText: {
     flex: 1,
-     fontStyle:'normal',
     textAlign: 'center',
-    fontSize:18,
-    fontWeight:500,
-    color:'#1F2937'
+    fontSize: 18,
+    fontWeight: '500',
+    color: '#1F2937',
+    fontFamily: 'InterTight-SemiBold',
   },
   placeholder: {
-    width: 50,
-    height: 50,
+    width: 40,
+    height: 40,
   },
   progressContainer: {
-   paddingBottom: 15,
+    paddingBottom: 15,
   },
   progressBar: {
     height: 4,
@@ -338,25 +509,49 @@ const styles = StyleSheet.create({
   logo: {
     width: 96,
     height: 96,
-    borderRadius: 9999,
+    borderRadius: 48,
     backgroundColor: '#3B82F6',
   },
   appName: {
     fontSize: 24,
-    fontFamily:"InterTight-SemiBold",
+    fontFamily: 'InterTight-SemiBold',
     color: '#333333',
     marginBottom: 8,
-
-
   },
   subtitle: {
-    
-    fontFamily:"InterTight-Regular",
+    fontFamily: 'InterTight-Regular',
     marginBottom: 60,
     textAlign: 'center',
-    color:"#6B7280",
-    fontSize:14
-  
+    color: '#6B7280',
+    fontSize: 14,
+  },
+  errorContainer: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    width: '100%',
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#DC2626',
+    fontSize: 14,
+    fontFamily: 'InterTight-Regular',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  retryButton: {
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 4,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontFamily: 'InterTight-SemiBold',
   },
   googleButton: {
     backgroundColor: '#ffffff',
@@ -364,7 +559,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 10,
     marginBottom: 5,
-    minWidth: 400,
+    width: 350,
+    height: 58,
     borderWidth: 1,
     borderColor: '#dadce0',
     shadowColor: '#000',
@@ -375,13 +571,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    width:350,
-    height:58
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   googleButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    height: '100%',
   },
   googleIconContainer: {
     width: 30,
@@ -398,23 +596,32 @@ const styles = StyleSheet.create({
   googleButtonText: {
     color: '#374151',
     fontSize: 16,
-    fontFamily:'InterTight-SemiBold',
-    lineHeight:16,
-  
+    fontFamily: 'InterTight-SemiBold',
+    lineHeight: 16,
   },
   termsText: {
     fontSize: 12,
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: 12,
+    lineHeight: 16,
     paddingHorizontal: 20,
-  
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontFamily: 'InterTight-Regular',
+  },
+  termsBaseText: {
+    fontFamily: 'InterTight-Regular',
+    fontSize: 12,
+    color: '#6B7280',
   },
   linkText: {
     color: '#3B82F6',
-    fontFamily:'InterTight-Regular',
-    fontSize:12
-
+    fontFamily: 'InterTight-Regular',
+    fontSize: 12,
+    textDecorationLine: 'underline',
   },
 });
 

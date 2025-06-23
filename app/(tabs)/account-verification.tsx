@@ -1011,7 +1011,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   submitButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#29C4AF',
     borderRadius: 12,
     paddingVertical: 16,
     flexDirection: 'row',

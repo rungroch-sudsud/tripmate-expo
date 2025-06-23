@@ -1,27 +1,26 @@
-import React,{useState,useEffect,useRef}  from  'react'
+import React, { useState,useEffect} from 'react';
 import {
-    View,
-    Text,
-    Modal,
-    TextInput,
-    TouchableOpacity,
-    ScrollView,
-    StyleSheet,
-    SafeAreaView,
-    FlatList,
-    Image,
-    Alert,
-    ActivityIndicator
-  } from 'react-native';
-import { auth } from '../firebaseConfig';
-import { Ionicons } from '@expo/vector-icons';
-import { router,Stack,useLocalSearchParams } from 'expo-router';
+  View,
+  Text,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+  SafeAreaView,
+  Image,
+  Alert,
+  ActivityIndicator
+} from 'react-native';
+
+import { router,Stack, useLocalSearchParams } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../lib/axios'
 import '@expo-google-fonts/inter'
 import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CameraType } from 'expo-image-picker';
+import {useFonts} from 'expo-font'
+import TripCard from './TripCard'
 const MAX_WORDS = 40;
 interface Service {
   id: string;
@@ -52,6 +51,21 @@ type PickedFile = {
     }[];
   }
  
+
+  interface TripData{
+    data:{
+      name:String,
+      destinations:[],
+      details:String,
+      endDate:String,
+      startDate:String,
+      includedServices:[],
+      maxParticipants:number,
+      pricePerPerson:number,
+      travelStyles:[],
+      tripCoverImageUrl:String
+    }
+  }
   
   interface ServicesResponse {
     data: {
@@ -62,16 +76,18 @@ type PickedFile = {
 
 
 
-  
-
-
-
-const EditTrip=()=>{
+const ThaiFormScreen = () => {
+ 
+      
   const params = useLocalSearchParams();
-  const tripId = params.tripId;
+  const [fontsLoaded] = useFonts({
+    'InterTight-Black': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+  });
+ const [tripData, setTripData] = useState(null); 
     const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
-    const [selfieError, setSelfieError] = useState(false);
-     
+    const [isFocused, setIsFocused] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -79,10 +95,23 @@ const EditTrip=()=>{
 const [selectedServices, setSelectedServices] = useState<string[]>([]);
 const [showStartDatePicker, setShowStartDatePicker] = useState(false);
 const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-const [trip, setTrip] = useState(null);
-const [error, setError] = useState(null);
-const [tripData,setTripData]=useState<Trip | null>(null)
+const [errors, setErrors] = useState({
+  coverImage: '',
+  tripName: '',
+  startDate: '',
+  endDate: '',
+  maxParticipants: '',
+  pricePerPerson: '',
+  services: '',
+  travelStyles: '',
+  destinations: '',
+  atmosphere: '',
+  details: '',
+  terms: ''
+});
 
+const [isValidating, setIsValidating] = useState(false);
+ 
   const [formData, setFormData] = useState({
     name: '',
     startDate: '',
@@ -90,28 +119,115 @@ const [tripData,setTripData]=useState<Trip | null>(null)
     description: '',
     selectedOptions: [] as string[],
     attachments: 0,
+    details:''
   });
 
-  const handleBack=async()=>{
-    router.push('/findTrips')
-  }
-  
 
-  const insertImage2=async()=>{
-    console.log("Insert Image");
-    
-  }
+const handleBack=async()=>{
+  router.push('/(tabs)/findTrips')
+}
+
+
+ // For services
+const toggleServiceCheckbox = (id: string) => {
+  setSelectedServices(prev =>
+    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+  );
+};
+
+const isServiceChecked = (id: string) => selectedServices.includes(id);
+
+
+
+
+
+
   
-   // For services
-  const toggleServiceCheckbox = (id: string) => {
-    setSelectedServices(prev =>
-      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-    );
+  const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
+    // Extract base64 data
+    const base64Data = base64Uri.split(',')[1];
+    return {
+      uri: base64Uri, // Keep original for display
+      base64Data: base64Data,
+      type: mimeType,
+      name: filename,
+      isBase64: true,
+    };
   };
-  
-  const isServiceChecked = (id: string) => selectedServices.includes(id);
+  const pickImage2 = () => {
+    // Compatible options for different versions of react-native-image-picker
+    const options: any = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      // Force file URI instead of base64
+      presentationStyle: 'overFullScreen',
+    };
 
-  
+    launchImageLibrary(options, (response: any) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+        return;
+      }
+
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
+        const pickedImage = response.assets[0];
+        
+        // Handle base64 data URIs (common in web environment)
+        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
+          console.log('🟡 Base64 data detected, converting...');
+          const convertedFile = convertBase64ToFile(
+            pickedImage.uri,
+            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+            pickedImage.type ?? 'image/jpeg'
+          );
+          
+          setPickedFile2({
+            uri: convertedFile.uri,
+            type: convertedFile.type,
+            name: convertedFile.name,
+            base64Data: convertedFile.base64Data,
+            isBase64: true,
+          } as any);
+
+          console.log('🟢 Base64 image processed successfully');
+          return;
+        }
+
+        // Validate that we have a proper file URI
+        if (!pickedImage.uri) {
+          Alert.alert('Error', 'No image URI received. Please try again.');
+          return;
+        }
+
+        setPickedFile2({
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
+          size: pickedImage.fileSize,
+        });
+
+        console.log('🟢 Image 2 picked successfully:', {
+          uri: pickedImage.uri.substring(0, 50) + '...',
+          type: pickedImage.type,
+          name: pickedImage.fileName,
+          size: pickedImage.fileSize,
+        });
+      }
+    });
+  };
+
   const toggleSelection = (id: string): void => {
     setSelectedItems(prev =>
       prev.includes(id)
@@ -119,87 +235,92 @@ const [tripData,setTripData]=useState<Trip | null>(null)
         : [...prev, id]
     );
   };
+  const formatDateFromAPI = (dateString) => {
+    if (!dateString) return '';
+    
+    // Convert from "2025-06-20" to "20/06/2025"
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
+  };
 
-  const fetchTripById = async (): Promise<void> => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get(`trips/${tripId}`);
-      console.log(response.data.data);
-      setTrip(response.data.data);
+const tripId=params.tripId
+const fetchTripDetails = async (): Promise<void> => {
+  try {
+    setLoading(true)
+    const response = await axiosInstance.get(`/trips/${tripId}`);
+    const result: TripData = response.data.data;
+    setTripData(result as any)
+    
+    // Set the initial form data with the fetched trip name
+    setFormData2(prev => ({ 
+      ...prev, 
+      name: result.name || '',
+      details:result.groupAtmosphere || ''
+    }));
 
-      
-    } catch (err) {
-      console.error('Error fetching trip:', err);
-    } finally {
-      setLoading(false);
+    setFormData(prev => ({ 
+      ...prev, 
+      details:result.detail || '',
+      description:result.groupAtmosphere || ''
+    }));
+
+    setpricePerPerson(result.pricePerPerson || '')
+    setmaxParticipant(result.maxParticipants || '')
+
+
+    if (result.includedServices && result.includedServices.length > 0) {
+      const selectedServiceIds = services
+        .filter(service => result.includedServices.includes(service.title))
+        .map(service => service.id);
+      setSelectedServices(selectedServiceIds);
     }
+    
+
+    
+    // Set the initial dates - convert from YYYY-MM-DD to DD/MM/YYYY format
+    setFormData(prev => ({
+      ...prev,
+      startDate: result.startDate ? formatDateFromAPI(result.startDate) : '',
+      endDate: result.endDate ? formatDateFromAPI(result.endDate) : ''
+    }));
+    
+    // Set the initial cover image if it exists
+    if (result.tripCoverImageUrl) {
+      setPickedFile2({
+        uri: result.tripCoverImageUrl,
+        type: 'image/jpeg',
+        name: 'cover-image.jpg'
+      });
+    }
+
+
+    if (result.travelStyles && result.travelStyles.length > 0 && categories.length > 0) {
+      const selectedStyleIds = categories
+        .filter(category => result.travelStyles.includes(category.title))
+        .map(category => category.id);
+      setSelectedItems(selectedStyleIds);
+    }
+    
+    // Set initial destinations (this one is straightforward)
+    if (result.destinations && result.destinations.length > 0) {
+      setSelected(result.destinations);
+    }
+    console.log(tripId);
+    
+    console.log(result);
+  } catch (error) {
+    console.error('Failed to fetch trip details:', error);
+    setTripData(null)
+  } finally {
+    setLoading(false)
   }
-
-  useEffect(()=>{
-     console.log("Trip Updated: ",trip);
-     
-  },[trip])
-  
-  useEffect(() => {
-    if (tripId) {
-      fetchTripById();
-    }
-  }, [tripId]);
-  //INitially Adding
-
-  useEffect(() => {
-    if (trip) {
-
-      setFormData2(prev => ({ 
-        ...prev, 
-        name: trip.name,
-        // add other fields too
-      }));
-      // Convert from "2025-06-13" to "13/06/2025" format
-      const formatApiDateToDisplay = (apiDate: string) => {
-        const date = new Date(apiDate);
-        const day = date.getDate().toString().padStart(2, '0');
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      };
-  
-      setFormData(prev => ({
-        ...prev,
-        startDate: formatApiDateToDisplay(trip.startDate),
-        endDate: formatApiDateToDisplay(trip.endDate),
-        description: trip.groupAtmosphere,
-      }));
-      
-       setmaxParticipant(trip.maxParticipants)
-       setpricePerPerson(trip.pricePerPerson)
+}
 
 
-        if(services.length>0){
-          const initialSelectedServices = services
-      .filter(service => trip.includedServices.includes(service.title))
-      .map(service => service.id);
-    
-    setSelectedServices(initialSelectedServices);
-        }
-
-
-        if(categories.length>0){
-          const initialSelectedStyles = categories
-      .filter(category => trip.travelStyles.includes(category.title))
-      .map(category => category.id);
-    
-    setSelectedItems(initialSelectedStyles);
-        }
-
-      setSelected(trip.destinations);
-      setEditorState(prev => ({
-        ...prev,
-        content: trip.detail
-      }));
-    }
-  }, [trip,services,categories]);
-  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+useEffect(()=>{
+  fetchTripDetails()
+}
+,[])
 
   const fetchServices = async (): Promise<void> => {
     try {
@@ -212,8 +333,6 @@ const [tripData,setTripData]=useState<Trip | null>(null)
         id: item.id,
         title: item.title,
       }));
-      console.log(response.data);
-      
   
       setServices(mappedServices);
     } catch (error) {
@@ -229,15 +348,15 @@ const [tripData,setTripData]=useState<Trip | null>(null)
   useEffect(() => {
     fetchServices();
   }, []);
-
+  
+  
   const fetchTravelStyles = async (): Promise<void> => {
     try {
       setLoading(true); 
     
  
       const response = await axiosInstance.get('/travel-styles'); 
-       console.log(response.data.data);
-       
+    
       const result: ApiResponse = response.data; 
       
       
@@ -266,250 +385,6 @@ const [tripData,setTripData]=useState<Trip | null>(null)
     fetchTravelStyles();
   }, []);
 
-
-  //Rich Text Editor
-  const [editorState, setEditorState] = useState<EditorState>({
-    content: '',
-    format: {
-      bold: false,
-      italic: false,
-      underline: false,
-      fontSize: 16,
-      textColor: '#000000',
-      backgroundColor: '#ffffff',
-      textAlign: 'left',
-      fontFamily: 'System', 
-    },
-    selectionStart: 0,
-    selectionEnd: 0,
-    images: [] // Add this to store image data
-  });
-const [isFocused, setIsFocused] = useState(false);
-const [showColorPicker, setShowColorPicker] = useState(false);
-const [showFontSizePicker, setShowFontSizePicker] = useState(false);
-const [showUrlInput, setShowUrlInput] = useState(false);
-const [showLinkTextInput, setShowLinkTextInput] = useState(false);
-const [showLinkInputModal, setShowLinkInputModal] = useState(false);
-const [tempUrl, setTempUrl] = useState('');
-const [tempLinkText, setTempLinkText] = useState('');
-const [showImageUrlInput, setShowImageUrlInput] = useState(false);
-const [textInputRef, setTextInputRef] = useState<TextInput | null>(null);
-const [listCounter, setListCounter] = useState(1);
-const [showFontDropdown, setShowFontDropdown] = useState(false);
-const fontFamilies = [
-    { name: 'Default', value: 'System' },
-    { name: 'Arial', value: 'Arial' },
-    { name: 'Times New Roman', value: 'Times New Roman' },
-    { name: 'Helvetica', value: 'Helvetica' },
-    { name: 'Georgia', value: 'Georgia' },
-    { name: 'Verdana', value: 'Verdana' },
-    { name: 'Courier New', value: 'Courier New' },
-    { name: 'Trebuchet MS', value: 'Trebuchet MS' },
-    { name: 'Comic Sans MS', value: 'Comic Sans MS' },
-    { name: 'Impact', value: 'Impact' },
-  ];
-const FontDropdown = () => (
-    <Modal
-      visible={showFontDropdown}
-      transparent={true}
-      animationType="fade"
-      onRequestClose={() => setShowFontDropdown(false)}
-    >
-      <TouchableOpacity 
-        style={styles.modalOverlay}
-        activeOpacity={1}
-        onPress={() => setShowFontDropdown(false)}
-      >
-        <View style={styles.fontDropdownContainer}>
-          <Text style={styles.dropdownTitle}>Select Font</Text>
-          <ScrollView style={styles.fontList}>
-            {fontFamilies.map((font) => (
-              <TouchableOpacity
-                key={font.value}
-                style={[
-                  styles.fontItem,
-                  editorState.format.fontFamily === font.value && styles.selectedFontItem
-                ]}
-                onPress={() => changeFontFamily(font.value)}
-              >
-                <Text 
-                  style={[
-                    styles.fontItemText,
-                    { fontFamily: font.value },
-                    editorState.format.fontFamily === font.value && styles.selectedFontText
-                  ]}
-                >
-                  {font.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      </TouchableOpacity>
-    </Modal>
-  );
-  const changeFontFamily = (fontFamily: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, fontFamily }
-    }));
-    setShowFontDropdown(false);
-  };  
-  const toggleBold = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, bold: !prev.format.bold }
-    }));
-  };
-  const toggleItalic = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, italic: !prev.format.italic }
-    }));
-  };
-  const toggleUnderline = () => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, underline: !prev.format.underline }
-    }));
-  };
-  const changeTextAlign = () => {
-    const alignments: Array<'left' | 'center' | 'right' | 'justify'> = ['left', 'center', 'right', 'justify'];
-    const currentIndex = alignments.indexOf(editorState.format.textAlign);
-    const nextIndex = (currentIndex + 1) % alignments.length;
-    
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, textAlign: alignments[nextIndex] }
-    }));
-  };
-
-  const insertBulletList = () => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + '\n• ' + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-
-  const insertNumberedList = () => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `\n${listCounter}. ` + afterCursor;
-    
-    setListCounter(prev => prev + 1);
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-  const handleLinkSubmit = () => {
-    const url = tempUrl.trim();
-    const linkText = tempLinkText.trim() || tempUrl;
-  
-    if (!url) {
-    
-      return;
-    }
-  
-    const { selectionStart, content } = editorState;
-    const beforeCursor = content.substring(0, selectionStart);
-    const afterCursor = content.substring(selectionStart);
-    const markdownLink = `[${linkText}](${url})`;
-    const newContent = `${beforeCursor}${markdownLink}${afterCursor}`;
-  
-    setEditorState((prev) => ({
-      ...prev,
-      content: newContent,
-      selectionStart: selectionStart + markdownLink.length,
-      selectionEnd: selectionStart + markdownLink.length,
-    }));
-  
-    // Reset modal fields and close modal
-    setTempUrl('');
-    setTempLinkText('');
-    setShowLinkInputModal(false);
-  };
-
-  const insertLink = () => {
-    setShowLinkInputModal(true);
-  };
-
-  const handleUrlSubmit = (url: string) => {
-    setTempUrl(url);
-    setShowLinkTextInput(true);
-  };
-  const handleLinkTextSubmit = (linkText: string) => {
-    const displayText = linkText || tempUrl;
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `[${displayText}](${tempUrl})` + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-    setTempUrl('');
-  };
-  const handleImageUrlSubmit = (imageUrl: string) => {
-    const cursor = editorState.selectionStart;
-    const beforeCursor = editorState.content.substring(0, cursor);
-    const afterCursor = editorState.content.substring(cursor);
-    const newContent = beforeCursor + `\n[รูปภาพ: ${imageUrl}]\n` + afterCursor;
-    
-    setEditorState(prev => ({
-      ...prev,
-      content: newContent
-    }));
-  };
-  const handleContentChange = (text: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      content: text,
-    }));
-  };
-
-  const handleSelectionChange = (event: any) => {
-    const { start, end } = event.nativeEvent.selection;
-    setEditorState(prev => ({
-      ...prev,
-      selectionStart: start,
-      selectionEnd: end
-    }));
-  };
-
-  const onColorSelect = (color: string) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, textColor: color }
-    }));
-  };
-
-  const onFontSizeSelect = (size: number) => {
-    setEditorState(prev => ({
-      ...prev,
-      format: { ...prev.format, fontSize: size }
-    }));
-  };
-  const getTextStyle = () => {
-    return {
-      fontWeight: editorState.format.bold ? 'bold' as 'bold' : 'normal' as 'normal',
-      fontStyle: editorState.format.italic ? 'italic' as 'italic' : 'normal' as 'normal',
-      textDecorationLine: editorState.format.underline ? 'underline' as 'underline' : 'none' as 'none',
-      fontSize: editorState.format.fontSize,
-      color: editorState.format.textColor,
-      textAlign: editorState.format.textAlign,
-      fontFamily: editorState.format.fontFamily === 'System' ? undefined : editorState.format.fontFamily,
-    };
-  };
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////
   const formatDateInput = (text: string): string => {
     const cleaned = text.replace(/\D/g, '');
     
@@ -521,6 +396,170 @@ const FontDropdown = () => (
       return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(4, 8)}`;
     }
   };
+
+
+  const validateCoverImage = () => {
+    if (!pickedFile2) {
+      return 'กรุณาเลือกรูปภาพหน้าปก';
+    }
+    return '';
+  };
+  
+  const validateTripName = () => {
+    if (!formData2.name.trim()) {
+      return 'กรุณาใส่ชื่อทริป';
+    }
+    if (wordCount > MAX_WORDS) {
+      return `ชื่อทริปต้องไม่เกิน ${MAX_WORDS} คำ`;
+    }
+    return '';
+  };
+
+  const validateDates = () => {
+    const errors = { startDate: '', endDate: '' };
+    
+    if (!formData.startDate) {
+      errors.startDate = 'กรุณาเลือกวันที่เริ่มต้น';
+    } else if (!validateDate(formData.startDate)) {
+      errors.startDate = 'รูปแบบวันที่ไม่ถูกต้อง';
+    }
+    
+    if (!formData.endDate) {
+      errors.endDate = 'กรุณาเลือกวันที่สิ้นสุด';
+    } else if (!validateDate(formData.endDate)) {
+      errors.endDate = 'รูปแบบวันที่ไม่ถูกต้อง';
+    }
+    
+    // Check if end date is after start date
+    if (formData.startDate && formData.endDate && validateDate(formData.startDate) && validateDate(formData.endDate)) {
+      const startDateObj = new Date(formData.startDate.split('/').reverse().join('-'));
+      const endDateObj = new Date(formData.endDate.split('/').reverse().join('-'));
+      
+      if (endDateObj <= startDateObj) {
+        errors.endDate = 'วันที่สิ้นสุดต้องหลังจากวันที่เริ่มต้น';
+      }
+    }
+    
+    return errors;
+  };
+  
+  const validateMaxParticipants = () => {
+    if (!maxParticipant || maxParticipant === '') {
+      return 'กรุณาใส่จำนวนคน';
+    }
+    const num = parseInt(maxParticipant.toString());
+    if (isNaN(num) || num < 1) {
+      return 'จำนวนคนต้องเป็นตัวเลขและมากกว่า 0';
+    }
+    if (num > 50) {
+      return 'จำนวนคนต้องไม่เกิน 50 คน';
+    }
+    return '';
+  };
+  
+  const validatePricePerPerson = () => {
+    if (!pricePerPerson || pricePerPerson === '') {
+      return 'กรุณาใส่ราคาต่อคน';
+    }
+    const price = parseFloat(pricePerPerson.toString());
+    if (isNaN(price) || price < 0) {
+      return 'ราคาต้องเป็นตัวเลขและมากกว่าหรือเท่ากับ 0';
+    }
+    if (price > 100000) {
+      return 'ราคาต้องไม่เกิน 100,000 บาท';
+    }
+    return '';
+  };
+  
+  const validateServices = () => {
+    const checkedServices = services.filter(service => isServiceChecked(service.id));
+    if (checkedServices.length === 0) {
+      return 'กรุณาเลือกสิ่งที่รวมในราคาอย่างน้อย 1 รายการ';
+    }
+    return '';
+  };
+  
+  const validateTravelStyles = () => {
+    if (selectedItems.length === 0) {
+      return 'กรุณาเลือกสไตล์การเที่ยวอย่างน้อย 1 รายการ';
+    }
+    return '';
+  };
+  
+  const validateDestinations = () => {
+    if (selected.length === 0) {
+      return 'กรุณาเลือกสถานที่ท่องเที่ยวอย่างน้อย 1 แห่ง';
+    }
+    return '';
+  };
+  
+  const validateAtmosphere = () => {
+    if (!formData.description.trim()) {
+      return 'กรุณาอธิบายบรรยากาศ/โทนกลุ่ม';
+    }
+    const words = formData.description.trim().split(/\s+/).filter(word => word.length > 0);
+    if (words.length < 5) {
+      return 'คำอธิบายต้องมีอย่างน้อย 5 คำ';
+    }
+    if (words.length > 100) {
+      return 'คำอธิบายต้องไม่เกิน 100 คำ';
+    }
+    return '';
+  };
+  
+  const validateDetails = () => {
+    if (!formData.details.trim()) {
+      return 'กรุณาใส่รายละเอียดทั่วไป';
+    }
+    if (formData.details.trim().length < 20) {
+      return 'รายละเอียดต้องมีอย่างน้อย 20 ตัวอักษร';
+    }
+    return '';
+  };
+  
+  const validateTerms = () => {
+    if (!isChecked) {
+      return 'กรุณายอมรับนโยบายและข้อตกลง';
+    }
+    return '';
+  };
+  
+  // Main validation function
+  const validateForm = () => {
+    const dateErrors = validateDates();
+    
+    const newErrors = {
+      coverImage: validateCoverImage(),
+      tripName: validateTripName(),
+      startDate: dateErrors.startDate,
+      endDate: dateErrors.endDate,
+      maxParticipants: validateMaxParticipants(),
+      pricePerPerson: validatePricePerPerson(),
+      services: validateServices(),
+      travelStyles: validateTravelStyles(),
+      destinations: validateDestinations(),
+      atmosphere: validateAtmosphere(),
+      details: validateDetails(),
+      terms: validateTerms()
+    };
+  
+    setErrors(newErrors);
+    
+    // Check if there are any errors
+    const hasErrors = Object.values(newErrors).some(error => error !== '');
+    return !hasErrors;
+  };
+  
+  // Clear specific error when user starts typing/selecting
+  const clearError = (field) => {
+    setErrors(prev => ({ ...prev, [field]: '' }));
+  };
+
+
+
+
+
+  
   const validateDate = (dateString: string): boolean => {
     const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
     const match = dateString.match(regex);
@@ -535,517 +574,500 @@ const FontDropdown = () => (
     return date.getDate() === day && 
            date.getMonth() === month - 1 && 
            date.getFullYear() === year;
-  };
+  }
   const formatDateToCalendar = (dateString: string): string => {
     // Convert dd/mm/yyyy to yyyy-mm-dd format for calendar
     if (!dateString || !validateDate(dateString)) return '';
     const [day, month, year] = dateString.split('/');
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
+  
   const formatDateFromCalendar = (dateString: string): string => {
     // Convert yyyy-mm-dd to dd/mm/yyyy format
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
   };
-
+  
   const handleStartDateSelect = (day: any) => {
     const selectedDate = formatDateFromCalendar(day.dateString);
     setFormData(prev => ({ ...prev, startDate: selectedDate }));
     setShowStartDatePicker(false);
   };
+  
   const handleEndDateSelect = (day: any) => {
     const selectedDate = formatDateFromCalendar(day.dateString);
     setFormData(prev => ({ ...prev, endDate: selectedDate }));
     setShowEndDatePicker(false);
   };
+  
   const [formData2, setFormData2] = useState({ name: '' });
-  const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
-  const formatDateRange = (start: string, end: string): string => {
-    const [sd, sm, sy] = start.split('/').map(Number); // dd/mm/yyyy
-    const [ed, em, ey] = end.split('/').map(Number);
-  
-    if (!sd || !sm || !sy || !ed || !em || !ey) return '';
-  
-    if (sy === ey && sm === em) {
-      // Same month & year: 01-05/06/2025
-      return `${sd}-${ed}/${pad(sm)}/${sy}`;
-    } else if (sy === ey) {
-      // Same year, different months: 29/05-02/06/2025
-      return `${pad(sd)}/${pad(sm)}-${pad(ed)}/${pad(em)}/${sy}`;
-    } else {
-      // Different years: 29/12/2024-02/01/2025
-      return `${pad(sd)}/${pad(sm)}/${sy}-${pad(ed)}/${pad(em)}/${ey}`;
-    }
-  };
 
+
+  
+  const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
+  
+
+  // Calculate word count from current text
   const wordCount = formData2.name.trim() === ''
     ? 0
     : formData2.name.trim().split(/\s+/).length;
 
-const [maxParticipant,setmaxParticipant]=useState<number | ''>('')
-const handleMaxParticipant=(text: String)=>{
-        const filteredText = text.replace(/[^0-9]/g, '');
-        const numberValue = filteredText ? parseInt(filteredText, 10) : '';
-        setmaxParticipant(numberValue)
-}
 
-const [pricePerPerson,setpricePerPerson]=useState<number | ''>('')
-const handlepricePerPerson=(text: String)=>{
-  const filteredText = text.replace(/[^0-9]/g, '');
-  const numberValue = filteredText ? parseInt(filteredText, 10) : '';
-  setpricePerPerson(numberValue)
-}
-const [isChecked, setIsChecked] = useState(false);
-const [dropdownOpen, setDropdownOpen] = useState(false);
-const [selected, setSelected] = useState<string[]>([]);
-const [searchText, setSearchText] = useState('');
-const [destinations, setDestinations] = useState<string[]>([]);
-const [uploading, setUploading] = useState(false);
-const [responseMessage, setResponseMessage] = useState<string | null>(null);
-function addDestination(dest: string) {
-    if (!selected.includes(dest)) {
-      setSelected([...selected, dest]);
+
+    const [maxParticipant,setmaxParticipant]=useState<number | ''>('')
+    const handleMaxParticipant=(text: String)=>{
+      const filteredText = text.replace(/[^0-9]/g, '');
+      const numberValue = filteredText ? parseInt(filteredText, 10) : '';
+      setmaxParticipant(numberValue)
     }
-    setDropdownOpen(false);
-    setSearchText(''); // Clear search when selecting
-  }
-  
-  const filteredDestinations = destinations.filter(dest =>
-    dest.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  function removeDestination(dest: string) {
-    setSelected(selected.filter(d => d !== dest));
-  }
-  useEffect(() => {
-    setLoading(true);
-    axiosInstance.get('/destinations')
-      .then(response => {
-        setDestinations(response.data.data || []);
-      })
-      .catch(err => {
-        console.error('Axios error:', err);
-        setDestinations([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-
-  const ensureFreshToken = async (): Promise<string> => {
-    if (!auth.currentUser) {
-      throw new Error('User not authenticated');
+    const [pricePerPerson,setpricePerPerson]=useState<number | ''>('')
+    const handlepricePerPerson=(text: String)=>{
+      const filteredText = text.replace(/[^0-9]/g, '');
+      const numberValue = filteredText ? parseInt(filteredText, 10) : '';
+      setpricePerPerson(numberValue)
     }
-  
-    try {
-      // Force refresh to get a fresh token
-      const freshToken = await auth.currentUser.getIdToken(true);
-      await AsyncStorage.setItem('googleIdToken', freshToken);
-      console.log('✅ Fresh token generated and stored');
-      return freshToken;
-    } catch (error) {
-      console.error('❌ Failed to generate fresh token:', error);
-      throw new Error('Failed to refresh authentication token');
-    }
-  };
-  
-  // Helper function to validate token
-  const validateStoredToken = async (): Promise<boolean> => {
-    const googleIdToken = await AsyncStorage.getItem('googleIdToken');
-    
-    if (!googleIdToken) {
-      console.log('❌ No stored token found');
-      return false;
-    }
-  
-    try {
-      const tokenParts = googleIdToken.split('.');
-      if (tokenParts.length !== 3) return false;
-  
-      const payload = JSON.parse(atob(tokenParts[1]));
-      const currentTime = Math.floor(Date.now() / 1000);
-      const isExpired = payload.exp <= currentTime;
-      
-      console.log('Token validation:', {
-        userId: payload.user_id || payload.sub,
-        expiresAt: new Date(payload.exp * 1000),
-        isExpired
-      });
-      
-      return !isExpired;
-    } catch (error) {
-      console.log('Could not decode token:', error);
-      return false;
-    }
-  };
-  
-  // Helper function to debug authentication state
-  const debugAuthState = async (): Promise<void> => {
-    const userId = await AsyncStorage.getItem('userId');
-    const googleIdToken = await AsyncStorage.getItem('googleIdToken');
-    const googleAccessToken = await AsyncStorage.getItem('googleAccessToken');
-    
-    console.log('=== FRONTEND DEBUG ===');
-    console.log('User ID from AsyncStorage:', userId);
-    console.log('Google ID Token exists:', !!googleIdToken);
-    console.log('Google Access Token exists:', !!googleAccessToken);
-    console.log('Firebase currentUser:', auth.currentUser ? 'EXISTS' : 'NULL');
-    console.log('Firebase currentUser UID:', auth.currentUser?.uid || 'N/A');
-    console.log('Trip ID being updated:', tripId);
-    console.log('Trip owner from trip object:', trip?.tripOwner || trip?.userId || 'Not found');
-    console.log('====================');
-  };
-  
-  // Helper function to prepare request body
-  const prepareRequestBody = () => {
-    // Helper function to safely map IDs to titles
-    const mapIdsToTitles = <T extends { id: string; title: string }>(
-      selectedIds: string[],
-      sourceArray: T[]
-    ): string[] => {
-      return selectedIds
-        .map(id => sourceArray.find(item => item.id === id)?.title)
-        .filter((title): title is string => Boolean(title));
-    };
-  
-    return {
-      name: formData2.name.trim(),
-      startDate: formatDisplayDateToApi(formData.startDate),
-      endDate: formatDisplayDateToApi(formData.endDate),
-      destinations: selected || [],
-      maxParticipants: maxParticipant || 0,
-      pricePerPerson: pricePerPerson || 0,
-      includedServices: mapIdsToTitles(selectedServices || [], services || []),
-      detail: editorState?.content || '',
-      travelStyles: mapIdsToTitles(selectedItems || [], categories || []),
-      groupAtmosphere: formData?.description || '',
-      tripCoverImageFile: trip?.tripCoverImageUrl || '',
-      status: "published"
-    };
-  };
 
-
-  const [validationErrors, setValidationErrors] = useState({});
-
-  const ErrorText = ({ error }) => {
-    if (!error) return null;
-    return (
-      <Text style={styles.errorText}>
-        {error}
-      </Text>
+    const [isChecked, setIsChecked] = useState(false);
+   //Destination
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const [selected, setSelected] = useState<string[]>([]);
+    const [searchText, setSearchText] = useState('');
+    const [destinations, setDestinations] = useState<string[]>([]);
+    const [uploading, setUploading] = useState(false);
+    const [responseMessage, setResponseMessage] = useState<string | null>(null);
+    function addDestination(dest: string) {
+      if (!selected.includes(dest)) {
+        setSelected([...selected, dest]);
+      }
+      setDropdownOpen(false);
+      setSearchText(''); 
+    }
+    const filteredDestinations = destinations.filter(dest =>
+      dest.toLowerCase().includes(searchText.toLowerCase())
     );
-  };
-  
-  // 5. Complete validation function
-  const validateForm = () => {
-    const errors = {};
-  
-    // Trip cover image validation
-    if (!trip?.tripCoverImageUrl) {
-      errors.coverImage = 'กรุณาเลือกรูปภาพปก';
+    function removeDestination(dest: string) {
+      setSelected(selected.filter(d => d !== dest));
     }
-  
-    // Trip name validation
-    if (!formData2.name || formData2.name.trim() === '') {
-      errors.tripName = 'กรุณาใส่ชื่อทริป';
-    }
-  
-    // Start date validation
-    if (!formData.startDate) {
-      errors.startDate = 'กรุณาเลือกวันที่เริ่มต้น';
-    } else if (!validateDate(formData.startDate)) {
-      errors.startDate = 'รูปแบบวันที่ไม่ถูกต้อง';
-    }
-  
-    // End date validation
-    if (!formData.endDate) {
-      errors.endDate = 'กรุณาเลือกวันที่สิ้นสุด';
-    } else if (!validateDate(formData.endDate)) {
-      errors.endDate = 'รูปแบบวันที่ไม่ถูกต้อง';
-    }
-  
-    // Date range validation
-    if (formData.startDate && formData.endDate && validateDate(formData.startDate) && validateDate(formData.endDate)) {
-      const startDateObj = parseDate(formData.startDate);
-      const endDateObj = parseDate(formData.endDate);
-      if (endDateObj <= startDateObj) {
-        errors.dateRange = 'วันที่สิ้นสุดต้องมากกว่าวันที่เริ่มต้น';
-      }
-    }
-  
-    // Max participants validation
-    if (!maxParticipant || maxParticipant === '' || parseInt(maxParticipant) <= 0) {
-      errors.maxParticipant = 'กรุณาใส่จำนวนคนที่ต้องการ';
-    }
-  
-    // Price per person validation
-    if (!pricePerPerson || pricePerPerson === '' || parseFloat(pricePerPerson) <= 0) {
-      errors.pricePerPerson = 'กรุณาใส่ราคาต่อคน';
-    }
-  
-    // Services validation
-    const hasSelectedService = services.some(service => isServiceChecked(service.id));
-    if (!hasSelectedService) {
-      errors.services = 'กรุณาเลือกสิ่งที่รวมในราคาอย่างน้อย 1 รายการ';
-    }
-  
-    // Travel style validation
-    if (selectedItems.length === 0) {
-      errors.travelStyle = 'กรุณาเลือกสไตล์การเที่ยวอย่างน้อย 1 รายการ';
-    }
-  
-    // Destination validation
-    if (selected.length === 0) {
-      errors.destinations = 'กรุณาเลือกสถานที่ท่องเที่ยวอย่างน้อย 1 แห่ง';
-    }
-  
-    // Description validation
-    if (!formData.description || formData.description.trim() === '') {
-      errors.description = 'กรุณาใส่บรรยากาศ/โทนกลุ่ม';
-    }
-  
-    // General details validation
-    if (!editorState.content || editorState.content.trim() === '') {
-      errors.generalDetails = 'กรุณาใส่รายละเอียดทั่วไป';
-    }
-  
-    return errors;
-  };
-  
-  // 6. Helper function
-  const parseDate = (dateString) => {
-    const [day, month, year] = dateString.split('/').map(num => parseInt(num));
-    return new Date(year, month - 1, day);
-  };
-  
-
-  const scrollViewRef = useRef(null);
-
-  const editTrip = async (): Promise<void> => {
-
-
-    const errors = validateForm();
-  
-  if (Object.keys(errors).length > 0) {
-    setValidationErrors(errors);
-    
+    useEffect(() => {
+      setLoading(true);
+      axiosInstance.get('/destinations')
+        .then(response => {
+          setDestinations(response.data.data || []);
+        })
+        .catch(err => {
+          console.error('Axios error:', err);
+          setDestinations([]);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }, []);
    
-    const firstError = Object.values(errors)[0];
-    
-    // Scroll to top to show errors
-    if (scrollViewRef.current) {
-      scrollViewRef.current.scrollTo({ y: 0, animated: true });
-    }
-    
-    return;
-  }
 
-  // Clear validation errors if form is valid
-  setValidationErrors({});
-    try {
-      console.log("Trip Editing...");
-      
-      // Debug current auth state
-      await debugAuthState();
-      
-      // Validate user authentication
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        throw new Error('User ID not found in storage');
-      }
   
-      // Validate required form fields
-      if (!formData2?.name || !formData?.startDate || !formData?.endDate) {
-        throw new Error('Missing required trip information');
-      }
-  
-      // Ensure we have a fresh, valid token
-      const isTokenValid = await validateStoredToken();
-      if (!isTokenValid) {
-        console.log('🔄 Token invalid or expired, refreshing...');
-        await ensureFreshToken();
-      }
-  
-      // Prepare the request body
-      const requestBody = prepareRequestBody();
+    //Submit
+    const edit = async (tripId: string): Promise<void> => {
+      console.log("🔥 EDIT FUNCTION CALLED WITH TRIP ID:", tripId);
+      console.log("🔥 TRIP ID TYPE:", typeof tripId);
       
-      console.log('Updating trip with data:', requestBody);
-      console.log('Axios headers:', axiosInstance.defaults.headers);
-  
-      // Make the API call
-      const response = await axiosInstance.put(`/trips/${tripId}`, requestBody);
       
-      console.log("✅ Trip updated successfully:", response.data);
-      router.push('/findTrips')
-      
-      // Handle success
-      // showSuccessMessage('Trip updated successfully!');
-      // router.back(); 
-      // or 
-      // router.push(`/trips/${tripId}`);
-      
-    } catch (error) {
-      console.error('❌ Error updating trip:', error);
-      
-      // Enhanced error handling
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
+    
+      try {
+        console.log("🚀 Starting trip update...");
         
-        // Handle specific authentication errors
-        if (error.message.includes('authentication') || error.message.includes('token')) {
-          // showErrorMessage('Authentication expired. Please log in again.');
-          // Optionally redirect to login
-        } else if (error.message.includes('Missing required')) {
-          // showErrorMessage('Please fill in all required fields');
-        } else {
-          // showErrorMessage(error.message);
+        // Validation - check if required fields are filled
+        if (!formData2.name || !formData.startDate || !formData.endDate || 
+            selected.length === 0 || !maxParticipant || !pricePerPerson || 
+            categories.length === 0) {
+          return;
         }
-      } else if (error?.response) {
-        // Axios error with response
-        console.error('API Error Status:', error.response.status);
-        console.error('API Error Data:', error.response.data);
+    
+        setUploading(true);
+        setResponseMessage(null);
+    
+        const formatDate = (dateStr: string): string => {
+          try {
+            let date: Date;
         
-        const errorMessage = error.response.data?.message || 'Failed to update trip';
+            if (dateStr.includes('/')) {
+              const [day, month, year] = dateStr.split('/');
+              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            } else {
+              date = new Date(dateStr);
+            }
         
-        // Handle specific HTTP status codes
-        switch (error.response.status) {
-          case 401:
-            // showErrorMessage('Authentication expired. Please log in again.');
-            // Redirect to login
-            break;
-          case 403:
-            // showErrorMessage('You do not have permission to edit this trip.');
-            break;
-          case 404:
-            // showErrorMessage('Trip not found.');
-            break;
-          case 422:
-            // showErrorMessage('Invalid trip data. Please check your inputs.');
-            break;
-          default:
-            // showErrorMessage(errorMessage);
+            if (isNaN(date.getTime())) {
+              throw new Error(`Invalid date: ${dateStr}`);
+            }
+        
+            // Return in YYYY-MM-DD format
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+        
+            return `${year}-${month}-${day}`;
+          } catch (error) {
+            console.error('Date formatting error:', error);
+            throw new Error(`Invalid date format: ${dateStr}`);
+          }
+        };
+    
+        const travelStyleIds: string[] = categories.map((category: any) => category.id);
+    
+        // Prepare JSON payload for trip update
+        const updatePayload = {
+          name: formData2.name.trim(),
+          startDate: formatDate(formData.startDate),
+          endDate: formatDate(formData.endDate),
+          destinations: selected,
+          maxParticipants: parseInt(maxParticipant.toString()),
+          pricePerPerson: parseFloat(pricePerPerson.toString()),
+          includedServices: selectedServices,
+          detail: formData.details || '',
+          travelStyles: travelStyleIds,
+          groupAtmosphere: formData.description || '',
+          status: 'published'
+        };
+    
+        console.log("📋 Update payload:", updatePayload);
+    
+        const idToken = await AsyncStorage.getItem('googleIdToken');
+    
+        // Step 1: Update trip details
+        console.log("📤 Sending trip update request...");
+        const response = await axiosInstance.put(`/trips/${tripId}`, updatePayload, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${idToken}`
+          },
+          timeout: 60000,
+        });
+    
+        console.log("✅ Trip updated successfully:", response.data);
+    
+        // Step 2: Update cover image if a new one was selected
+        if (pickedFile2) {
+          console.log("📷 Updating cover image...");
+          
+          try {
+            const imageFormData = new FormData();
+            
+            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
+              const blob = await response.blob();
+              imageFormData.append('file', blob, pickedFile2.name);
+            } else if (pickedFile2.uri) {
+              const fileObj = {
+                uri: pickedFile2.uri,
+                type: pickedFile2.type || 'image/jpeg',
+                name: pickedFile2.name || 'image.jpg',
+              } as any;
+              
+              imageFormData.append('file', fileObj);
+            }
+    
+            // Update cover image using separate endpoint
+            const imageResponse = await axiosInstance.patch(`/trips/${tripId}/cover-image`, imageFormData, {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${idToken}`
+              },
+              timeout: 60000,
+              maxContentLength: Infinity,
+              maxBodyLength: Infinity,
+            });
+    
+            console.log("✅ Cover image updated successfully:", imageResponse.data);
+          } catch (imageError) {
+            console.error('Image update error:', imageError);
+            Alert.alert('Warning', 'Trip updated successfully, but cover image update failed.');
+          }
         }
-      } else {
-        console.error('Unknown error occurred');
-        // showErrorMessage('An unexpected error occurred. Please try again.');
+    
+        // Navigate back or show success message
+        router.push('/findTrips');
+        // Or you could show a success alert:
+        // Alert.alert('สำเร็จ', 'อัปเดตข้อมูลทริปเรียบร้อยแล้ว');
+    
+      } catch (error: unknown) {
+        console.error('🔴 Trip update error:', error);
+        
+        let errorMessage = 'Failed to update trip';
+        let debugInfo = '';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const axiosError = error as any;
+          console.error('Server Error Response:', axiosError.response?.data);
+          console.error('Server Error Status:', axiosError.response?.status);
+          console.error('Server Error Headers:', axiosError.response?.headers);
+          
+          const serverMessage = axiosError.response?.data?.message;
+          const statusCode = axiosError.response?.status;
+          
+          if (serverMessage) {
+            errorMessage = serverMessage;
+          } else {
+            errorMessage = `Server Error (${statusCode})`;
+          }
+          
+          debugInfo = `Status: ${statusCode}`;
+        } else if (error && typeof error === 'object' && 'request' in error) {
+          console.error('Network Error:', (error as any).request);
+          errorMessage = 'Network error. Please check your connection.';
+        } else if (error instanceof Error) {
+          console.error('General Error:', error.message);
+          errorMessage = error.message || 'Unknown error occurred';
+        }
+        
+        setResponseMessage(`Error: ${errorMessage}`);
+        Alert.alert('ข้อผิดพลาด', errorMessage);
+    
+      } finally {
+        setIsValidating(false);
+        setUploading(false);
       }
-      
-      // Optionally re-throw the error if you want calling code to handle it
-      // throw error;
-    }
-  };
-  // Helper function to convert display date back to API format
-  const formatDisplayDateToApi = (displayDate: string) => {
-    // Convert "13/06/2025" back to "2025-06-13"
-    const [day, month, year] = displayDate.split('/');
-    return `${year}-${month}-${day}`;
-  };
+    };
+    const ErrorMessage = ({ error }) => {
+      if (!error) return null;
+      return (
+        <Text style={styles.errorText}>{error}</Text>
+      );
+    };
+    
+    const [userInfo, setUserInfo] = useState(null);
+    const getUserInfo = async () => {
+      try {
+        const userId = await AsyncStorage.getItem('userId');
+        const response = await axiosInstance.get(`/users/profile/${userId}`);
+        console.log(response.data.data);
+        setUserInfo(response.data.data);
+      } catch (error) {
+        console.error('Error fetching user info:', error);
+      }
+    };
+  
+    useEffect(() => {
+      getUserInfo();
+    }, []);
 
-  return(
-   <SafeAreaView style={styles.container}>
-    {/* HEader */}
-    <Stack.Screen options={{ headerShown: false }} />
-    <View style={styles.header}>
+    const convertDate = (dateStr: string) => {
+      if (!dateStr) return new Date().toISOString();
+      const [day, month, year] = dateStr.split('/');
+      const date = new Date(`${month}/${day}/${year}`);
+      return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+    };
+
+    const createTripFromFormData = () => {
+      const trip = {
+        id: 'preview-trip', 
+        name: formData2.name,
+        destinations: selected, 
+        startDate: convertDate(formData.startDate),
+        endDate: convertDate(formData.endDate),
+        maxParticipants: parseInt(maxParticipant) || 0,
+        participants: [], 
+        pricePerPerson: pricePerPerson, 
+        detail: formData.details,
+        groupAtmosphere: formData.description, 
+        includedServices: services
+          .filter(service => isServiceChecked(service.id))
+          .map(service => service.title),
+        travelStyles: categories
+          .filter(category => selectedItems.includes(category.id))
+          .map(category => category.title),
+        tripCoverImageUrl: pickedFile2?.uri,
+        tripOwner: {
+          id: userInfo?.userId || 'current-user',
+          displayName: userInfo?.fullname || 'ผู้สร้างทริป',
+          firstName: userInfo?.fullname?.split(' ')[0] || '',
+          lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
+          profileImageUrl: userInfo?.profileImageUrl || 'https://via.placeholder.com/40',
+          age: userInfo?.age,
+          travelStyles: userInfo?.travelStyles || [],
+          fullname: userInfo?.fullname || 'ผู้สร้างทริป'
+        },
+        fullname: formData2.name || 'ชื่อทริป'
+      };
+      
+      return trip;
+    };
+ 
+    const handleBookmarkToggle = (trip) => {
+    
+      console.log('Bookmark toggled for trip:', trip.id);
+    };
+  
+    const handleTripPress = (trip) => {
+   
+      console.log('Trip pressed:', trip.id);
+    };
+  
+    const handleJoinTrip = (trip) => {
+  
+      console.log('Join trip pressed:', trip.id);
+    };
+
+    
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+         <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:16.75,height:18}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
 
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      
+        
+           
+        
 
-      <ScrollView 
-  ref={scrollViewRef}
-  style={styles.content} 
-  showsVerticalScrollIndicator={false}
->
-      <View style={styles.formSection}>
-         <TouchableOpacity style={[
-                styles.uploadBox,
-                selfieError && { borderColor: 'red', borderWidth: 1 }
-              ]}>
-           {trip && (
-  <Image style={styles.uploadedImage} source={{uri: trip.tripCoverImageUrl}} />
-)}
-         </TouchableOpacity>
-
-
-         <View style={styles.fieldContainer}>
-         <Text style={styles.label}>ชื่อทริป</Text>
-         <TextInput
+        {/* Form Fields */}
+        <View style={styles.formSection}>
+              {/* Image Upload Section with Error */}
+<TouchableOpacity
   style={[
-    styles.textInput, 
-    isFocused && styles.textInputFocused,
-    validationErrors.tripName && styles.errorBorder
+    styles.uploadBox,
+    errors.coverImage && styles.uploadBoxError
   ]}
-  onFocus={() => setIsFocused(true)}
-  onBlur={() => setIsFocused(false)}
-  value={formData2.name}
-  onChangeText={(text) => {
-    setFormData2(prev => ({ ...prev, name: text }));
-    // Clear error when user starts typing
-    if (validationErrors.tripName) {
-      setValidationErrors(prev => ({ ...prev, tripName: null }));
-    }
+  onPress={() => {
+    clearError('coverImage');
+    pickImage2();
   }}
-  placeholder="ตั้งชื่อทริปของคุณ"
-  multiline
-/>
-<ErrorText error={validationErrors.tripName} />
-       <Text style={styles.wordCount}>
-        {wordCount}/{MAX_WORDS}
-      </Text>
-         </View>
+>
+  {pickedFile2 ? (
+    <Image source={{ uri: pickedFile2.uri }} style={styles.uploadedImage} />
+  ) : (
+    <View style={styles.uploadPlaceholder}>
+      <View style={styles.personIcon}>
+        <Image
+          source={require('../assets/images/images/images/image3.png')}
+          style={{ height: 27, width: 27, tintColor: "#9CA3AF" }}
+          resizeMode="contain"
+        />
+      </View>
+      <Text style={styles.uploadSubtext}>เพิ่มรูปภาพหน้าปก</Text>
+    </View>
+  )}
+</TouchableOpacity>
+ <ErrorMessage error={errors.coverImage} /> 
+
+
+{/* Trip Name Field with Character Count */}
+<View style={styles.fieldContainer}>
+  <Text style={styles.label}>ชื่อทริป</Text>
+  <TextInput
+    style={[
+      styles.textInput,
+      isFocused && styles.textInputFocused,
+      errors.tripName && styles.inputError
+    ]}
+    onFocus={() => {
+      setIsFocused(true);
+      clearError('tripName');
+    }}
+    onBlur={() => setIsFocused(false)}
+    value={formData2.name}
+    onChangeText={(text) => {
+      // Character limit for trip name
+      const characterLimit = 50; // Adjust this to your desired limit
+      
+      if (text.length <= characterLimit) {
+        setFormData2(prev => ({ ...prev, name: text }));
+        if (errors.tripName) clearError('tripName');
+      }
+    }}
+    placeholder="ตั้งชื่อทริปของคุณ"
+    placeholderTextColor='gray'
+    multiline
+    maxLength={50} 
+  />
+  <Text style={[
+    styles.wordCount,
+   
+    formData2.name.length > 45 && { color: 'red' }
+  ]}>
+    {formData2.name.length}/50
+  </Text>
+</View>
+ <ErrorMessage error={errors.tripName} /> 
 
 
 
-          {/* Date Fields */}
-         <View style={styles.dateContainer}>
-  <View style={styles.dateField}>
-    <Text style={styles.dateLabel}>วันที่เริ่มต้น</Text>
-    <TouchableOpacity onPress={() => setShowStartDatePicker(true)}>
-      <TextInput
-        style={[
-          styles.dateInput,
-          formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
-        ]}
-        value={formData.startDate}
-        onChangeText={(text) => {
-          const formatted = formatDateInput(text);
-          setFormData(prev => ({ ...prev, startDate: formatted }));
-        }}
-        placeholder="dd/mm/yyyy"
-        keyboardType="numeric"
-        maxLength={10}
-        accessibilityLabel="วันที่เริ่มต้น"
-        editable={true}
-        pointerEvents="none"
-      />
-    </TouchableOpacity>
-  </View>
+         {/* Date Fields with Errors */}
+<Text style={{
+  marginBottom: 10,
+  fontWeight: '500',
+  color: '#333',
+  fontFamily: 'InterTight-Regular',
+  fontSize: 16
+}}>วันที่เริ่มต้น</Text>
+
+<View style={[
+  styles.dateContainer,
+  (errors.startDate || errors.endDate) && styles.inputError
+]}>
+  <Image source={require('../assets/images/images/images/image25.png')} 
+         style={{width: 14, height: 16, marginHorizontal: 10}} />
   
-  <View style={styles.dateField}>
-    <Text style={styles.dateLabel}>วันที่สิ้นสุด</Text>
-    <TouchableOpacity onPress={() => setShowEndDatePicker(true)}>
-      <TextInput
-        style={[
-          styles.dateInput,
-          formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
-        ]}
-        value={formData.endDate}
-        onChangeText={(text) => {
-          const formatted = formatDateInput(text);
-          setFormData(prev => ({ ...prev, endDate: formatted }));
-        }}
-        placeholder="dd/mm/yyyy"
-        keyboardType="numeric"
-        maxLength={10}
-        accessibilityLabel="วันที่สิ้นสุด"
-        editable={true}
-        pointerEvents="none"
-      />
-    </TouchableOpacity>
-  </View>
-  </View>
+  <TouchableOpacity onPress={() => {
+    clearError('startDate');
+    setShowStartDatePicker(true);
+  }}>
+    <TextInput
+      style={[
+        formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
+      ]}
+      value={formData.startDate}
+      onChangeText={(text) => {
+        const formatted = formatDateInput(text);
+        setFormData(prev => ({ ...prev, startDate: formatted }));
+        if (errors.startDate) clearError('startDate');
+      }}
+      placeholder="dd/mm/yyyy"
+      keyboardType="numeric"
+      maxLength={10}
+      accessibilityLabel="วันที่เริ่มต้น"
+      editable={true}
+      pointerEvents="none"
+    />
+  </TouchableOpacity>
+  
+  <Text style={{marginRight: 40, marginLeft: -20, fontSize: 20, fontWeight: '500'}}>-</Text>
+  
+  <TouchableOpacity onPress={() => {
+    clearError('endDate');
+    setShowEndDatePicker(true);
+  }}>
+    <TextInput
+      style={[
+        formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
+      ]}
+      value={formData.endDate}
+      onChangeText={(text) => {
+        const formatted = formatDateInput(text);
+        setFormData(prev => ({ ...prev, endDate: formatted }));
+        if (errors.endDate) clearError('endDate');
+      }}
+      placeholder="dd/mm/yyyy"
+      keyboardType="numeric"
+      maxLength={10}
+      accessibilityLabel="วันที่สิ้นสุด"
+      editable={true}
+      pointerEvents="none"
+    />
+  </TouchableOpacity>
+</View>
+<View style={styles.dateErrorContainer}>
+  <Text style={styles.dateErrorText}>{errors.startDate || ''}</Text>
+  <Text style={styles.dateErrorText}>{errors.endDate || ''}</Text>
+</View>
+ 
+
+
 
  {/* Start Date Calendar Modal */}
 <Modal
@@ -1085,191 +1107,257 @@ function addDestination(dest: string) {
 </Modal>
 
   {/* End Date Calendar Modal */}
-  <Modal
-    visible={showEndDatePicker}
-    transparent={true}
-    animationType="fade"
-    onRequestClose={() => setShowEndDatePicker(false)}
-  >
-    <View style={styles.modalOverlay}>
-      <View style={styles.calendarContainer}>
-        <View style={styles.calendarHeader}>
-          <Text style={styles.calendarTitle}>เลือกวันที่สิ้นสุด</Text>
-          <TouchableOpacity
-            onPress={() => setShowEndDatePicker(false)}
-            style={styles.closeButton}
-          >
-            <Text style={styles.closeButtonText}>✕</Text>
-          </TouchableOpacity>
-        </View>
-        <Calendar
-          onDayPress={handleEndDateSelect}
-          markedDates={{
-            [formatDateToCalendar(formData.endDate)]: {
-              selected: true,
-              selectedColor: '#007AFF'
-            }
-          }}
-          theme={{
-            selectedDayBackgroundColor: '#007AFF',
-            todayTextColor: '#007AFF',
-            arrowColor: '#007AFF',
-          }}
-          minDate={formData.startDate ? formatDateToCalendar(formData.startDate) : undefined}
-        />
+
+<Modal
+  visible={showEndDatePicker}
+  transparent={true}
+  animationType="fade"
+  onRequestClose={() => setShowEndDatePicker(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.calendarContainer}>
+      <View style={styles.calendarHeader}>
+        <Text style={styles.calendarTitle}>เลือกวันที่สิ้นสุด</Text>
+        <TouchableOpacity
+          onPress={() => setShowEndDatePicker(false)}
+          style={styles.closeButton}
+        >
+          <Text style={styles.closeButtonText}>✕</Text>
+        </TouchableOpacity>
       </View>
-    </View>
-  </Modal>
-
-
-{/* Max Participants */}
-<Text style={{marginLeft:2,marginBottom:6}}>จํานวนคน
-      </Text>
-     <View style={styles.dateContainer}>
-
-    
-     <View style={{flex:0.40,flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:40,paddingHorizontal:4,borderRadius:8}}>
-     <Image
-        source={require('../assets/images/images/images/image11.png')} // Replace with your image path
-        style={{height:16,width:16,marginHorizontal:3}}
-        resizeMode="contain"
+      <Calendar
+        onDayPress={handleEndDateSelect}
+        markedDates={{
+          [formatDateToCalendar(formData.endDate)]: {
+            selected: true,
+            selectedColor: '#007AFF'
+          }
+        }}
+        theme={{
+          selectedDayBackgroundColor: '#007AFF',
+          todayTextColor: '#007AFF',
+          arrowColor: '#007AFF',
+        }}
+        // Set the minimum date for end date based on the selected start date
+        minDate={formData.startDate ? formatDateToCalendar(formData.startDate) : undefined}
       />
-     <TextInput 
-  style={{width:100,height:'80%',paddingHorizontal:5,outlineColor:'white',backgroundColor:'#F9FAFBFF'}}
+    </View>
+  </View>
+</Modal>
+
+</View>
+
+{/* Max Participants with Error */}
+<Text style={{
+  marginHorizontal: 20,
+  marginBottom: 6,
+  fontWeight: '500',
+  color: '#333',
+  fontFamily: 'InterTight-Regular',
+  fontSize: 16
+}}>จำนวนคน</Text>
+
+<View style={[
+  {
+    width: '45%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFBFF',
+    height: 40,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    marginHorizontal: 20,
+    marginBottom: 30
+  },
+  errors.maxParticipants && styles.inputError
+]}>
+  <Image
+    source={require('../assets/images/images/images/image11.png')}
+    style={{ height: 16, width: 16, marginHorizontal: 3 }}
+    resizeMode="contain"
+  />
+<TextInput
+  style={{
+    width: 100,
+    height: '80%',
+    paddingHorizontal: 5,
+    outlineColor: 'white',
+    backgroundColor: '#F9FAFBFF',
+    flex: 0.45
+  }}
   placeholder=''
-  value={maxParticipant!=''?maxParticipant.toString():''}
+  value={maxParticipant !== '' ? maxParticipant.toString() : ''}
   onChangeText={(text) => {
-    handleMaxParticipant(text);
-    // Clear error when user starts typing
-    if (validationErrors.maxParticipant) {
-      setValidationErrors(prev => ({ ...prev, maxParticipant: null }));
+    if (text && parseInt(text) <= 15) {
+      handleMaxParticipant(text);
+    } else if (text === '') {
+      handleMaxParticipant(text); // Allow clearing the input
     }
+    if (errors.maxParticipants) clearError('maxParticipants');
   }}
   keyboardType='numeric'
 />
-      <Text style={{marginLeft:3}}>คน</Text>
-     </View>
-     </View>
 
-   {/* Price Per Person */}
-   <Text style={{marginLeft:2,marginBottom:6}}>ราคาต่อคน
-    </Text>
-     <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'#F9FAFBFF',height:45,borderRadius:8,justifyContent:'space-between',marginBottom:30}}>
-     <Image
-        source={require('../assets/images/images/images/image12.png')} // Replace with your image path
-        style={{height:16,width:16,marginHorizontal:3}}
-        resizeMode="contain"
-      />
-      <Text style={{marginLeft:5,marginRight:10,width:100}}>ราคาต่อคน
-      </Text>
-       <TextInput style={{width:'100%',height:'70%',paddingHorizontal:5,outlineColor:'#e0e0e0'}}
-      placeholder=''
-      value={pricePerPerson!=''?pricePerPerson.toString():''}
-      onChangeText={handlepricePerPerson}
-      keyboardType='numeric'
-      />
-      <Text style={{marginHorizontal:5}}>คน</Text>
-     </View>
+  <Text style={{ marginLeft: 3, flex: 0.2, fontFamily: 'InterTight-Regular' }}>คน</Text>
+</View>
+ <ErrorMessage error={errors.maxParticipants} /> 
+
+    
+    {/* Price Per Person with Error */}
+<Text style={{
+  marginHorizontal: 20,
+  marginBottom: 6,
+  fontWeight: '500',
+  color: '#333',
+  fontFamily: 'InterTight-Regular',
+  fontSize: 16
+}}>ราคาต่อคน</Text>
+
+<View style={[
+  {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFBFF',
+    height: 45,
+    borderRadius: 8,
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    marginHorizontal: 20
+  },
+  errors.pricePerPerson && styles.inputError
+]}>
+  <Image
+    source={require('../assets/images/images/images/image12.png')}
+    style={{ height: 16, width: 16, marginHorizontal: 3 }}
+    resizeMode="contain"
+  />
+  <Text style={{
+    marginLeft: 5,
+    marginRight: 10,
+    width: '100%',
+    fontWeight: '500',
+    color: '#333',
+    fontFamily: 'InterTight-Regular',
+    fontSize: 16
+  }}>ราคาต่อคน</Text>
+  <TextInput
+    style={{ width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0',fontFamily:'InterTight-Regular' }}
+    placeholder=''
+    value={pricePerPerson != '' ? pricePerPerson.toString() : ''}
+    onChangeText={(text) => {
+      handlepricePerPerson(text);
+      if (errors.pricePerPerson) clearError('pricePerPerson');
+    }}
+    keyboardType='numeric'
+  />
+  <Text style={{
+    marginHorizontal: 5,
+    fontWeight: '500',
+    color: '#333',
+    fontFamily: 'InterTight-Regular',
+    fontSize: 16
+  }}>บาท</Text>
+</View>
+ <ErrorMessage error={errors.pricePerPerson} /> 
 
 
-       {/* Checkbox Serives */}
-       <View style={styles.checkboxSection}>
-  <Text style={styles.label}>สิ่งที่รวมในราคา
-  </Text>
-
+  {/* Services with Error */}
+<View style={styles.checkboxSection}>
+  <Text style={styles.label}>สิ่งที่รวมในราคา</Text>
   <View style={styles.checkboxContainer}>
-  {services.map(service => (
-  <View key={service.id} style={styles.checkboxRow}>
-    <TouchableOpacity
-  style={styles.checkbox}
-  onPress={() => {
-    toggleServiceCheckbox(service.id);
-    // Clear error when user selects a service
-    if (validationErrors.services) {
-      setValidationErrors(prev => ({ ...prev, services: null }));
-    }
-  }}
->
-      <View
-        style={[
-          styles.checkboxInner,
-          isServiceChecked(service.id) && styles.checked,
-        ]}
-      />
-    </TouchableOpacity>
-    <Text style={styles.checkboxText}>{service.title}</Text>
-  </View>
-))}
-
+    {services.map(service => (
+      <TouchableOpacity
+        key={service.id}
+        style={styles.checkboxRow}
+        onPress={() => {
+          toggleServiceCheckbox(service.id);
+          if (errors.services) clearError('services');
+        }}
+      >
+        <TouchableOpacity
+          style={styles.checkbox}
+          onPress={() => {
+            toggleServiceCheckbox(service.id);
+            if (errors.services) clearError('services');
+          }}
+        >
+          <View
+            style={[
+              styles.checkboxInner,
+              isServiceChecked(service.id) && styles.checked,
+            ]}
+          />
+        </TouchableOpacity>
+        <Text style={styles.checkboxText}>{service.title}</Text>
+      </TouchableOpacity>
+    ))}
   </View>
 </View>
+ <ErrorMessage error={errors.services} /> 
 
+       {/* Travel Styles with Error */}
+       <View style={styles.content}>
+  <Text style={styles.label}>สไตล์การเที่ยว</Text>
+  {loading ? (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color="#6366f1" />
+      <Text style={styles.loadingText}>กำลังโหลด...</Text>
+    </View>
+  ) : (
+    <View style={styles.categoriesContainer}>
+      {categories.map((category) => {
+        const isSelected = selectedItems.includes(category.id);
+        const iconUrl = isSelected && category.activeIconImageUrl 
+          ? category.activeIconImageUrl 
+          : category.iconImageUrl;
+        
+        return (
+          <TouchableOpacity
+            key={category.id}
+            style={[
+              styles.categoryItem,
+              isSelected && styles.selectedItem
+            ]}
+            onPress={() => {
+              toggleSelection(category.id);
+              if (errors.travelStyles) clearError('travelStyles');
+            }}
+          >
+            <Image
+              source={{ 
+                uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' 
+              }}
+              style={{
+                width: 14,
+                height: 12,
+                tintColor: isSelected ? '#29C4AF' : '#000',
+              }}
+              resizeMode="contain"
+            />
+            <Text style={[
+              styles.categoryText,
+              isSelected && styles.selectedText
+            ]}>
+              {category.title}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  )}
+</View>
+ <ErrorMessage error={errors.travelStyles} /> 
 
+  
 
-
-
-          {/* Travel-Style */}
-      
-          <View style={styles.content}>
-        <Text style={styles.label}>
-        สไตล์การเที่ยว
-
-        </Text>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>กำลังโหลด...</Text>
-          </View>
-        ) : (
-          <View style={styles.categoriesContainer}>
-            {categories.map((category: Category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryItem,
-                  selectedItems.includes(category.id) && styles.selectedItem
-                ]}
-                onPress={() => {
-                  toggleSelection(category.id);
-                  // Clear error when user selects a category
-                  if (validationErrors.travelStyle) {
-                    setValidationErrors(prev => ({ ...prev, travelStyle: null }));
-                  }
-                }}
-              >
-  <Image
-  source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' }}
-  style={{
-    width: 14,
-    height: 12,
-   
-    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
-    
-  }}
-  resizeMode="contain"
-/>
-
-                <Text style={[
-                  styles.categoryText,
-                  selectedItems.includes(category.id) && styles.selectedText
-                ]}>
-                  {category.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-
-
-      {/* Destination */}
+{/* Destination */}
 <View style={{
   backgroundColor: '#fff',
   position: 'relative',
   zIndex: 1000,
-  marginBottom: dropdownOpen ? 220 : 20, // Dynamic margin based on dropdown state
-  marginTop:10
+  marginBottom: dropdownOpen ? 220 : 30, // Dynamic margin based on dropdown state
+  marginTop:10,
+  marginHorizontal:20
 }}>
   <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
     <View>
@@ -1282,7 +1370,7 @@ function addDestination(dest: string) {
             paddingHorizontal: 12,
             paddingVertical: 12,
             fontSize: 16,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'InterTight-Regular',
             lineHeight: 24,
             color: '#374151',
             height: 50,
@@ -1301,7 +1389,7 @@ function addDestination(dest: string) {
           paddingHorizontal: 12,
           paddingVertical: 12,
           fontSize: 16,
-          fontFamily: 'Inter_400Regular',
+          fontFamily: 'InterTight-Regular',
           lineHeight: 24,
           color: '#374151',
           height: 50,
@@ -1319,8 +1407,8 @@ function addDestination(dest: string) {
 
   {dropdownOpen && (
     <View style={{
-      position: 'absolute', // Position absolutely to avoid pushing content down
-      top: 55, // Position just below the input (50px height + 5px margin)
+      position: 'absolute', 
+      top: 55, 
       left: 0,
       right: 0,
       backgroundColor: '#FFFFFF',
@@ -1328,8 +1416,8 @@ function addDestination(dest: string) {
       borderColor: '#999',
       borderRadius: 6,
       maxHeight: 200,
-      zIndex: 1001, // Higher z-index than parent
-      shadowColor: '#000', // Add shadow for better visibility
+      zIndex: 1001, 
+      shadowColor: '#000',
       shadowOffset: {
         width: 0,
         height: 2,
@@ -1355,7 +1443,7 @@ function addDestination(dest: string) {
                 }}
                 onPress={() => addDestination(item)}
               >
-                <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                <Text style={{ fontSize: 14, color: '#374151',fontFamily:'InterTight-Regular' }}>{item}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -1364,6 +1452,7 @@ function addDestination(dest: string) {
               textAlign: 'center',
               color: '#9CA3AF',
               fontSize: 14,
+              fontFamily:'InterTight-Regular'
             }}>
               ไม่พบสถานที่ที่ค้นหา
             </Text>
@@ -1386,13 +1475,13 @@ function addDestination(dest: string) {
         <TouchableOpacity
           key={index}
           style={{
-            backgroundColor: '#4F46E51A',
+            backgroundColor: 'rgba(41, 196, 175, 0.1)',
             borderWidth: 1,
             paddingHorizontal: 8,
             paddingTop: 7,
             borderRadius: 9999,
             margin: 5,
-            borderColor: '#4F46E5',
+            borderColor: '#29C4AF',
             minWidth: 84.09,
             height: 38,
             alignItems: 'center',
@@ -1400,8 +1489,8 @@ function addDestination(dest: string) {
           onPress={() => removeDestination(dest)}
         >
           <Text style={{
-            color: '#4F46E5',
-            fontFamily: 'Inter_400Regular',
+            color: '#29C4AF',
+            fontFamily: 'InterTight-Regular',
             fontSize: 14,
           }}>
             {dest} <Text style={{ fontSize: 16 }}>×</Text>
@@ -1411,413 +1500,109 @@ function addDestination(dest: string) {
     </View>
   </View>
 </View>
+ <ErrorMessage error={errors.destinations} /> 
 
 
-
-
-       {/* Description Field */}
-       <View style={{marginBottom:20,marginTop:-20}}>
-            <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
-            <TextInput
-  style={[
-    styles.textArea,
-    validationErrors.description && styles.errorBorder
-  ]}
-  multiline
-  numberOfLines={4}
-  value={formData.description}
-  onChangeText={(text) => {
-    setFormData(prev => ({ ...prev, description: text }));
-    // Clear error when user starts typing
-    if (validationErrors.description) {
-      setValidationErrors(prev => ({ ...prev, description: null }));
-    }
-  }}
-  placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
-/>
-<ErrorText error={validationErrors.description} />
-          </View>
-
-
-
-
-
-                {/*RIch Editor */}
-      <View style={styles.container3}>
-      {/* Header */}
+{/* Group Atmosphere with Character Count */}
+<View style={{ marginBottom: 30, marginTop: -20, marginHorizontal: 20 }}>
+  <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
+  <View style={{ position: 'relative' }}>
+    <TextInput
+      style={[
+        styles.textArea,
+        errors.atmosphere && styles.inputError
+      ]}
+      multiline
+      numberOfLines={4}
+      value={formData.description}
+      onChangeText={(text) => {
+        // Character limit set to 100
+        const characterLimit = 100;
+        
+        if (text.length <= characterLimit) {
+          setFormData(prev => ({ ...prev, description: text }));
+          if (errors.atmosphere) clearError('atmosphere');
+        }
+        // If character limit is exceeded, the text won't update (user can't type more)
+      }}
+      placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
+      placeholderTextColor="#888"
+      maxLength={100} // Prevents typing beyond 100 characters
+    />
+    <Text style={[
+      styles.wordCountText,
+      // Optional: Change color when approaching limit (90+ characters)
+      formData.description.length > 90 && { color: 'red' }
+    ]}>
+      {formData.description.length}/100
+    </Text>
+  </View>
+</View><ErrorMessage error={errors.atmosphere}/>
+      
+      {/* General Details with Error */}
+<View style={styles.container3}>
+  <Text style={styles.label}>รายละเอียดทั่วไป</Text>
+  <TextInput
+    style={[
+      styles.textArea,
+      errors.details && styles.inputError
+    ]}
+    multiline
+    numberOfLines={4}
+    value={formData.details}
+    onChangeText={(text) => {
+      setFormData(prev => ({ ...prev, details: text }));
+      if (errors.details) clearError('details');
+    }}
+    placeholder='เขียนรายละเอียดทริปของคุณ...'
+    placeholderTextColor="#888"
+  />
+</View>
+<ErrorMessage error={errors.details} /> 
+ 
+        
+        
+      
     
-        <Text style={styles.label}>รายละเอียดทั่วไป</Text>
-       
-      
-     
-      
-      {/* Text Editor */}
-      <ScrollView style={styles.editorContainer}>
-      <TextInput
-  ref={(ref) => setTextInputRef(ref)}
-  style={[styles.textEditor, getTextStyle()]}
-  multiline={true}
-  placeholder="เขียนรายละเอียดทั่วไปของคุณ..."
-  placeholderTextColor="#999"
-  value={editorState.content}
-  onChangeText={(text) => {
-    handleContentChange(text);
-    // Clear error when user starts typing
-    if (validationErrors.generalDetails) {
-      setValidationErrors(prev => ({ ...prev, generalDetails: null }));
-    }
-  }}
-  onSelectionChange={handleSelectionChange}
-  textAlignVertical="top"
-/>
+      <Text style={{fontWeight:600,fontFamily:'InterTight-Regular',marginHorizontal:20,marginBottom:5}}>ตัวอย่างโพสต์
+      </Text>
+      {userInfo && (
+        <TripCard
+          trip={createTripFromFormData()}
+          isBookmarked={false} // Set based on your bookmark state
+          onBookmarkToggle={handleBookmarkToggle}
+          onTripPress={handleTripPress}
+          onJoinTrip={handleJoinTrip}
+        />
+      )}
 
       </ScrollView>
-      <ErrorText error={validationErrors.generalDetails} />
-       {/*Link MOdal */}
 
+{/* Updated Submit Buttons */}
+<View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
+  
 
-    </View>
-      </View>
-
-
-{/* Review */}
- 
-<View style={{marginLeft:20,marginRight:20}}>
-<Text style={{fontWeight:600,}}>ตัวอย่างโพสต์
-      </Text>
-      <View style={styles.card}>
-      <View style={styles.imageContainer}>
-      <Image style={styles.backgroundImage} source={{ uri: trip?.tripCoverImageUrl }} />
-
-       {/* Date Badge - Top Left */}
-    {formData.startDate && formData.endDate && (
-      <View style={styles.dateBadge}>
-        <Text style={styles.dateIcon}>📅</Text>
-        <Text style={styles.dateText}>
-          {formatDateRange(formData.startDate, formData.endDate)}
-        </Text>
-      </View>
-    )}
+  <View style={styles.submitContainer}>
+    <TouchableOpacity 
+      style={[
+        styles.submitButton,
+      ]} 
+      onPress={() => edit(tripId as String) } 
     
-    {/* Max Participant Badge - Top Right */}
-    {maxParticipant && (
-      <View style={styles.participantBadge}>
-        <Image source={require('../assets/images/images/images/image14.png')} style={{width:15,height:12,marginRight:3}} />
-        <Text style={styles.participantText}>ต้องการ {maxParticipant} คน</Text>
-      </View>
-    )}
-   </View>
-
-       {/* Content Below Image */}
-  <View style={styles.content2}>
-    {/* Trip Name */}
-    {formData2.name && (
-      <Text style={styles.tripName}>{formData2.name}</Text>
-    )}
-
-    {/* Destinations */}
-    {selected.length > 0 && (
-      <View style={styles.destinationRow}>
-       
-
-        <View style={styles.destinationContainer}>
-          {selected.map((dest, index) => (
-            <Text key={dest} style={styles.destinationText}>
-              {dest}{index < selected.length - 1 ? ', ' : ''}
-            </Text>
-          ))}
-        </View>
-      </View>
-    )}
-
-    {/* Description */}
-    {formData.description && (
-      <Text style={styles.description}>{formData.description}</Text>
-    )}
-
-    {/* Editor Content */}
-    {editorState.content && (
-      <Text style={styles.description}>{editorState.content}</Text>
-    )}
-
-    {/* Services Tags */}
-    <View style={styles.tagsContainer2}>
-      {services.map(service =>
-        isServiceChecked(service.id) ? (
-          <View key={service.id} style={styles.serviceTag}>
-            <Text style={styles.serviceTagText}>#{service.title}</Text>
-          </View>
-        ) : null
-      )}
-    </View>
-
-    {/* Travel Styles */}
-    <View style={styles.travelStylesContainer}>
-      {categories
-        .filter(category => selectedItems.includes(category.id))
-        .map(category => (
-          <View key={category.id} style={styles.categoryItem2}>
-            <Image
-              source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30' }}
-              style={styles.categoryIcon}
-            />
-            <Text style={styles.categoryText2}>{category.title}</Text>
-          </View>
-        ))}
-    </View>
-
-    {/* Action Button */}
-    <TouchableOpacity style={styles.joinButton}>
-      <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
+    >
+      <Text style={styles.submitText}>
+       Edit
+      </Text>
     </TouchableOpacity>
   </View>
+</View>
+    <Text style={styles.submitNote}>กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง</Text>
+    
+    </SafeAreaView>
+  );
+};
 
-
-
-
-
-
-      </View>
-  </View>
-
-
-      </ScrollView>
-
-      
-      <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
-
-      {/* Submit Button 2 */}
-      <View style={styles.submitContainer}>
-        <TouchableOpacity style={styles.submitButton} onPress={editTrip}>
-        
-          {/*   <Ionicons name="send" size={20} color="#fff" /> */}
-          <Text style={styles.submitText}>Edit</Text>
-        </TouchableOpacity>
-        
-      </View>
-    </View>
-   </SafeAreaView>
-  )
-}
-
-
-const styles=StyleSheet.create({
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      colorPickerContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 20,
-        margin: 20,
-        maxWidth: 300,
-      },
-      modalTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        textAlign: 'center',
-        marginBottom: 16,
-        color: '#333',
-      },
-      colorGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        marginBottom: 16,
-      },
-      colorOption: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        margin: 4,
-        borderWidth: 2,
-        borderColor: '#ddd',
-      },
-      selectedColor: {
-        borderColor: '#007bff',
-        borderWidth: 3,
-      },
-      modalCloseButton: {
-        backgroundColor: '#007bff',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 8,
-        alignItems: 'center',
-        marginTop: 8,
-      },
-      modalCloseText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '500',
-      },
-      modalContent: {
-        width: '80%',
-        backgroundColor: '#ffffff',
-        padding: 16,
-        borderRadius: 8,
-        elevation: 4,
-      },
-      input: {
-        borderWidth: 1,
-        borderColor: '#D1D5DB',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        fontSize: 16,
-        fontFamily: 'Inter_400Regular',
-        lineHeight: 24,
-        color: '#374151',
-        height: 50,
-        backgroundColor: '#FFFFFF',
-        outlineColor:'#e0e0e0'
-      },
-      modalActions: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginTop: 8,
-      },
-
-      inputModalContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 24,
-        margin: 20,
-        minWidth: 300,
-      },
-
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    marginBottom: 20,
-    backgroundColor: '#f9f9f9',
-  },
-
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalCancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    flex: 1,
-    marginRight: 8,
-  },
-  modalCancelText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  modalSubmitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-
-  modalSubmitButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: '#007bff',
-    flex: 1,
-    marginLeft: 8,
-  },
-
-  fontSizeContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    margin: 20,
-    maxWidth: 250,
-  },
-  fontSizeOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  selectedFontSize: {
-    backgroundColor: '#f0f8ff',
-  },
-
-  fontSizeText: {
-    color: '#333',
-  },
-  toolbarButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-  activeButton: {
-    backgroundColor: '#007bff',
-  },
-  toolbarButtonText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-
-  activeButtonText: {
-    color: '#fff',
-  },
-
-  fontDropdownContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    margin: 20,
-    maxHeight: 400,
-    minWidth: 200,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-},
-dropdownTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-    color: '#333',
-  },
-  selectedFontItem: {
-    backgroundColor: '#007AFF',
-  },
-  fontList: {
-    maxHeight: 300,
-  },
-  fontItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    borderRadius: 4,
-    marginBottom: 2,
-  },
-
-fontItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedFontText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
+const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
@@ -1826,7 +1611,7 @@ fontItemText: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
- 
+    borderBottomWidth:1,
     paddingVertical: 12,
     borderBottomColor: '#e0e0e0',
   },
@@ -1835,39 +1620,44 @@ fontItemText: {
   },
   headerTitle: {
     fontSize: 18,
-    fontFamily:'Inter_500Medium',
     color: '#1F2937',
     flex: 1,
     textAlign: 'center',
-
-    marginLeft:-20
+    fontWeight:500,
+    fontFamily:'InterTight-Regular',
+    marginLeft:-20,
+   
   },
   content: {
     flex: 1,
-    marginBottom:10
+    marginBottom:30,
+    marginHorizontal:20,
+  },
+  imageSection: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  imagePlaceholder: {
+    width: 120,
+    height: 120,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#e0e0e0',
+    borderStyle: 'dashed',
+  },
+  imageText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#666',
   },
   formSection: {
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
-  },
-  uploadBox: {
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderStyle: 'solid',
-    borderRadius: 12,
-    alignItems: 'center',
-    minHeight: 270,
-    backgroundColor:'#E5E7EB',
-    verticalAlign:'middle',
-    marginBottom:12
-  },
-  uploadedImage: {
-    width: '100%',
-    flex: 1,
-    borderRadius: 8,
-    resizeMode: 'cover',
-    minHeight: 200,
+    marginBottom: 10,       // Add consistent bottom margin
   },
   fieldContainer: {
     marginBottom: 20,
@@ -1875,18 +1665,30 @@ fontItemText: {
   label: {
     fontWeight: '500',
     color: '#333',
-    marginBottom:4
+    marginBottom:4,
+    fontFamily:'InterTight-Regular',
+    fontSize:16
+  },
+  requiredText: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 8,
+  },
+  disabledButton: {
+    opacity: 0.5, 
+    backgroundColor: '#4285f4', 
   },
   textInput: {
     borderWidth:1,
     borderColor: '#e0e0e0',
-   
+    marginTop:5,
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#fff',
-    fontWeight:"600"
+    fontWeight:400,
+    fontFamily:'InterTight-Regular'
   },
   textInputFocused: {
     borderColor: 'transparent',
@@ -1896,7 +1698,12 @@ fontItemText: {
   dateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 20,       // Reduced from 30 to 20
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    height: 50,
+    alignItems: 'center'
   },
   dateField: {
     flex: 0.48,
@@ -1908,6 +1715,45 @@ fontItemText: {
     marginBottom: 8,
   },
   dateInput: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 14,
+    backgroundColor: '#fff',
+  },
+  alignmentIcon: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: 'bold',
+  },
+  tagsContainer: {
+    marginBottom: 20,
+  },
+  tagButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+  },
+  tagButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  activeTag: {
+    backgroundColor: '#4285f4',
+  },
+  tagText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeTagText: {
+    fontSize: 14,
+    color: '#fff',
+  },
+  textArea: {
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
@@ -1915,51 +1761,32 @@ fontItemText: {
     paddingVertical: 12,
     fontSize: 14,
     backgroundColor: '#fff',
+    minHeight: 80,
+    textAlignVertical: 'top',
+    outlineColor:'#e0e0e0',
+    fontFamily:'InterTight-Regular'
   },
-  wordCount: {
-    position: 'absolute',
-    bottom: 8,
-    right: 12,
-    fontSize: 12,
-    color: '#888',
-  },
-  dateInputError: {
-    borderColor: '#FF6B6B',
-    borderWidth: 1,
-  },
-  calendarContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    margin: 20,
-    maxHeight: '80%',
-    width: '90%',
-  },
-  calendarHeader: {
+  attachmentSection: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    marginBottom: 20,
   },
-  calendarTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
+  attachmentText: {
+    fontSize: 14,
     color: '#333',
   },
-  closeButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
+  attachmentCount: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  closeButtonText: {
-    fontSize: 18,
+  countNumber: {
+    fontSize: 14,
     color: '#666',
   },
-   
   checkboxSection: {
-    marginBottom: 30,
+    marginBottom: 20,
+    marginHorizontal:20
   },
   checkboxContainer: {
     flexDirection: 'row',
@@ -1999,6 +1826,122 @@ fontItemText: {
   checkboxText: {
     fontSize: 14,
     color: '#333',
+    fontFamily:'InterTight-Regular'
+  },
+  bottomSection: {
+    alignItems: 'center',
+    marginTop: 20,
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+  },
+  addButtonText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#666',
+  },
+  submitContainer: {
+    flex:1,
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  drafContainer: {
+    flex:0.5,
+    backgroundColor: '#fff',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  submitButton: {
+    flex:1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#29C4AF',
+    paddingVertical: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+
+  draftText:{
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  submitText: {
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  submitNote: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginTop:-25,
+    marginBottom:20
+  },
+  uploadBox: {
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    borderStyle: 'solid',
+    borderRadius: 12,
+    alignItems: 'center',
+    minHeight: 270,
+    backgroundColor: '#E5E7EB',
+    verticalAlign: 'middle',
+    marginBottom: 20,       // Reduced from 30 to 20
+    justifyContent: 'center',
+  },
+  uploadPlaceholder: {
+    alignItems: 'center',
+    verticalAlign:'middle'
+  },
+  container2:{
+  
+     
+  },
+  personIcon: {
+    width: 64,
+    height: 64,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+   
+  },
+  uploadText: {
+    fontSize: 14,
+    fontFamily:"Inter_500Medium",
+    color: '#374151',
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  uploadedImage: {
+    width: '100%',
+    flex: 1,
+    borderRadius: 8,
+    resizeMode: 'cover',
+    minHeight: 200,
+  },
+  uploadSubtext: {
+    fontSize: 16,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 12,
+    fontFamily:'InterTight-Regular',
+  },
+  title: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '800',
+    marginBottom: 14,
+    lineHeight: 24,
+    fontFamily:'Inter_900Black'
   },
   loadingContainer: {
     flex: 1,
@@ -2014,49 +1957,54 @@ fontItemText: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 10, // Add space after categories
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    height:38,
+    height: 38,
     borderRadius: 30,
-    marginBottom: 8,
+    // Remove marginBottom: 20
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   selectedItem: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // 10% opacity of #6366f1
-    borderColor: '#6366f1',
+    backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
+    borderColor: '#29C4AF',
   },
   selectedText: {
-    color: '#6366f1',
+    color: '#29C4AF',
+    fontFamily:'InterTight-Regular'
   },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
     color: '#666',
-    fontWeight: '700',
+    fontWeight: '500',
+    fontFamily:'InterTight-Regular'
   },
-  textArea: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+  toolbarButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginRight: 4,
+  },
+  activeButton: {
+    backgroundColor: '#007bff',
+  },
+  toolbarButtonText: {
     fontSize: 14,
-    backgroundColor: '#fff',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    outlineColor:'#e0e0e0'
+    color: '#333',
+    fontWeight: '500',
   },
-  container3: {
-    flex: 4,
-    backgroundColor: 'white',
-    position: 'relative',         
-    zIndex: 1000,               
+  activeButtonText: {
+    color: '#fff',
   },
+
   toolbar: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -2069,15 +2017,37 @@ fontItemText: {
     flexWrap: 'wrap',
     alignItems: 'center',
   }, 
-  toolButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+   dropdown: {
+    position: 'absolute',         
+    top: 52,                     
+    left: 0,                    
+    right: 0,                    
+    backgroundColor: '#FFFFFF',  
+    borderWidth: 1,
+    borderColor: 'black',      
+    borderTopWidth: 0,         
+    borderBottomLeftRadius: 8,   
+    borderBottomRightRadius: 8,
+    maxHeight: 200,              
+    zIndex: 1002,                
+    elevation: 5,              
+    shadowColor: '#000',        
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },shadowOpacity: 0.1,
+    shadowRadius: 4,
+    
+  },
+  
+  dropdownText: {
+    fontSize: 14,
+    color: '#333',
     marginRight: 4,
   },
-  fontButtonText: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
+  dropdownArrow: {
+    fontSize: 10,
+    color: '#666',
   },
 
   formatButton: {
@@ -2094,27 +2064,14 @@ fontItemText: {
     minWidth: 32,
     alignItems: 'center',
   },
-  alignmentIcon: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
+  toolButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginRight: 4,
   },
   toolButtonText: {
     fontSize: 14,
     color: '#666',
-  },
-  textFormatIcon: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  textFormatX: {
-    fontSize: 10,
-    color: '#666',
-    position: 'absolute',
-    right: 2,
-    bottom: 2,
   },
 
   editorContainer: {
@@ -2139,6 +2096,302 @@ fontItemText: {
     minHeight: 200,
     outlineColor:'#e0e0e0'
   },
+  dateInputError: {
+    borderColor: '#FF6B6B',
+    borderWidth: 1,
+  },
+  calendarIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 3,
+    position: 'relative',
+  },
+  calendarTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 2,
+    paddingHorizontal: 3,
+  },
+  calendarHook: {
+    width: 2,
+    height: 3,
+    backgroundColor: 'white',
+    borderRadius: 1,
+  },
+  calendarBody: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingHorizontal: 3,
+    paddingTop: 2,
+    flex: 1,
+  },
+  calendarDot: {
+    width: 2,
+    height: 2,
+    backgroundColor: 'white',
+    borderRadius: 1,
+    margin: 1,
+  },
+  wordCount: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    fontSize: 12,
+    fontFamily:'InterTight-Regular',
+  },
+  text: {
+    flex: 1,
+    fontSize: 16,
+    lineHeight: 22,
+  },
+  linkText: {
+    color: 'blue',
+    textDecorationLine: 'underline',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    fontSize: 16,
+    fontFamily: 'Inter_400Regular',
+    lineHeight: 24,
+    color: '#374151',
+    height: 50,
+    backgroundColor: '#FFFFFF',
+    outlineColor:'#e0e0e0'
+  },
+  dropdownItem: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+  },
+  emptyText: {
+    padding: 10,
+    textAlign: 'center',
+    color: '#999',
+    fontStyle: 'italic',
+    fontFamily:'InterTight-Regular'
+  },
+  selectedContainer: { 
+    marginTop: 10,
+   
+    },
+  selectedGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap:5,
+    
+  },
+  container4: {
+    flex: 4,
+    backgroundColor: 'white',
+    position: 'relative',         
+    zIndex: 1000,
+    maxHeight:120,
+    overflowY:'auto',
+    marginTop:20,
+  },
+  selectedButton: {
+    backgroundColor: '#4F46E51A',
+    borderWidth: 1,
+    paddingHorizontal:8,
+    paddingVertical:7,
+    borderRadius: 9999,
+    borderColor:'#4F46E5',
+    minWidth: 84.09,   
+    height:38,
+    alignItems: 'center',
+    justifyContent:'center'
+  },
+  selectedButtonText: {
+    color: '#4F46E5',
+    fontFamily:'Inter_400Regular',
+    fontSize: 14,
+  },
+  container3: {
+    flex: 4,
+    backgroundColor: 'white',        
+    marginHorizontal: 20,
+    marginBottom: 20,       // Add consistent bottom margin
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    maxWidth: 300,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 16,
+    color: '#333',
+  },
+  colorGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  colorOption: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    margin: 4,
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+  selectedColor: {
+    borderColor: '#007bff',
+    borderWidth: 3,
+  },
+  modalCloseButton: {
+    backgroundColor: '#007bff',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  modalCloseText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  fontSizeContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 20,
+    margin: 20,
+    maxWidth: 250,
+  },
+  fontSizeOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  selectedFontSize: {
+    backgroundColor: '#f0f8ff',
+  },
+  fontSizeText: {
+    color: '#333',
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  colorButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 4,
+    borderWidth: 2,
+    borderColor: '#ddd',
+  },
+  colorButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  statusBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginTop: 8,
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#666',
+  },
+  textFormatIcon: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+  },
+  textFormatX: {
+    fontSize: 10,
+    color: '#666',
+    position: 'absolute',
+    right: 2,
+    bottom: 2,
+  },
+  selectedTravelStylesContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginVertical: 10,
+    gap: 8, 
+  },
+  inputModalContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 300,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 20,
+    backgroundColor: '#f9f9f9',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalCancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    flex: 1,
+    marginRight: 8,
+  },
+  modalSubmitButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    backgroundColor: '#007bff',
+    flex: 1,
+    marginLeft: 8,
+  },
+  modalCancelText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  modalSubmitText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  
   card: {
     backgroundColor: 'white',
     borderRadius: 16,
@@ -2154,11 +2407,16 @@ fontItemText: {
     height: 270,
     position: 'relative',
   },
-
   backgroundImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+    borderRadius: 12,
   },
   dateBadge: {
     position: 'absolute',
@@ -2214,7 +2472,13 @@ fontItemText: {
     alignItems: 'baseline',
     marginBottom: 8,
   },
-
+  locationIcon: {
+    fontSize: 14,
+    marginRight: 6,
+  },
+  sectionWithError: {
+    marginBottom: 5,        // Minimal margin, let ErrorMessage handle spacing
+  },
   destinationContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2230,7 +2494,6 @@ fontItemText: {
     lineHeight: 20,
     marginBottom: 12,
   },
-
   tagsContainer2: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2249,11 +2512,11 @@ fontItemText: {
     fontSize: 12,
     fontWeight: '500',
   },
-
   travelStylesContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginBottom: 16,
+    marginHorizontal:20
   },
   categoryItem2: {
     flexDirection: 'row',
@@ -2289,62 +2552,142 @@ fontItemText: {
     fontWeight: '400',
     textAlign: 'center',
   },
-  submitContainer: {
-    flex:1,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
+
+  calendarContainer: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    margin: 20,
+    maxHeight: '80%',
+    width: '90%',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  calendarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonText: {
+    fontSize: 18,
+    color: '#666',
   },
 
-  drafContainer: {
-    flex:0.5,
-    backgroundColor: '#fff',
+  fontDropdownContainer: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 16,
+    margin: 20,
+    maxHeight: 400,
+    minWidth: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    textAlign: 'center',
+    color: '#333',
+  },
+  fontList: {
+    maxHeight: 300,
+  },
+  fontItem: {
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    borderRadius: 4,
+    marginBottom: 2,
   },
-  draftButton:{
-    flex:0.5,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#E5E7EB',
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 8,
+  selectedFontItem: {
+    backgroundColor: '#007AFF',
   },
-  submitButton: {
-    flex:0.5,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#4285f4',
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  submitText: {
-    marginLeft: 8,
+  fontItemText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    color: '#333',
+  },
+  selectedFontText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  fontButtonText: {
+    fontSize: 12,
+    color: '#333',
+    fontWeight: '500',
+  },
+
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 8,
+    elevation: 4,
+  },
+
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 8,
+  },
+  wordCountText: {
+    position: 'absolute',
+    bottom: 8,
+    right: 12,
+    fontSize: 12,
+    color: '#666',
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', 
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   errorText: {
-    color: '#DC2626',
+    color: '#EF4444',
     fontSize: 12,
-    marginTop: 4,
-    marginLeft: 2,
-    fontFamily: 'Inter_400Regular',
+    marginTop: 5,           
+    marginHorizontal: 20,
+    fontFamily: 'InterTight-Regular',
+    marginBottom: 15,       
   },
-  errorBorder: {
-    borderColor: '#DC2626',
+  inputError: {
+    borderColor: '#EF4444',
     borderWidth: 1,
   },
-  errorContainer: {
-    borderColor: '#DC2626',
-    borderWidth: 1,
-    backgroundColor: '#FEF2F2',
+  uploadBoxError: {
+    borderColor: '#EF4444',
+    borderWidth: 2,
+  },
+  dateErrorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  dateErrorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontFamily: 'InterTight-Regular',
+    flex: 1,
   }
+});
 
-})
-
-export default EditTrip;
+export default ThaiFormScreen;

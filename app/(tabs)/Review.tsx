@@ -12,6 +12,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams,Stack } from 'expo-router';
 import { axiosInstance } from '../lib/axios';
+import { useFonts } from 'expo-font';
+
 
 interface UserProfile {
   age: number;
@@ -38,6 +40,12 @@ interface ReviewRequest {
 }
 
 const ReviewScreen: React.FC = () => {
+
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
+  });
   const router = useRouter();
   const { id, tripId } = useLocalSearchParams();
   
@@ -59,7 +67,7 @@ const ReviewScreen: React.FC = () => {
 
   const fetchUserProfile = async () => {
     if (!targetUserId) {
-      router.back();
+      router.push('/findTrips');
       return;
     }
 
@@ -103,11 +111,11 @@ const ReviewScreen: React.FC = () => {
 
       const response=await axiosInstance.post(`/users/review/${targetUserId}`, reviewData);
       console.log(response.data);
-      
-      
+      router.push('/findTrips')
       
     } catch (error: any) {
       console.error('Error submitting review:', error);
+      router.push('/findTrips')
     } finally {
       setSubmitting(false);
     }
@@ -149,7 +157,7 @@ const ReviewScreen: React.FC = () => {
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.push('/findTrips')}
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
@@ -167,10 +175,11 @@ const ReviewScreen: React.FC = () => {
   if (!userProfile) {
     return (
       <SafeAreaView style={styles.container}>
+           <Stack.Screen options={{ headerShown: false, tabBarStyle: { display: 'none' } }} />
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.push('/findTrips')}
           >
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
@@ -191,7 +200,7 @@ const ReviewScreen: React.FC = () => {
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={() => router.push('/findTrips')}
         >
           <Ionicons name="chevron-back" size={24} color="#333" />
         </TouchableOpacity>
@@ -280,17 +289,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 6,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+     fontFamily:'InterTight-Regular'
   },
   backButton: {
-    padding: 8,
+    padding: 4,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+     fontFamily:'InterTight-Regular'
   },
   placeholder: {
     width: 40,
@@ -304,6 +315,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+     fontFamily:'InterTight-Regular'
   },
   errorContainer: {
     flex: 1,
@@ -313,6 +325,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 16,
     color: '#666',
+     fontFamily:'InterTight-Regular'
   },
   profileSection: {
     flexDirection: 'row',
@@ -334,15 +347,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 4,
+     fontFamily:'InterTight-Regular'
   },
   userSubtitle: {
     fontSize: 14,
     color: '#666',
     marginBottom: 2,
+     fontFamily:'InterTight-Regular'
   },
   userDestinations: {
     fontSize: 12,
     color: '#999',
+     fontFamily:'InterTight-Regular'
   },
   ratingSection: {
     paddingHorizontal: 20,
@@ -354,6 +370,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 20,
+     fontFamily:'InterTight-Regular'
   },
   starsContainer: {
     flexDirection: 'row',
@@ -373,6 +390,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
     marginBottom: 12,
+     fontFamily:'InterTight-Regular'
   },
   commentInput: {
     borderWidth: 1,
@@ -383,11 +401,13 @@ const styles = StyleSheet.create({
     minHeight: 120,
     backgroundColor: '#FAFAFA',
     marginBottom: 12,
+     fontFamily:'InterTight-Regular'
   },
   commentHint: {
     fontSize: 12,
     color: '#999',
     lineHeight: 16,
+     fontFamily:'InterTight-Regular'
   },
   submitButton: {
     backgroundColor: '#007AFF',
@@ -405,7 +425,8 @@ const styles = StyleSheet.create({
   submitButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '500',
+    fontFamily:'InterTight-Regular'
   },
   submitButtonTextDisabled: {
     color: '#999',

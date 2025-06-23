@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
-  ActivityIndicator,
   TextInput,
   Alert,
 } from 'react-native';
@@ -19,6 +18,9 @@ import {requirements}  from '../requirement'
 import axios from 'axios'
 import {useFonts} from 'expo-font'
 import TripCard from './TripCard'
+import BottomNavigation from './customNavigation'
+
+
 
 interface TravelStyle {
   id: string;
@@ -96,28 +98,6 @@ interface TripDetailResponse {
   data: Trip;
 }
 
-// Helper Functions
-const getOwnerInfo = (tripOwner: TripOwner | null | undefined) => {
-  if (!tripOwner) {
-    return {
-      profileImageUrl: 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
-      displayName: 'ไม่ระบุชื่อ',
-      age: 'ไม่ระบุอายุ'
-    };
-  }
-
-  return {
-    profileImageUrl: tripOwner.profileImageUrl && tripOwner.profileImageUrl !== 'N/A' 
-      ? tripOwner.profileImageUrl 
-      : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
-    displayName: tripOwner.fullname && tripOwner.fullname !== 'N/A' 
-      ? tripOwner.fullname 
-      : tripOwner.fullname || 'ไม่ระบุชื่อ',
-    age: tripOwner.age && tripOwner.age > 0 ? `${tripOwner.age} ปี` : 'ไม่ระบุอายุ'
-  };
-};
-
-
 
 const FindTripScreen: React.FC = () => {
  
@@ -127,7 +107,6 @@ const FindTripScreen: React.FC = () => {
   const [travelStyles, setTravelStyles] = useState<TravelStyle[]>([]);
   const [selectedTravelStyle, setSelectedTravelStyle] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedTripIds, setBookmarkedTripIds] = useState<string[]>([]);
@@ -194,8 +173,7 @@ const FindTripScreen: React.FC = () => {
     }
   
     try {
-      setLoading(true);
-      
+     
       const response = await axiosInstance.get('/bookmarks');
       console.log('Bookmarks API response:', response.data);
       
@@ -232,9 +210,7 @@ const FindTripScreen: React.FC = () => {
           setUserId(null);
         }
       }
-    } finally {
-      setLoading(false);
-    }
+    } 
   };
   
 
@@ -312,25 +288,13 @@ const FindTripScreen: React.FC = () => {
     try {
       const response = await axiosInstance.get<TravelStylesResponse>('/travel-styles');
       setTravelStyles(response.data.data);
+      console.log("CD2xc3bg4dge4w",travelStyles);
+      
     } catch (error) {
       console.error('Error fetching travel styles:', error);
     }
   };
-  const fetchTripDetail = async (tripId: string): Promise<Trip | null> => {
-    try {
-      const response = await axiosInstance.get<TripDetailResponse>(`/trips/${tripId}`);
-      
-      if (response.data && response.data.data) {
-        console.log('Fetched trip detail:', response.data.data);
-        return response.data.data;
-      }
-      return null;
-    } catch (error) {
-      console.error('Error fetching trip detail:', error);
-      Alert.alert('ข้อผิดพลาด', 'ไม่สามารถโหลดรายละเอียดทริปได้ กรุณาลองใหม่อีกครั้ง');
-      return null;
-    }
-  };
+
   const fetchTrips = async (): Promise<void> => {
     const accessToken = await AsyncStorage.getItem('googleAccessToken');
    
@@ -359,12 +323,10 @@ const FindTripScreen: React.FC = () => {
       }
     } catch (error) {
       console.error('Error fetching trips:', error);
-      Alert.alert('Error', 'Failed to load trips. Please try again.');
       setAllTrips([]);
       setFilteredTrips([]);
       setDisplayedTrips([]);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
   };
@@ -398,10 +360,10 @@ const FindTripScreen: React.FC = () => {
           hasStyleById,
           hasStyleByTitle,
           ownerHasStyle,
-          matches: hasStyleById || hasStyleByTitle || ownerHasStyle
+          matches: hasStyleById || hasStyleByTitle
         });
         
-        return hasStyleById || hasStyleByTitle || ownerHasStyle;
+        return hasStyleById || hasStyleByTitle;
       });
     }
     
@@ -436,53 +398,32 @@ const FindTripScreen: React.FC = () => {
   };
 
   
+
   const handleJoinTrip = async (trip: Trip): Promise<void> => {
     try {
       console.log('Join trip:', trip.id);
       
-      // Retrieve the access token
+      // Retrieve tokens
       const accessToken = await AsyncStorage.getItem('googleAccessToken');
       const idToken = await AsyncStorage.getItem('googleIdToken');
-      console.log('Access Token:', accessToken);
-      console.log('ID Token:', idToken);
+      
+      console.log('Access Token:', accessToken ? 'Present' : 'Not found');
+      console.log('ID Token:', idToken ? 'Present' : 'Not found');
       
       if (!accessToken && !idToken) {
         console.error('No access token or ID token found');
+        // You might want to show an error message to the user here
+        // showErrorMessage('Authentication tokens not found. Please log in again.');
         return;
       }
       
       const bodyParameters = {}; // Empty payload
       
-      // Try using the ID token first if available
-      if (idToken) {
-        try {
-          const config = {
-            headers: {
-              Authorization: `Bearer ${idToken}`
-            }
-          };
-          
-          const response = await axiosInstance.post(
-            `${requirements.baseURL}/trips/join/${trip.id}`,
-            bodyParameters,
-            config
-          );
-          
-          console.log('Response with ID Token:', response.data);
-          router.push(`/stramChat?tripId=${trip.id}`)
-          return; // Success, so exit
-        } catch (err) {
-          console.warn('Failed with ID Token, trying access token:', err);
-        
-          // Fall back to accessToken
-        }
-      }
-      
-      // Fallback to using the access token
-      if (accessToken) {
+      // Helper function to make the API call
+      const makeJoinRequest = async (token: string, tokenType: string) => {
         const config = {
           headers: {
-            Authorization: `Bearer ${accessToken}`
+            Authorization: `Bearer ${token}`
           }
         };
         
@@ -492,12 +433,55 @@ const FindTripScreen: React.FC = () => {
           config
         );
         
-        console.log('Response with Access Token:', response.data);
-        router.push(`/stramChat?tripId=${trip.id}`)
+        console.log(`Response with ${tokenType}:`, response.data);
+        return response;
+      };
+      
+      let lastError: any = null;
+      
+      // Try ID token first if available
+      if (idToken) {
+        try {
+          await makeJoinRequest(idToken, 'ID Token');
+          router.push(`/stramChat?tripId=${trip.id}`);
+          return; // Success, exit function
+        } catch (err) {
+          console.warn('Failed with ID Token:', err);
+          lastError = err;
+          // Continue to try access token
+        }
       }
+      
+      // Fallback to access token
+      if (accessToken) {
+        try {
+          await makeJoinRequest(accessToken, 'Access Token');
+          router.push(`/stramChat?tripId=${trip.id}`);
+          return; // Success, exit function
+        } catch (err) {
+          console.error('Failed with Access Token:', err);
+          lastError = err;
+        }
+      }
+      
+      // If we reach here, both attempts failed
+      throw lastError || new Error('Failed to join trip with available tokens');
       
     } catch (error) {
       console.error('Error joining trip:', error);
+      if (error.response?.status === 404) {
+       
+      } else if (error.response?.status === 400) {
+        const message = error.response?.data?.message;
+        if (message === 'คุณเป็นสมาชิกของทริปนี้แล้ว') {
+         
+          router.push(`/stramChat?tripId=${trip.id}`);
+        } else if (message === 'ทริปนี้เต็มแล้ว') {
+         return
+        }
+      } else {
+       return
+      }
     }
   };
   
@@ -577,17 +561,7 @@ const FindTripScreen: React.FC = () => {
 
 
 
-  const formatDateRange = (startDate: string, endDate: string) => {
-    const start = new Date(startDate).toLocaleDateString('th-TH', {
-      day: 'numeric',
-      month: 'short',
-    });
-    const end = new Date(endDate).toLocaleDateString('th-TH', {
-      day: 'numeric',
-      month: 'short',
-    });
-    return `${start} - ${end}`;
-  };
+
   
   //Render All Catagories
   const renderAllCategory = () => (
@@ -660,17 +634,7 @@ const FindTripScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-  // Loading State
-  if (loading) {
-    return (
-      
-      <View style={styles.loadingContainer}>
-          <Stack.Screen options={{ headerShown: false }} />
-        <ActivityIndicator size="large" color="#6366f1" />
-        <Text style={styles.loadingText}>กำลังโหลดทริป...</Text>
-      </View>
-    );
-  }
+
 
   return (
     <View style={styles.container}>
@@ -718,9 +682,7 @@ const FindTripScreen: React.FC = () => {
       {displayedTrips.length === 0 ? (
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>
-            {loading ? 'กำลังโหลด...' : 
-             searchQuery ? `ไม่พบทริปที่ชื่อ "${searchQuery}"` : 
-             'ไม่พบทริปในหมวดหมู่นี้'}
+          {searchQuery ? `ไม่พบทริปที่ชื่อ "${searchQuery}"` : 'ไม่พบทริปในหมวดหมู่นี้'}
           </Text>
         </View>
       ) : (
@@ -739,43 +701,9 @@ const FindTripScreen: React.FC = () => {
 
     {/* Floating Action Button */}
     {renderFloatingButton()}
-
+   
     {/* Bottom Navigation */}
-    <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',paddingVertical:10,borderTopWidth:1,borderTopColor:'#E5E7EB'}}>
-      <View style={{ alignItems: 'center'}}>
-        <Image 
-          source={require('../assets/images/images/images/image18.png')} 
-          style={{ width: 24, height: 24,marginBottom:10}} 
-        />
-        <Text style={{fontSize: 12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline' }}>หน้าหลัก</Text>
-      </View>
-      <View style={{alignItems:'center'}}>
-        <Image 
-          source={require('../assets/images/images/images/image19.png')} 
-          style={{ width: 24, height: 24,marginBottom:10,tintColor:'#29C4AF'}} 
-        />
-        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#29C4AF',alignItems:'baseline'}}>ค้นหา</Text>
-      </View>
-   <TouchableOpacity onPress={handlesavedTrips}>
-   <View style={{alignItems:'center'}}>
-        <Image 
-          source={require('../assets/images/images/images/image21.png')} 
-          style={{   height: 20, marginBottom:10,
-            width: 15,}} 
-        />
-        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline'}}>บันทึก</Text>
-      </View>
-   </TouchableOpacity>
-     <TouchableOpacity onPress={handleProfile}>
-     <View style={{alignItems:'center'}}>
-        <Image 
-          source={require('../assets/images/images/images/image20.png')} 
-          style={{width: 24, height: 24 ,marginBottom:10}} 
-        />
-        <Text style={{fontSize:12,fontFamily:'InterTight-Regular',color:'#6B7280',alignItems:'baseline'}}>โปรไฟล์</Text>
-      </View>
-     </TouchableOpacity>
-    </View>
+    <BottomNavigation currentScreen="findTrips" userId={userId} />
   </View>
   );
 };

@@ -17,6 +17,7 @@ import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useRoute } from '@react-navigation/native';
 import {axiosInstance} from '../lib/axios'
+import {useFonts} from 'expo-font'
 
 
 
@@ -42,6 +43,12 @@ interface ApiResponse {
 
 
 const TravelStyleScreen: React.FC = () => {
+
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
+  });
   const router = useRouter();
   const route = useRoute();
   const [email, setEmail] = useState<string | null>(null);
@@ -140,23 +147,19 @@ const TravelStyleScreen: React.FC = () => {
       if (response.status === 200) {
         // Store travel styles after the update
         await AsyncStorage.setItem('travelStyles', JSON.stringify(response.data.data.travelStyles));
-  
-        if (__DEV__) {  // Only log in development mode
           console.log("Travel style updated:", response.data.data.travelStyles);
-        }
-  
         router.push("/account-verification");
       } else if (response.status === 404) {
         Alert.alert("Error", "User profile not found. Please log in again.");
         router.push("/login");
       } else {
-        Alert.alert("Error", "Internal server error. Please try again later.");
+     
         router.push("/login");
       }
       
     } catch (error) {
       console.error("Failed to update travel styles:", error);
-      Alert.alert("Error", "An unexpected error occurred. Please try again.");
+
     }
   };
   
@@ -233,7 +236,7 @@ const TravelStyleScreen: React.FC = () => {
                   style={{
                     width: 14,
                     height: 12,
-                    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
+                    tintColor: selectedItems.includes(category.id) ? '#29C4AF' : '#000',
                   }}
                   resizeMode="contain"
                 />
@@ -312,7 +315,7 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
     textAlign: 'center',
-    fontFamily:'Inter_500Medium'
+    fontFamily:'InterTight-Regular'
   },
   placeholder: {
     width: 50,
@@ -329,7 +332,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 24,
     lineHeight: 24,
-    fontFamily:'Inter_900Black'
+    fontFamily:'InterTight-Regular'
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -349,19 +352,19 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
   },
   selectedItem: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // 10% opacity of #6366f1
-
-    borderColor: '#6366f1',
-   
+    backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
+    borderColor: '#29C4AF',
   },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
     color: '#666',
     fontWeight: '700',
+    fontFamily:'InterTight-Regular'
   },
   selectedText: {
-    color: '#6366f1',
+    color: '#29C4AF',
+    fontFamily:'InterTight-Regular'
   },
   bottomContainer: {
     paddingHorizontal: 20,
@@ -372,7 +375,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6366f1',
+    backgroundColor: '#29C4AF',
     paddingVertical: 16,
     borderRadius: 12,
   },
@@ -412,7 +415,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6366f1',
+    backgroundColor: '#29C4AF',
     borderRadius: 2,
   },
   loadingOverlay: {

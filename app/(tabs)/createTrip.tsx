@@ -12,7 +12,7 @@ import {
   Alert,
   ActivityIndicator
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../lib/axios'
@@ -72,7 +72,6 @@ const ThaiFormScreen = () => {
   });
 
     const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
-    const [selfieError, setSelfieError] = useState(false);
     const [isFocused, setIsFocused] = useState(false);
     const [categories, setCategories] = useState<Category[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -768,12 +767,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         setResponseMessage(`Error: ${errorMessage}`);
         
        
-        const isDevelopment = __DEV__ || process.env.NODE_ENV === 'development';
-        const displayMessage = isDevelopment && debugInfo 
-          ? `${errorMessage}\n\n${debugInfo}` 
-          : errorMessage;
-        
-        Alert.alert('Trip Creation Failed', displayMessage);
+      
       } finally {
         setIsValidating(false);
         setUploading(false);
@@ -867,7 +861,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Ionicons name="chevron-back" size={24} color="#000" />
+         <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:16.75,height:18}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
@@ -932,15 +926,15 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         setFormData2(prev => ({ ...prev, name: text }));
         if (errors.tripName) clearError('tripName');
       }
-      // If character limit is exceeded, the text won't update (user can't type more)
     }}
     placeholder="ตั้งชื่อทริปของคุณ"
+    placeholderTextColor='gray'
     multiline
-    maxLength={50} // Additional protection against exceeding limit
+    maxLength={50} 
   />
   <Text style={[
     styles.wordCount,
-    // Optional: Change color when approaching limit
+   
     formData2.name.length > 45 && { color: 'red' }
   ]}>
     {formData2.name.length}/50
@@ -952,7 +946,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
 
          {/* Date Fields with Errors */}
 <Text style={{
-  marginHorizontal: 20,
   marginBottom: 10,
   fontWeight: '500',
   color: '#333',
@@ -1015,9 +1008,9 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     />
   </TouchableOpacity>
 </View>
-<View style={{display:'flex',flexDirection:'row',justifyContent:'space-between'}}>
-<ErrorMessage error={errors.startDate} />
-<ErrorMessage error={errors.endDate} /> 
+<View style={styles.dateErrorContainer}>
+  <Text style={styles.dateErrorText}>{errors.startDate || ''}</Text>
+  <Text style={styles.dateErrorText}>{errors.endDate || ''}</Text>
 </View>
  
 
@@ -1195,7 +1188,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     fontSize: 16
   }}>ราคาต่อคน</Text>
   <TextInput
-    style={{ width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0' }}
+    style={{ width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0',fontFamily:'InterTight-Regular' }}
     placeholder=''
     value={pricePerPerson != '' ? pricePerPerson.toString() : ''}
     onChangeText={(text) => {
@@ -1250,9 +1243,8 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
  <ErrorMessage error={errors.services} /> 
 
        {/* Travel Styles with Error */}
-<View style={styles.content}>
+       <View style={styles.content}>
   <Text style={styles.label}>สไตล์การเที่ยว</Text>
-  <ErrorMessage error={errors.travelStyles} />
   {loading ? (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#6366f1" />
@@ -1260,40 +1252,48 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     </View>
   ) : (
     <View style={styles.categoriesContainer}>
-      {categories.map((category) => (
-        <TouchableOpacity
-          key={category.id}
-          style={[
-            styles.categoryItem,
-            selectedItems.includes(category.id) && styles.selectedItem
-          ]}
-          onPress={() => {
-            toggleSelection(category.id);
-            if (errors.travelStyles) clearError('travelStyles');
-          }}
-        >
-          <Image
-            source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' }}
-            style={{
-              width: 14,
-              height: 12,
-              tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
+      {categories.map((category) => {
+        const isSelected = selectedItems.includes(category.id);
+        const iconUrl = isSelected && category.activeIconImageUrl 
+          ? category.activeIconImageUrl 
+          : category.iconImageUrl;
+        
+        return (
+          <TouchableOpacity
+            key={category.id}
+            style={[
+              styles.categoryItem,
+              isSelected && styles.selectedItem
+            ]}
+            onPress={() => {
+              toggleSelection(category.id);
+              if (errors.travelStyles) clearError('travelStyles');
             }}
-            resizeMode="contain"
-          />
-          <Text style={[
-            styles.categoryText,
-            selectedItems.includes(category.id) && styles.selectedText
-          ]}>
-            {category.title}
-          </Text>
-        </TouchableOpacity>
-      ))}
+          >
+            <Image
+              source={{ 
+                uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' 
+              }}
+              style={{
+                width: 14,
+                height: 12,
+                tintColor: isSelected ? '#29C4AF' : '#000',
+              }}
+              resizeMode="contain"
+            />
+            <Text style={[
+              styles.categoryText,
+              isSelected && styles.selectedText
+            ]}>
+              {category.title}
+            </Text>
+          </TouchableOpacity>
+        );
+      })}
     </View>
   )}
-  
 </View>
-{/* <ErrorMessage error={errors.travelStyles} /> */}
+ <ErrorMessage error={errors.travelStyles} /> 
 
   
 
@@ -1317,7 +1317,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
             paddingHorizontal: 12,
             paddingVertical: 12,
             fontSize: 16,
-            fontFamily: 'Inter_400Regular',
+            fontFamily: 'InterTight-Regular',
             lineHeight: 24,
             color: '#374151',
             height: 50,
@@ -1336,7 +1336,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           paddingHorizontal: 12,
           paddingVertical: 12,
           fontSize: 16,
-          fontFamily: 'Inter_400Regular',
+          fontFamily: 'InterTight-Regular',
           lineHeight: 24,
           color: '#374151',
           height: 50,
@@ -1390,7 +1390,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
                 }}
                 onPress={() => addDestination(item)}
               >
-                <Text style={{ fontSize: 14, color: '#374151' }}>{item}</Text>
+                <Text style={{ fontSize: 14, color: '#374151',fontFamily:'InterTight-Regular' }}>{item}</Text>
               </TouchableOpacity>
             ))
           ) : (
@@ -1399,6 +1399,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
               textAlign: 'center',
               color: '#9CA3AF',
               fontSize: 14,
+              fontFamily:'InterTight-Regular'
             }}>
               ไม่พบสถานที่ที่ค้นหา
             </Text>
@@ -1421,13 +1422,13 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         <TouchableOpacity
           key={index}
           style={{
-            backgroundColor: '#4F46E51A',
+            backgroundColor: 'rgba(41, 196, 175, 0.1)',
             borderWidth: 1,
             paddingHorizontal: 8,
             paddingTop: 7,
             borderRadius: 9999,
             margin: 5,
-            borderColor: '#4F46E5',
+            borderColor: '#29C4AF',
             minWidth: 84.09,
             height: 38,
             alignItems: 'center',
@@ -1435,8 +1436,8 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           onPress={() => removeDestination(dest)}
         >
           <Text style={{
-            color: '#4F46E5',
-            fontFamily: 'Inter_400Regular',
+            color: '#29C4AF',
+            fontFamily: 'InterTight-Regular',
             fontSize: 14,
           }}>
             {dest} <Text style={{ fontSize: 16 }}>×</Text>
@@ -1472,6 +1473,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         // If character limit is exceeded, the text won't update (user can't type more)
       }}
       placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
+      placeholderTextColor="#888"
       maxLength={100} // Prevents typing beyond 100 characters
     />
     <Text style={[
@@ -1500,6 +1502,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       if (errors.details) clearError('details');
     }}
     placeholder='เขียนรายละเอียดทริปของคุณ...'
+    placeholderTextColor="#888"
   />
 </View>
 <ErrorMessage error={errors.details} /> 
@@ -1508,7 +1511,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         
       
     
-      <Text style={{fontWeight:600,}}>ตัวอย่างโพสต์
+      <Text style={{fontWeight:600,fontFamily:'InterTight-Regular',marginHorizontal:20,marginBottom:5}}>ตัวอย่างโพสต์
       </Text>
       {userInfo && (
         <TripCard
@@ -1583,7 +1586,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
- 
+    borderBottomWidth:1,
     paddingVertical: 12,
     borderBottomColor: '#e0e0e0',
   },
@@ -1595,9 +1598,10 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     flex: 1,
     textAlign: 'center',
-    fontWeight:700,
-    fontFamily:'InterTight-Black',
-    marginLeft:-20
+    fontWeight:500,
+    fontFamily:'InterTight-Regular',
+    marginLeft:-20,
+   
   },
   content: {
     flex: 1,
@@ -1628,10 +1632,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
+    marginBottom: 10,       // Add consistent bottom margin
   },
   fieldContainer: {
-    marginBottom: 30,
-    marginHorizontal:20
+    marginBottom: 20,
   },
   label: {
     fontWeight: '500',
@@ -1658,8 +1662,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     fontSize: 16,
     backgroundColor: '#fff',
-    fontWeight:500,
-    fontFamily:'InterTight-SemiBold'
+    fontWeight:400,
+    fontFamily:'InterTight-Regular'
   },
   textInputFocused: {
     borderColor: 'transparent',
@@ -1669,13 +1673,12 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 20,       // Reduced from 30 to 20
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
-    height:50,
-    marginHorizontal:20,
-    alignItems:'center'
+    height: 50,
+    alignItems: 'center'
   },
   dateField: {
     flex: 0.48,
@@ -1735,7 +1738,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     minHeight: 80,
     textAlignVertical: 'top',
-    outlineColor:'#e0e0e0'
+    outlineColor:'#e0e0e0',
+    fontFamily:'InterTight-Regular'
   },
   attachmentSection: {
     flexDirection: 'row',
@@ -1756,7 +1760,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   checkboxSection: {
-    marginBottom: 30,
+    marginBottom: 20,
     marginHorizontal:20
   },
   checkboxContainer: {
@@ -1797,6 +1801,7 @@ const styles = StyleSheet.create({
   checkboxText: {
     fontSize: 14,
     color: '#333',
+    fontFamily:'InterTight-Regular'
   },
   bottomSection: {
     alignItems: 'center',
@@ -1832,7 +1837,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#4285f4',
+    backgroundColor: '#29C4AF',
     paddingVertical: 16,
     borderRadius: 8,
     marginBottom: 8,
@@ -1872,12 +1877,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     minHeight: 270,
-    backgroundColor:'#E5E7EB',
-    verticalAlign:'middle',
-    marginBottom:30,
-    justifyContent:'center',
-    marginHorizontal:20
-
+    backgroundColor: '#E5E7EB',
+    verticalAlign: 'middle',
+    marginBottom: 20,       // Reduced from 30 to 20
+    justifyContent: 'center',
   },
   uploadPlaceholder: {
     alignItems: 'center',
@@ -1939,30 +1942,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    alignItems: 'center',
+    marginTop: 5,
+    marginBottom: 10, // Add space after categories
   },
   categoryItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    height:38,
+    height: 38,
     borderRadius: 30,
-    marginBottom: 20,
+    // Remove marginBottom: 20
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   selectedItem: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // 10% opacity of #6366f1
-    borderColor: '#6366f1',
+    backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
+    borderColor: '#29C4AF',
   },
   selectedText: {
-    color: '#6366f1',
+    color: '#29C4AF',
+    fontFamily:'InterTight-Regular'
   },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
     color: '#666',
-    fontWeight: '700',
+    fontWeight: '500',
+    fontFamily:'InterTight-Regular'
   },
   toolbarButton: {
     paddingHorizontal: 8,
@@ -2116,7 +2124,7 @@ const styles = StyleSheet.create({
     bottom: 8,
     right: 12,
     fontSize: 12,
-    color: '#888',
+    fontFamily:'InterTight-Regular',
   },
   text: {
     flex: 1,
@@ -2152,7 +2160,8 @@ const styles = StyleSheet.create({
     padding: 10,
     textAlign: 'center',
     color: '#999',
-    fontStyle: 'italic'
+    fontStyle: 'italic',
+    fontFamily:'InterTight-Regular'
   },
   selectedContainer: { 
     marginTop: 10,
@@ -2193,7 +2202,8 @@ const styles = StyleSheet.create({
   container3: {
     flex: 4,
     backgroundColor: 'white',        
-    marginHorizontal:20,         
+    marginHorizontal: 20,
+    marginBottom: 20,       // Add consistent bottom margin
   },
   modalOverlay: {
     flex: 1,
@@ -2451,6 +2461,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginRight: 6,
   },
+  sectionWithError: {
+    marginBottom: 5,        // Minimal margin, let ErrorMessage handle spacing
+  },
   destinationContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2634,10 +2647,10 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#EF4444',
     fontSize: 12,
-    marginTop: -30,
+    marginTop: 5,           
     marginHorizontal: 20,
     fontFamily: 'InterTight-Regular',
-    marginBottom:30
+    marginBottom: 15,       
   },
   inputError: {
     borderColor: '#EF4444',
@@ -2646,6 +2659,19 @@ const styles = StyleSheet.create({
   uploadBoxError: {
     borderColor: '#EF4444',
     borderWidth: 2,
+  },
+  dateErrorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: 20,
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  dateErrorText: {
+    color: '#EF4444',
+    fontSize: 12,
+    fontFamily: 'InterTight-Regular',
+    flex: 1,
   }
 });
 

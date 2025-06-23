@@ -14,7 +14,6 @@ import {
   StyleSheet,
   SafeAreaView,
   ActivityIndicator,
-  StatusBar,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +21,10 @@ import { router,Stack,useLocalSearchParams } from 'expo-router';
 import {axiosInstance} from '../lib/axios'
 import axios from 'axios'
 import { getAuth, signOut } from 'firebase/auth';
+import {useFonts} from 'expo-font'
+
+
+
 interface Category {
   id: string;
   title: string;
@@ -88,6 +91,13 @@ interface ValidationErrors {
 }
 
 const ProfileForm: React.FC = () => {
+
+
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
+  });
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
     const [email, setEmail] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -1001,7 +1011,7 @@ const ProfileForm: React.FC = () => {
                 onPress={() => toggleSelection(category.id)}
               >
   <Image
-  source={{ uri: category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' }}
+  source={{ uri: selectedItems.includes(category.id)?category.activeIconImageUrl :category.iconImageUrl }}
   style={{
     width: 15.75,
     height: 14,
@@ -1109,8 +1119,10 @@ const ProfileForm: React.FC = () => {
 
       
 
-        {/* Submit Button */}
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+        
+      </ScrollView>
+      {/* Submit Button */}
+      <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
           <Image
         source={require('../assets/images/images/images/image8.png')} // Replace with your image path
@@ -1118,7 +1130,6 @@ const ProfileForm: React.FC = () => {
         resizeMode="contain"
       />
         </TouchableOpacity>
-      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -1170,14 +1181,14 @@ const styles = StyleSheet.create({
     height: 112,
     borderRadius: 9999,
     borderWidth: 2,
-    borderColor: '#4F46E5', 
+    borderColor: '#29C4AF', 
   },
   
   cameraButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#29C4AF',
     borderRadius: 9999,
     width: 36,
     height: 36,
@@ -1188,7 +1199,7 @@ const styles = StyleSheet.create({
   },
   uploadText: {
     fontSize: 14,
-    fontFamily:'Inter_400Regular',
+    fontFamily:'InterTight-Regular',
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 4,
@@ -1202,8 +1213,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontFamily:'Inter_500Medium',
-    color: '#374151',
+    fontFamily:'InterTight-Regular',
     marginBottom: 8,
   },
   subLabel: {
@@ -1219,7 +1229,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    fontFamily:'Inter_400Regular',
+    fontFamily:'InterTight-Regular',
     lineHeight:24,
     color: '#374151',
     height:50,
@@ -1293,7 +1303,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingLeft: 12,
     fontSize: 16,
-    fontFamily:'Inter_400Regular',
+    fontFamily:'InterTight-Regular',
     color: '#374151',
     lineHeight:24,
     marginLeft:10,
@@ -1343,13 +1353,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   submitButton: {
-    backgroundColor: '#4F46E5',
+    backgroundColor: '#29C4AF',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 16,
     marginHorizontal: 16,
-    marginTop: 24,
+    marginVertical: 24,
     borderRadius: 8,
     shadowColor: '#6B46C1',
     shadowOffset: { width: 0, height: 2 },
@@ -1365,7 +1375,7 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontSize: 18,
-    fontFamily:'Inter_500Medium',
+    fontFamily:'InterTight-Regular',
     color: '#1F2937',
     flex: 1,
     textAlign: 'center',
@@ -1388,7 +1398,7 @@ const styles = StyleSheet.create({
    },
    progressFill: {
      height: '100%',
-     backgroundColor: '#4F46E5',
+     backgroundColor: '#29C4AF',
      borderRadius: 2,
    },
  
@@ -1441,7 +1451,7 @@ const styles = StyleSheet.create({
    },
    selectedButtonText: {
      color: '#4F46E5',
-     fontFamily:'Inter_400Regular',
+     fontFamily:'InterTight-Regular',
      fontSize: 14,
    },
 
@@ -1474,7 +1484,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     marginBottom: 6,
-    fontFamily:'Inter_500Medium'
+    fontFamily:'InterTight-Regular'
   },
 
 
@@ -1483,7 +1493,7 @@ const styles = StyleSheet.create({
     lineHeight:13,
     color: '#6B7280',
     marginBottom: 12,
-    fontFamily:'Inter_400Regular'
+    fontFamily:'InterTight-Regular'
   },
   loadingContainer: {
     flex: 1,
@@ -1566,25 +1576,25 @@ textDisplayArea: {
 
 displayText: {
   fontSize: 16,
-  color: '#ADAEBC', // Match your input placeholder color for consistency
-  fontFamily: 'Inter_400Regular', // Match your input fontFamily
-  lineHeight: 24, // Match your input lineHeight
+  color: '#ADAEBC', 
+  fontFamily: 'InterTight-Regular', 
+  lineHeight: 24, 
 },
 
 iconButton: {
-  paddingHorizontal: 8, // Reduced horizontal padding for mobile
-  paddingVertical: 0, // Remove vertical padding
+  paddingHorizontal: 8, 
+  paddingVertical: 0, 
   justifyContent: 'center',
   alignItems: 'center',
-  minWidth: 40, // Ensure minimum touchable area
-  height: 48, // Slightly smaller than container height
+  minWidth: 40, 
+  height: 48, 
 },
 
 dropdownIcon: {
-  width: 18, // Slightly larger for better visibility
-  height: 18, // Slightly larger for better visibility
+  width: 18, 
+  height: 18, 
   tintColor: '#666',
-  resizeMode: 'contain', // Ensure icon scales properly
+  resizeMode: 'contain',
 },
   
 

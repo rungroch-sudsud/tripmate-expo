@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { axiosInstance } from '../lib/axios';
 import TripCard from './TripCard'
+import BottomNavigation from './customNavigation'
 
 // Types
 interface Trip {
@@ -247,54 +248,7 @@ const Header: React.FC = () => (
   </View>
 );
 
-const BottomNavigation: React.FC<{
-  onFindTrips: () => void;
-  onSavedTrips: () => void;
-}> = ({ onFindTrips, onSavedTrips }) => (
-  <View style={styles.bottomNav}>
-    <View style={styles.navItem}>
-      <Image 
-        source={require('../assets/images/images/images/image18.png')} 
-        style={styles.navIcon} 
-      />
-      <Text style={styles.navText}>หน้าหลัก</Text>
-    </View>
-    
-    <TouchableOpacity onPress={onFindTrips} style={styles.navItem}>
-      <Image 
-        source={require('../assets/images/images/images/image23.png')} 
-        style={styles.navIcon} 
-      />
-      <Text style={styles.navText}>ค้นหา</Text>
-    </TouchableOpacity>
-    
-    <TouchableOpacity onPress={onSavedTrips} style={styles.navItem}>
-      <Image 
-        source={require('../assets/images/images/images/image22.png')} 
-        style={styles.savedIcon} 
-      />
-      <Text style={styles.navText}>บันทึก</Text>
-    </TouchableOpacity>
-    
-    <View style={styles.navItem}>
-      <Image 
-        source={require('../assets/images/images/images/image20.png')} 
-        style={styles.navIcon} 
-      />
-      <Text style={styles.navText}>โปรไฟล์</Text>
-    </View>
-  </View>
-);
 
-const FloatingButton: React.FC<{ onPress: () => void }> = ({ onPress }) => (
-  <TouchableOpacity
-    style={styles.floatingButton}
-    onPress={onPress}
-    activeOpacity={0.8}
-  >
-    <Text style={styles.floatingButtonIcon}>+</Text>
-  </TouchableOpacity>
-);
 
 // Main Component
 const SavedTripScreen: React.FC = () => {
@@ -422,11 +376,7 @@ const SavedTripScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      <FloatingButton onPress={handleFloatingButtonPress} />
-      <BottomNavigation 
-        onFindTrips={handleFindTrips} 
-        onSavedTrips={handleSavedTrips} 
-      />
+      <BottomNavigation currentScreen="savedTrips" userId={userId} />
     </View>
   );
 };
