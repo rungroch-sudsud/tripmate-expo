@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View,
@@ -15,12 +15,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { useRoute } from '@react-navigation/native';
-import {axiosInstance} from '../lib/axios'
-import {useFonts} from 'expo-font'
-
-
-
+import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
+import { axiosInstance } from '../lib/axios';
+import { useFonts } from 'expo-font';
+import { getAuth, signOut } from 'firebase/auth';
 
 interface Category {
   id: string;
@@ -39,48 +37,41 @@ interface ApiResponse {
   message: string;
 }
 
-
-
-
 const TravelStyleScreen: React.FC = () => {
-
+  // All hooks at the top level
   const [fontsLoaded] = useFonts({
     'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
     'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
   });
+  
   const router = useRouter();
   const route = useRoute();
+  const navigation = useNavigation();
+  
   const [email, setEmail] = useState<string | null>(null);
-  useEffect(() => {
-    const fetchEmail = async () => {
-      const storedID = await AsyncStorage.getItem('userId');
-      console.log('User ID:', storedID);
-      setEmail(storedID);
-    };
-  
-    fetchEmail();
-  }, []);
-  
-
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const progressAnimation = useRef(new Animated.Value(33.33)).current;
-  
 
-
-  
-
-  const fetchTravelStyles = async (): Promise<void> => {
+  // Memoized callback for fetchEmail
+  const fetchEmail = useCallback(async () => {
     try {
-      setLoading(true); 
-    
- 
-      const response = await axiosInstance.get('/travel-styles'); 
-    
-      const result: ApiResponse = response.data; 
-      
+      const storedID = await AsyncStorage.getItem('userId');
+      console.log('User ID:', storedID);
+      setEmail(storedID);
+    } catch (error) {
+      console.error('Error fetching email:', error);
+    }
+  }, []);
+
+  // Memoized callback for fetchTravelStyles
+  const fetchTravelStyles = useCallback(async (): Promise<void> => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get('/travel-styles');
+      const result: ApiResponse = response.data;
       
       const mappedCategories: Category[] = result.data.map(item => ({
         id: item.id,
@@ -88,8 +79,8 @@ const TravelStyleScreen: React.FC = () => {
         iconImageUrl: item.iconImageUrl,
         activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
       }));
-    
-      setCategories(mappedCategories); 
+      
+      setCategories(mappedCategories);
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
       Alert.alert(
@@ -97,13 +88,35 @@ const TravelStyleScreen: React.FC = () => {
         'Failed to load travel styles. Please try again.',
         [{ text: 'OK' }]
       );
-    
       setCategories([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
+  // Effect for fetching email
+  useEffect(() => {
+    fetchEmail();
+  }, [fetchEmail]);
+
+  // useFocusEffect to clear selected items when screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      // Clear selected items when the screen loses focus
+      return () => {
+        setSelectedItems([]);
+      };
+    }, [])
+  );
+
+  // Effect for clearing selected items when navigating away
+  useEffect(() => {
+    return () => {
+      setSelectedItems([]);
+    };
+  }, [router]);
+
+  // Effect for animation and fetching travel styles
   useEffect(() => {
     const animateProgress = () => {
       Animated.timing(progressAnimation, {
@@ -113,78 +126,92 @@ const TravelStyleScreen: React.FC = () => {
       }).start();
     };
 
-    setTimeout(animateProgress, 300);
-  
+    const timer = setTimeout(animateProgress, 300);
     fetchTravelStyles();
-  }, []);
 
-  const toggleSelection = (id: string): void => {
+    return () => clearTimeout(timer);
+  }, [fetchTravelStyles]);
+
+  const toggleSelection = useCallback((id: string): void => {
     setSelectedItems(prev => 
       prev.includes(id) 
         ? prev.filter(item => item !== id)
         : [...prev, id]
     );
-  };
+  }, []);
 
-  const handleContinue = async (): Promise<void> => {
+  const handleContinue = useCallback(async (): Promise<void> => {
     try {
       const userId = await AsyncStorage.getItem('userId');
       
       if (!userId) {
         Alert.alert("Error", "User ID not found. Please log in.");
         router.push("/login");
-        return; // Return early if userId is not found
+        return;
       }
-  
+
       const payload = {
         userId,
-        travelStyles: selectedItems, // Assuming selectedItems holds the correct travel style IDs
+        travelStyles: selectedItems,
       };
-  
-      // Show a loading spinner or UI feedback
+
       const response = await axiosInstance.patch(`/users/profile/${userId}`, payload);
-  
+
       if (response.status === 200) {
-        // Store travel styles after the update
         await AsyncStorage.setItem('travelStyles', JSON.stringify(response.data.data.travelStyles));
-          console.log("Travel style updated:", response.data.data.travelStyles);
+        console.log("Travel style updated:", response.data.data.travelStyles);
         router.push("/account-verification");
       } else if (response.status === 404) {
         Alert.alert("Error", "User profile not found. Please log in again.");
         router.push("/login");
       } else {
-     
         router.push("/login");
       }
-      
     } catch (error) {
       console.error("Failed to update travel styles:", error);
-
+      Alert.alert("Error", "Failed to update travel styles. Please try again.");
     }
-  };
-  
-  
-  
+  }, [selectedItems, router]);
 
-  const handleGoBack = (): void => {
-    // Handle back navigation
-  
-    router.push('/login')
-  };
+  const handleGoBack = useCallback(async () => {
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      console.log('User logged out successfully');
+
+      await AsyncStorage.multiRemove(['googleIdToken', 'googleAccessToken', 'userId']);
+      router.push('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      router.push('/login');
+    }
+  }, [router]);
+
+  // Don't render anything if fonts aren't loaded yet
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#29C4AF" />
+          <Text style={styles.loadingText}>Loading fonts...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>
-    <Stack.Screen 
-      options={{ 
-        headerShown: false,
-        title: '', // Empty title
-        headerTitle: '', // Empty header title
-      }} 
-    />
+      <Stack.Screen 
+        options={{ 
+          headerShown: false,
+          title: '',
+          headerTitle: '',
+        }} 
+      />
       <SafeAreaView style={styles.container}>
-
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
         
-        {/* Your existing content */}
+        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
             <FontAwesome name="angle-left" size={24} color="#333" />
@@ -192,7 +219,7 @@ const TravelStyleScreen: React.FC = () => {
           <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
           <View style={styles.placeholder} />
         </View>
-  
+
         {/* Progress Bar */}
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
@@ -201,22 +228,21 @@ const TravelStyleScreen: React.FC = () => {
                 styles.progressFill,
                 {
                   width: progressAnimation.interpolate({
-                    inputRange: [0, 33.33],
-                    outputRange: ['0%', '33.33%'],
+                    inputRange: [0, 100],
+                    outputRange: ['0%', '66.66%'],
                   }),
                 },
               ]} 
             />
           </View>
         </View>
-  
+
         {/* Content */}
         <View style={styles.content}>
           <Text style={styles.title}>
             เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว
           </Text>
-  
-          {/* Remove the loading condition from here since we have overlay */}
+
           <View style={styles.categoriesContainer}>
             {categories.map((category) => (
               <TouchableOpacity
@@ -233,11 +259,12 @@ const TravelStyleScreen: React.FC = () => {
                       ? category.activeIconImageUrl || category.iconImageUrl
                       : category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?'
                   }}
-                  style={{
-                    width: 14,
-                    height: 12,
-                    tintColor: selectedItems.includes(category.id) ? '#29C4AF' : '#000',
-                  }}
+                  style={[
+                    styles.categoryIcon,
+                    {
+                      tintColor: selectedItems.includes(category.id) ? '#29C4AF' : '#000',
+                    }
+                  ]}
                   resizeMode="contain"
                 />
                 <Text style={[
@@ -250,7 +277,7 @@ const TravelStyleScreen: React.FC = () => {
             ))}
           </View>
         </View>
-  
+
         {/* Bottom Button */}
         <View style={styles.bottomContainer}>
           <TouchableOpacity 
@@ -276,14 +303,12 @@ const TravelStyleScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-  
+
       {/* Full Screen Loading Overlay */}
       {loading && (
-        
         <View style={styles.loadingOverlay}>
-          
           <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#6366f1" />
+            <ActivityIndicator size="large" color="#29C4AF" />
             <Text style={styles.loadingText}>กำลังโหลด...</Text>
           </View>
         </View>
@@ -315,7 +340,7 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
     textAlign: 'center',
-    fontFamily:'InterTight-Regular'
+    fontFamily: 'InterTight-Regular'
   },
   placeholder: {
     width: 50,
@@ -332,7 +357,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 24,
     lineHeight: 24,
-    fontFamily:'InterTight-Regular'
+    fontFamily: 'InterTight-Regular'
   },
   categoriesContainer: {
     flexDirection: 'row',
@@ -344,27 +369,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    height:38,
- 
+    height: 38,
     borderRadius: 30,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
   },
   selectedItem: {
-    backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
+    backgroundColor: 'rgba(41, 196, 175, 0.1)',
     borderColor: '#29C4AF',
+  },
+  categoryIcon: {
+    width: 14,
+    height: 12,
   },
   categoryText: {
     marginLeft: 8,
     fontSize: 14,
     color: '#666',
     fontWeight: '700',
-    fontFamily:'InterTight-Regular'
+    fontFamily: 'InterTight-Regular'
   },
   selectedText: {
     color: '#29C4AF',
-    fontFamily:'InterTight-Regular'
+    fontFamily: 'InterTight-Regular'
   },
   bottomContainer: {
     paddingHorizontal: 20,
@@ -403,6 +431,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+    fontFamily: 'InterTight-Regular',
   },
   progressContainer: {
     paddingBottom: 15,
@@ -424,10 +453,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)', // Semi-transparent white
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000, // Ensure it's on top
+    zIndex: 1000,
   },
   loadingContent: {
     backgroundColor: 'white',
@@ -441,9 +470,8 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
-    elevation: 5, // For Android shadow
+    elevation: 5,
   },
 });
-
 
 export default TravelStyleScreen;

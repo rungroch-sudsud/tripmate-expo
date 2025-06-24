@@ -109,6 +109,7 @@ const [isValidating, setIsValidating] = useState(false);
 
 
 const handleBack=async()=>{
+  resetForm()
   router.push('/(tabs)/findTrips')
 }
 
@@ -559,27 +560,90 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         });
     }, []);
    
-
+// Add this reset function to your component
+const resetForm = () => {
+  // Reset image picker
+  setPickedFile2(null);
+  
+  // Reset focus state
+  setIsFocused(false);
+  
+  // Reset selections
+  setSelectedItems([]);
+  setSelectedServices([]);
+  setSelected([]); // destinations
+  
+  // Reset date pickers
+  setShowStartDatePicker(false);
+  setShowEndDatePicker(false);
+  
+  // Reset validation states
+  setIsValidating(false);
+  setLoading(false);
+  setUploading(false);
+  setResponseMessage(null);
+  
+  // Reset errors
+  setErrors({
+    coverImage: '',
+    tripName: '',
+    startDate: '',
+    endDate: '',
+    maxParticipants: '',
+    pricePerPerson: '',
+    services: '',
+    travelStyles: '',
+    destinations: '',
+    atmosphere: '',
+    details: '',
+    terms: ''
+  });
+  
+  // Reset form data
+  setFormData({
+    name: '',
+    startDate: '',
+    endDate: '',
+    description: '',
+    selectedOptions: [],
+    attachments: 0,
+    details: ''
+  });
+  
+  setFormData2({ name: '' });
+  
+  // Reset numeric inputs
+  setmaxParticipant('');
+  setpricePerPerson('');
+  
+  // Reset checkbox
+  setIsChecked(false);
+  
+  // Reset dropdown
+  setDropdownOpen(false);
+  setSearchText('');
+};
     type StatusType = 'published' | 'draft';
     //Submit
-    const create = async (status:StatusType): Promise<void> => {
+    const create = async (status: StatusType): Promise<void> => {
       setIsValidating(true);
-  
-  // Validate form
-  const isValid = validateForm();
-  
-  if (!isValid) {
-    setIsValidating(false);
     
-    // Find first error and scroll to it (optional)
-    const firstErrorField = Object.keys(errors).find(key => errors[key] !== '');
+      // Validate form
+      const isValid = validateForm();
     
-    // Show alert with first error
-    const firstError = Object.values(errors).find(error => error !== '');
-    Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+      if (!isValid) {
+        setIsValidating(false);
+        
+        // Find first error and scroll to it (optional)
+        const firstErrorField = Object.keys(errors).find(key => errors[key] !== '');
+        
+        // Show alert with first error
+        const firstError = Object.values(errors).find(error => error !== '');
+        Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+        
+        return;
+      }
     
-    return;
-  }
       try {
         console.log("🚀 Starting trip creation...");
         
@@ -592,7 +656,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     
         setUploading(true);
         setResponseMessage(null);
-  
+    
         const formatDate = (dateStr: string): string => {
           try {
             let date: Date;
@@ -619,15 +683,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
             throw new Error(`Invalid date format: ${dateStr}`);
           }
         };
-        
     
-     
         const travelStyleIds: string[] = categories.map((category: any) => category.id);
-    
- 
         const requestFormData = new FormData();
     
-      
+        // Append form data
         requestFormData.append('name', formData2.name.trim());
         
         try {
@@ -638,40 +698,27 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           return;
         }
         
-     
         if (selected.length > 0) {
-          
           requestFormData.append('destinations', selected);
-         
         }
         
         requestFormData.append('maxParticipants', maxParticipant.toString());
         requestFormData.append('pricePerPerson', pricePerPerson.toString());
         
-      
         if (selectedServices.length > 0) {
-   
           requestFormData.append('includedServices', selectedServices);
-          
-     
-          
         }
         
         requestFormData.append('detail', formData.details || '');
-     
+    
         if (travelStyleIds.length > 0) {
-         
           requestFormData.append('travelStyles', travelStyleIds);
-          
-        
         }
         
         requestFormData.append('groupAtmosphere', formData.description || '');
         requestFormData.append('status', status);
-        const userId=await AsyncStorage.getItem('userId')
-     
+        const userId = await AsyncStorage.getItem('userId');
         requestFormData.append('tripOwnerId', userId);
-    
     
         if (pickedFile2) {
           console.log("📷 Adding image to request...", {
@@ -682,12 +729,10 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           
           try {
             if (pickedFile2.isBase64 && pickedFile2.base64Data) {
-          
               const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
               const blob = await response.blob();
               requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
             } else if (pickedFile2.uri) {
-          
               const fileObj = {
                 uri: pickedFile2.uri,
                 type: pickedFile2.type || 'image/jpeg',
@@ -706,7 +751,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     
         console.log("📤 Sending trip creation request...");
         
-    
         console.log("📋 Request data summary:", {
           name: formData2.name,
           startDate: formData.startDate,
@@ -718,13 +762,14 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
           categories: categories.length,
           hasImage: !!pickedFile2
         });
+    
         const accessToken = await AsyncStorage.getItem('googleAccessToken');
         const idToken = await AsyncStorage.getItem('googleIdToken');
-
+    
         const response = await axiosInstance.post('/trips', requestFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
-             Authorization: `Bearer ${idToken}`
+            Authorization: `Bearer ${idToken}`
           },
           timeout: 60000,
           maxContentLength: Infinity,
@@ -732,7 +777,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         });
     
         console.log("✅ Trip created successfully:", response.data);
-        router.push('/findTrips')
+        
+        // Reset form after successful creation
+        resetForm();
+        
+        router.push('/findTrips');
     
       } catch (error: unknown) {
         console.error('🔴 Trip creation error:', error);
@@ -766,13 +815,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         
         setResponseMessage(`Error: ${errorMessage}`);
         
-       
-      
       } finally {
         setIsValidating(false);
         setUploading(false);
       }
-    }
+    };
  
     const ErrorMessage = ({ error }) => {
       if (!error) return null;

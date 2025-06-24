@@ -465,36 +465,116 @@ const ProfileForm: React.FC = () => {
       fetchUserProfile()
     }
   }, [userId])
-  ///////////////////
 
+
+  const [originalData, setOriginalData] = useState<{
+    formData: ProfileFormData;
+    selectedDestinations: string[];
+    selectedTravelStyles: string[];
+  }>({
+    formData: {
+      fullName: '',
+      nickname: '',
+      age: '',
+      gender: '',
+      customGender: '',
+      email: '',
+      facebookUrl: '',
+      lineId: '',
+      travelInterests: [],
+      favouriteDestinations: [],
+      travelStyles: [],
+    },
+    selectedDestinations: [],
+    selectedTravelStyles: [],
+  });
 
   useEffect(() => {
     console.log("User Details Updated: ", user);
     if (user) {
-      setFormData(prevData => ({
-        ...prevData,
-        fullName: user.fullname || '',
-        nickname:user.nickname || '',
-        email:user.email || '',
-        age: user.age ? user.age.toString() : '', 
-        gender:user.gender ,
-        facebookUrl:user.facebookUrl,
-        lineId:user.lineId,
-      }))
-      setSelected(user.destinations || []);
+      // Handle "N/A" values and convert them to empty strings for form display
+      const sanitizeValue = (value: any): string => {
+        if (value === "N/A" || value === null || value === undefined) {
+          return '';
+        }
+        return String(value);
+      };
+  
+      const newFormData: ProfileFormData = {
+        fullName: sanitizeValue(user.fullname),
+        nickname: sanitizeValue(user.nickname),
+        email: sanitizeValue(user.email),
+        age: user.age !== 999 ? user.age.toString() : '', // Handle age 999 as empty
+        gender: sanitizeValue(user.gender),
+        customGender: '',
+        facebookUrl: sanitizeValue(user.facebookUrl),
+        lineId: sanitizeValue(user.lineId),
+        travelInterests: [],
+        favouriteDestinations: user.destinations?.filter(dest => dest !== "N/A") || [],
+        travelStyles: user.travelStyles || [],
+      };
+  
+      // Filter out "N/A" values from arrays
+      const newSelectedDestinations = user.destinations?.filter(dest => dest !== "N/A") || [];
+      const newSelectedTravelStyles = user.travelStyles || [];
+  
+      // Set current form data
+      setFormData(newFormData);
+      setSelected(newSelectedDestinations);
+      setSelectedItems(newSelectedTravelStyles);
+  
+      // Store original data for reset
+      setOriginalData({
+        formData: newFormData,
+        selectedDestinations: newSelectedDestinations,
+        selectedTravelStyles: newSelectedTravelStyles,
+      });
+  
+      console.log("Original data stored:", {
+        formData: newFormData,
+        selectedDestinations: newSelectedDestinations,
+        selectedTravelStyles: newSelectedTravelStyles,
+      });
     }
-  }, [user]) 
+  }, [user]);
+
+  
+  
   
 
   const removeSelectedInterest = (interest: string): void => {
     setSelectedInterests(selectedInterests.filter(item => item !== interest));
   };
-
-  const handleBack = (): void => {
-    router.push('/findTrips')
-    console.log("Back");
-    
-  };
+// Modified handleBack function with reset functionality
+const handleBack = (): void => {
+  console.log("Resetting form to original values...");
+  console.log("Original data:", originalData);
+  
+  // Reset form to original values
+  setFormData({ ...originalData.formData });
+  setSelected([...originalData.selectedDestinations]);
+  setSelectedItems([...originalData.selectedTravelStyles]);
+  
+  // Clear any errors
+  setErrors({});
+  
+  // Clear image selection
+  setImageFile(null);
+  setResponseMessage(null);
+  
+  // Reset other form-related states
+  setDropdownOpen(false);
+  setSearchText('');
+  setShowGenderDropdown(false);
+  
+  console.log("Form reset completed");
+  console.log("Reset formData:", originalData.formData);
+  console.log("Reset selected destinations:", originalData.selectedDestinations);
+  console.log("Reset selected travel styles:", originalData.selectedTravelStyles);
+  
+  // Navigate back
+  router.push('/findTrips');
+};
 
 
   const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
@@ -737,6 +817,9 @@ const ProfileForm: React.FC = () => {
     if (!error) return null;
     return <Text style={styles.errorText}>{error}</Text>;
   };
+
+
+
 
   return (
     <SafeAreaView style={styles.container}>

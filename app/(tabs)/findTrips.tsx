@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontWeight:500,
     lineHeight:18,
-    fontFamily:'InterTight-SemiBold',
+    fontFamily:'InterTight-Regular',
   },
   scrollView: {
     flex: 1,
@@ -735,6 +735,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#6b7280',
+    fontFamily:'InterTight-Regular'
   },
   emptyContainer: {
     flex: 1,
@@ -745,6 +746,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     color: '#6b7280',
+    fontFamily:'InterTight-Regular'
   },
   card: {
     backgroundColor: 'white',
@@ -796,7 +798,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#1F2937',
-    fontFamily:'InterTight-SemiBold'
+    fontFamily:'InterTight-Regular'
   },
   participantBadge: {
     position: 'absolute',
@@ -818,7 +820,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#FFFFFF',
-    fontFamily:'InterTight-SemiBold'
+    fontFamily:'InterTight-Regular'
   },
   statusBadge: {
     position: 'absolute',
@@ -833,6 +835,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: '#92400e',
+    fontFamily:'InterTight-Regular'
   },
   content: {
     padding: 16,
@@ -840,7 +843,7 @@ const styles = StyleSheet.create({
   tripName: {
     fontSize: 18,
     lineHeight:18,
-    fontFamily:'InterTight-SemiBold',
+    fontFamily:'InterTight-Regular',
     fontWeight: 500,
     color: '#1F2937',
     marginBottom: 8,

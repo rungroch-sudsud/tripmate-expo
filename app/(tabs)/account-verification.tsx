@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-import {requirements}  from '../requirement'
+import {useFocusEffect}  from '@react-navigation/native'
 import { launchImageLibrary } from 'react-native-image-picker';
 import { FontAwesome, } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
@@ -525,17 +525,20 @@ const [selfieErrorMessage, setSelfieErrorMessage] = useState('');   // Error mes
   console.error("Error Updating Portrait Image: ", error);
 }
     
-    
-   router.push('/findTrips')
+   resetFormState()
+   router.push('/profile')
       
   };
 
   const handleSkip = () => {
     console.log("Handle Go Back");
+    resetFormState();
+
     router.push('/profile')
   }
   const handleGoBack = () => {
     console.log("Handle Go Back");
+    resetFormState();
     router.push('/travel-style')
   }
 
@@ -571,6 +574,35 @@ const [selfieErrorMessage, setSelfieErrorMessage] = useState('');   // Error mes
     }
   
     return null; // No errors
+  };
+
+
+  const resetFormState = () => {
+    // Reset images
+    setPickedFile1(null);
+    setPickedFile2(null);
+    
+    // Reset form data
+    setfullName('');
+    setPhoneNumber('');
+    setEmail('');
+    
+    // Reset error states
+    setFullNameError(false);
+    setFullNameErrorMessage('');
+    setPhoneNumberError(false);
+    setPhoneNumberErrorMessage('');
+    setEmailError(false);
+    setEmailErrorMessage('');
+    setIdCardError(false);
+    setIdCardErrorMessage('');
+    setSelfieError(false);
+    setSelfieErrorMessage('');
+    
+    // Reset other states
+    setUploading(false);
+    setResponseMessage(null);
+    setLoading(false);
   };
   
 

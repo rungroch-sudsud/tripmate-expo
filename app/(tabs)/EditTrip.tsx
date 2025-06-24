@@ -122,8 +122,9 @@ const [isValidating, setIsValidating] = useState(false);
     details:''
   });
 
-
+ 
 const handleBack=async()=>{
+  resetFormToOriginal();
   router.push('/(tabs)/findTrips')
 }
 
@@ -242,7 +243,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
   };
-
+  const [originalTripData, setOriginalTripData] = useState(null);
 const tripId=params.tripId
 const fetchTripDetails = async (): Promise<void> => {
   try {
@@ -251,63 +252,12 @@ const fetchTripDetails = async (): Promise<void> => {
     const result: TripData = response.data.data;
     setTripData(result as any)
     
-    // Set the initial form data with the fetched trip name
-    setFormData2(prev => ({ 
-      ...prev, 
-      name: result.name || '',
-      details:result.groupAtmosphere || ''
-    }));
-
-    setFormData(prev => ({ 
-      ...prev, 
-      details:result.detail || '',
-      description:result.groupAtmosphere || ''
-    }));
-
-    setpricePerPerson(result.pricePerPerson || '')
-    setmaxParticipant(result.maxParticipants || '')
-
-
-    if (result.includedServices && result.includedServices.length > 0) {
-      const selectedServiceIds = services
-        .filter(service => result.includedServices.includes(service.title))
-        .map(service => service.id);
-      setSelectedServices(selectedServiceIds);
-    }
+    // Store original data for reset functionality
+    setOriginalTripData(result);
     
-
+    // Set the initial form data with the fetched trip data
+    setInitialFormData(result);
     
-    // Set the initial dates - convert from YYYY-MM-DD to DD/MM/YYYY format
-    setFormData(prev => ({
-      ...prev,
-      startDate: result.startDate ? formatDateFromAPI(result.startDate) : '',
-      endDate: result.endDate ? formatDateFromAPI(result.endDate) : ''
-    }));
-    
-    // Set the initial cover image if it exists
-    if (result.tripCoverImageUrl) {
-      setPickedFile2({
-        uri: result.tripCoverImageUrl,
-        type: 'image/jpeg',
-        name: 'cover-image.jpg'
-      });
-    }
-
-
-    if (result.travelStyles && result.travelStyles.length > 0 && categories.length > 0) {
-      const selectedStyleIds = categories
-        .filter(category => result.travelStyles.includes(category.title))
-        .map(category => category.id);
-      setSelectedItems(selectedStyleIds);
-    }
-    
-    // Set initial destinations (this one is straightforward)
-    if (result.destinations && result.destinations.length > 0) {
-      setSelected(result.destinations);
-    }
-    console.log(tripId);
-    
-    console.log(result);
   } catch (error) {
     console.error('Failed to fetch trip details:', error);
     setTripData(null)
@@ -315,6 +265,135 @@ const fetchTripDetails = async (): Promise<void> => {
     setLoading(false)
   }
 }
+const setInitialFormData = (tripData) => {
+  setFormData2(prev => ({ 
+    ...prev, 
+    name: tripData.name || '',
+    details: tripData.groupAtmosphere || ''
+  }));
+
+  setFormData(prev => ({ 
+    ...prev, 
+    details: tripData.detail || '',
+    description: tripData.groupAtmosphere || '',
+    startDate: tripData.startDate ? formatDateFromAPI(tripData.startDate) : '',
+    endDate: tripData.endDate ? formatDateFromAPI(tripData.endDate) : ''
+  }));
+
+  setpricePerPerson(tripData.pricePerPerson || '')
+  setmaxParticipant(tripData.maxParticipants || '')
+
+  if (tripData.includedServices && tripData.includedServices.length > 0) {
+    const selectedServiceIds = services
+      .filter(service => tripData.includedServices.includes(service.title))
+      .map(service => service.id);
+    setSelectedServices(selectedServiceIds);
+  }
+
+  if (tripData.tripCoverImageUrl) {
+    setPickedFile2({
+      uri: tripData.tripCoverImageUrl,
+      type: 'image/jpeg',
+      name: 'cover-image.jpg'
+    });
+  }
+
+  if (tripData.travelStyles && tripData.travelStyles.length > 0 && categories.length > 0) {
+    const selectedStyleIds = categories
+      .filter(category => tripData.travelStyles.includes(category.title))
+      .map(category => category.id);
+    setSelectedItems(selectedStyleIds);
+  }
+  
+  if (tripData.destinations && tripData.destinations.length > 0) {
+    setSelected(tripData.destinations);
+  }
+}
+
+// Modified reset function that resets to original values
+const resetFormToOriginal = () => {
+  if (originalTripData) {
+    setInitialFormData(originalTripData);
+  } else {
+    // Fallback to blank reset if no original data
+    resetFormToBlank();
+  }
+  
+  // Reset UI states
+  setIsFocused(false);
+  setShowStartDatePicker(false);
+  setShowEndDatePicker(false);
+  setIsValidating(false);
+  setLoading(false);
+  setUploading(false);
+  setResponseMessage(null);
+  setIsChecked(false);
+  setDropdownOpen(false);
+  setSearchText('');
+  
+  // Reset errors
+  setErrors({
+    coverImage: '',
+    tripName: '',
+    startDate: '',
+    endDate: '',
+    maxParticipants: '',
+    pricePerPerson: '',
+    services: '',
+    travelStyles: '',
+    destinations: '',
+    atmosphere: '',
+    details: '',
+    terms: ''
+  });
+};
+
+// Keep the original reset function for complete reset
+const resetFormToBlank = () => {
+  setPickedFile2(null);
+  setIsFocused(false);
+  setSelectedItems([]);
+  setSelectedServices([]);
+  setSelected([]);
+  setShowStartDatePicker(false);
+  setShowEndDatePicker(false);
+  setIsValidating(false);
+  setLoading(false);
+  setUploading(false);
+  setResponseMessage(null);
+  
+  setErrors({
+    coverImage: '',
+    tripName: '',
+    startDate: '',
+    endDate: '',
+    maxParticipants: '',
+    pricePerPerson: '',
+    services: '',
+    travelStyles: '',
+    destinations: '',
+    atmosphere: '',
+    details: '',
+    terms: ''
+  });
+  
+  setFormData({
+    name: '',
+    startDate: '',
+    endDate: '',
+    description: '',
+    selectedOptions: [],
+    attachments: 0,
+    details: ''
+  });
+  
+  setFormData2({ name: '' });
+  setmaxParticipant('');
+  setpricePerPerson('');
+  setIsChecked(false);
+  setDropdownOpen(false);
+  setSearchText('');
+};
 
 
 useEffect(()=>{

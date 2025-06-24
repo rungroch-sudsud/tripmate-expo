@@ -51,6 +51,8 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [isLoginInProgress, setIsLoginInProgress] = useState(false); // Add this flag
+  const [navigationHandled, setNavigationHandled] = useState(false); // Add this flag to prevent auth listener interference
 
   const router = useRouter();
   const progressAnimation = useRef(new Animated.Value(0)).current;
@@ -101,36 +103,49 @@ const Login = () => {
     );
   }, []);
 
-  // Auth state listener with improved error handling
+  // Auth state listener - only for detecting existing authentication on page load
   useEffect(() => {
     let isMounted = true;
+    let hasCheckedInitialAuth = false;
 
     const unsubscribe = authInstance.onAuthStateChanged(
       async (user) => {
         if (!isMounted) return;
 
         try {
-          if (user) {
+          if (user && !isLoginInProgress && !hasCheckedInitialAuth && !navigationHandled) {
+            // This handles the case where user is already authenticated when visiting login page
+            hasCheckedInitialAuth = true;
             const tokenStored = await storeUserTokens(user, null);
             if (tokenStored) {
               setIsAuthenticated(true);
+              console.log("Auth state listener: Redirecting existing user to /findTrips");
               router.push('/findTrips');
             } else {
               throw new Error('Failed to store user tokens');
             }
-          } else {
+          } else if (!user && !isLoginInProgress && !navigationHandled) {
             setIsAuthenticated(false);
             await clearStoredTokens();
           }
+          
+          // Mark that we've checked initial auth state
+          if (!hasCheckedInitialAuth) {
+            hasCheckedInitialAuth = true;
+          }
         } catch (error) {
           console.error('Auth state change error:', error);
-          setError('เกิดข้อผิดพลาดในการยืนยันตัวตน');
+          if (!isLoginInProgress) {
+            setError('เกิดข้อผิดพลาดในการยืนยันตัวตน');
+          }
         }
       },
       (error) => {
         if (!isMounted) return;
         console.error('Auth state listener error:', error);
-        setError('เกิดข้อผิดพลาดในระบบยืนยันตัวตน');
+        if (!isLoginInProgress) {
+          setError('เกิดข้อผิดพลาดในระบบยืนยันตัวตน');
+        }
       }
     );
 
@@ -138,7 +153,7 @@ const Login = () => {
       isMounted = false;
       unsubscribe();
     };
-  }, [authInstance, router, storeUserTokens, clearStoredTokens]);
+  }, [authInstance, router, storeUserTokens, clearStoredTokens, isLoginInProgress, navigationHandled]);
 
   // Progress animation
   useEffect(() => {
@@ -174,6 +189,7 @@ const Login = () => {
     };
 
     try {
+      console.log("Creating user profile...");
       const response = await axiosInstance.post('/users/profile', profileData, {
         timeout: 10000, // 10 second timeout
       });
@@ -181,20 +197,21 @@ const Login = () => {
       if (response.status === API_STATUS.SUCCESS) {
         console.log("User Profile Created Successfully", response.data);
         await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, response.data.data.userId);
-        return { success: true, route: '/travel-style' };
+        return { success: true, route: '/travel-style', isNewUser: true };
       }
     } catch (apiError) {
       if (axios.isAxiosError(apiError)) {
         switch (apiError.response?.status) {
           case API_STATUS.CONFLICT:
-            console.log("User already exists, proceeding...");
+            console.log("User already exists, checking if profile is complete...");
             await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-            return { success: true, route: '/travel-style' };
+            // User exists but we need to check if they need to complete profile setup
+            return { success: true, route: '/findTrips', isExistingUser: true };
           
           case API_STATUS.BAD_REQUEST:
-            console.log("User profile incomplete, proceeding...");
+            console.log("User profile incomplete, directing to travel-style...");
             await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-            return { success: true, route: '/travel-style' };
+            return { success: true, route: '/travel-style', isIncompleteProfile: true };
           
           default:
             console.error("API Error:", apiError.response?.data || apiError.message);
@@ -212,6 +229,8 @@ const Login = () => {
     if (isLoading) return;
 
     setIsLoading(true);
+    setIsLoginInProgress(true); // Set login in progress flag
+    setNavigationHandled(false); // Reset navigation flag
     setError(null);
 
     try {
@@ -265,7 +284,18 @@ const Login = () => {
       }
 
       if (profileResult?.success) {
-        router.push(profileResult.route);
+        console.log(`Navigation decision: ${profileResult.route}`, {
+          isNewUser: profileResult.isNewUser,
+          isExistingUser: profileResult.isExistingUser,
+          isIncompleteProfile: profileResult.isIncompleteProfile
+        });
+        
+        setNavigationHandled(true); // Mark that we're handling navigation
+        
+        // Add a small delay to ensure auth state is stable before navigation
+        setTimeout(() => {
+          router.push(profileResult.route);
+        }, 100);
       } else {
         throw new Error('Failed to create user profile');
       }
@@ -305,6 +335,7 @@ const Login = () => {
       await clearStoredTokens();
     } finally {
       setIsLoading(false);
+      setIsLoginInProgress(false); // Reset login in progress flag
     }
   }, [isLoading, authInstance, storeUserTokens, createUserProfile, router, clearStoredTokens, showErrorAlert]);
 
@@ -349,15 +380,8 @@ const Login = () => {
       
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={handleBackPress}
-          disabled={isLoading}
-        >
-          <FontAwesome name="angle-left" size={24} color="#333" />
-        </TouchableOpacity>
         <Text style={styles.headerText}>เข้าสู่ระบบ</Text>
-        <View style={styles.placeholder} />
+      
       </View>
 
       {/* Progress Bar */}
@@ -478,6 +502,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#1F2937',
     fontFamily: 'InterTight-SemiBold',
+    marginVertical:10
   },
   placeholder: {
     width: 40,
