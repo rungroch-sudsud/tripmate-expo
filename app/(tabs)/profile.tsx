@@ -1,6 +1,6 @@
-import React, { useState,useEffect,useRef, use } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { FontAwesome } from '@expo/vector-icons';
-import { Animated} from 'react-native';
+import { Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {
@@ -11,20 +11,19 @@ import {
   TouchableOpacity,
   ScrollView,
   Image,
-  StyleSheet,
   SafeAreaView,
   ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { router,Stack,useLocalSearchParams } from 'expo-router';
-import {axiosInstance} from '../lib/axios'
-import axios from 'axios'
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { axiosInstance } from '../lib/axios';
+import axios from 'axios';
 import { getAuth, signOut } from 'firebase/auth';
-import {useFonts} from 'expo-font'
+import { useFonts } from 'expo-font';
+import styles from './css/profile_styles';
 
-
-
+// Type definitions
 interface Category {
   id: string;
   title: string;
@@ -40,19 +39,6 @@ interface ApiResponse {
     activeIconImageUrl: string;
   }[];
   message: string;
-}
-
-interface FormData {
-  fullName: string;
-  nickname: string;
-  age: string;
-  gender: string;
-  customGender: string;
-  email: string;
-  facebookUrl: string;
-  lineId: string;
-  travelStyles: string[];          // only this, prefer this over travelInterests
-  favouriteDestinations: string[];
 }
 
 interface ProfileFormData {
@@ -78,179 +64,54 @@ type PickedFile = {
   isBase64?: boolean;
 };
 
-
-
 interface ValidationErrors {
   fullName?: string;
   nickname?: string;
   age?: string;
   gender?: string;
   email?: string;
-  facebookUrl?: string;  // Add this
-  lineId?: string;       // Add this
+  facebookUrl?: string;
+  lineId?: string;
+}
+
+interface User {
+  fullname: string;
+  nickname: string;
+  email: string;
+  age: number;
+  gender: string;
+  facebookUrl: string;
+  lineId: string;
+  destinations: string[];
+  travelStyles: string[];
+  profileImageUrl?: string;
 }
 
 const ProfileForm: React.FC = () => {
-
-
+  // Font loading
   const [fontsLoaded] = useFonts({
     'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
     'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
   });
+
+  // State management
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
-    const [email, setEmail] = useState<string | null>(null);
-    const [uploading, setUploading] = useState(false);
-    const [responseMessage, setResponseMessage] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [responseMessage, setResponseMessage] = useState<string | null>(null);
 
-    const [destinations, setDestinations] = useState<string[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [selected, setSelected] = useState<string[]>([]);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [searchText, setSearchText] = useState('');
-    const [selectedItems, setSelectedItems] = useState<string[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
-    const [showGenderDropdown, setShowGenderDropdown] = useState(false);
-    const [user, setUser] = useState(null);
+  // Destinations
+  const [destinations, setDestinations] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
 
-    const params=useLocalSearchParams()
-    const userId=params.userId
+  // Travel Styles
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
 
-
-    const fetchTravelStyles = async (): Promise<void> => {
-      try {
-        setLoading(true);
-        const response = await axiosInstance.get('/travel-styles'); 
-        
-     
-        
-        const result: ApiResponse = response.data;
-        
-        const mappedCategories: Category[] = result.data.map(item => ({
-          id: item.id,
-          title: item.title,
-          iconImageUrl: item.iconImageUrl,
-          activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
-        }));
-        
-        
-        setCategories(mappedCategories);
-      } catch (error) {
-        console.error('Failed to fetch travel styles:', error);
-        Alert.alert(
-          'Error',
-          'Failed to load travel styles. Please try again.',
-          [{ text: 'OK' }]
-        );
-        // Fallback to empty array or default categories
-        setCategories([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-     const toggleSelection = (id: string): void => {
-    setSelectedItems(prev => 
-      prev.includes(id) 
-        ? prev.filter(item => item !== id)
-        : [...prev, id]
-    );
-  };
-
-  
-  useEffect(() => {
-    setLoading(true);
-    axiosInstance.get('/destinations')
-      .then(response => {
-        setDestinations(response.data.data || []);
-      })
-      .catch(err => {
-        console.error('Axios error:', err);
-        setDestinations([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
-  
-  // Add filtered destinations based on search
-  const filteredDestinations = destinations.filter(dest =>
-    dest.toLowerCase().includes(searchText.toLowerCase())
-  );
-  
-  function addDestination(dest: string) {
-    if (!selected.includes(dest)) {
-      setSelected([...selected, dest]);
-    }
-    setDropdownOpen(false);
-    setSearchText(''); // Clear search when selecting
-  }
-  
-  function removeDestination(dest: string) {
-    setSelected(selected.filter(d => d !== dest));
-  }
-
-
-    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-    useEffect(() => {
-        const fetchEmail = async () => {
-          const storedID = await AsyncStorage.getItem('userId');
-          console.log('User Id:', storedID);
-          setEmail(storedID);
-        };
-      
-        fetchEmail();
-      }, []);
-     // console.log('User ID:', email);
-
-     useEffect(() => {
-      const initializeData = async () => {
-        try {
-          // Fetch all available travel styles first
-          await fetchTravelStyles();
-          
-          // Then load user's existing travel styles
-          const savedTravelStyles = await AsyncStorage.getItem('travelStyles');
-          if (savedTravelStyles) {
-            const userTravelStyles = JSON.parse(savedTravelStyles);
-            
-            // Since userTravelStyles is already an array of IDs, use directly
-            setSelectedItems(userTravelStyles);
-            
-            if (__DEV__) {
-              console.log('Loaded user travel styles:', userTravelStyles);
-              console.log('Selected IDs:', userTravelStyles);
-            }
-          }
-        } catch (error) {
-          console.error('Error initializing data:', error);
-        }
-      };
-    
-      initializeData();
-    }, []);
-
-      console.log("Catagories IDDDDDD:  "+selectedCategories);
-      
-
-    const progressAnimation = useRef(new Animated.Value(66.66)).current;
-
-  useEffect(() => {
-
- 
-    
-    const animateProgress = () => {
-      Animated.timing(progressAnimation, {
-        toValue: 100,
-        duration: 300,
-        useNativeDriver: false,
-      }).start();
-    };
-
-    setTimeout(animateProgress, 300);
-
-    fetchTravelStyles();
-  }, []);
+  // Form data
   const [formData, setFormData] = useState<ProfileFormData>({
     fullName: '',
     nickname: '',
@@ -264,96 +125,97 @@ const ProfileForm: React.FC = () => {
     favouriteDestinations: [],
     travelStyles: [],
   });
-  
-  
-  
 
+  // Other states
+  const [loading, setLoading] = useState(false);
+  const [showGenderDropdown, setShowGenderDropdown] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
-  
+
+  const params = useLocalSearchParams();
+  const userId = params.userId;
+  const progressAnimation = useRef(new Animated.Value(66.66)).current;
+
+  const [originalData, setOriginalData] = useState<{
+    formData: ProfileFormData;
+    selectedDestinations: string[];
+    selectedTravelStyles: string[];
+  }>({
+    formData: {
+      fullName: '',
+      nickname: '',
+      age: '',
+      gender: '',
+      customGender: '',
+      email: '',
+      facebookUrl: '',
+      lineId: '',
+      travelInterests: [],
+      favouriteDestinations: [],
+      travelStyles: [],
+    },
+    selectedDestinations: [],
+    selectedTravelStyles: [],
+  });
+
   const genderOptions = ['ผู้ชาย', 'ผู้หญิง', 'อื่นๆ'] as const;
+  const isResetting = useRef(false);
 
-  
-
-
-
-
+  // Validation functions
   const validateFullName = (name: string): string | null => {
-    const trimmedName = name.trim();  // Trim leading/trailing spaces
-  
-    // Check if the name has leading or trailing spaces
+    const trimmedName = name.trim();
+    
     if (name !== trimmedName) {
       return 'ชื่อ-นามสกุลห้ามมีช่องว่างก่อนและหลัง';
     }
-  
-    // Check for empty name after trimming
+    
     if (!trimmedName) {
       return 'กรุณากรอกชื่อ-นามสกุล';
     }
-  
-    // Check for malicious input or special characters
+    
     const specialCharRegex = /[^a-zA-Zก-๙\s]/;
     if (specialCharRegex.test(trimmedName)) {
       return 'ชื่อ-นามสกุลไม่สามารถมีอักขระพิเศษได้';
     }
-  
-    // Check for multiple spaces (more than one space between words)
+    
     if (trimmedName.includes('  ')) {
       return 'ชื่อ-นามสกุลไม่สามารถมีช่องว่างมากกว่า 1 ช่องได้';
     }
-  
-    // Split by space and check parts
+    
     const parts = trimmedName.split(' ');
-  
-    // Must have exactly 2 parts (first name and last name)
     if (parts.length !== 2) {
       return 'กรุณากรอกชื่อและนามสกุล คั่นด้วยช่องว่าง 1 ช่อง';
     }
-  
-    // Both parts must not be empty
+    
     if (parts[0].length === 0 || parts[1].length === 0) {
       return 'กรุณากรอกชื่อและนามสกุลให้ครบถ้วน';
     }
-  
-    // If everything is fine, return null (no error)
+    
     return null;
   };
-  
-  //validatenickName
 
-  const validatenickName = (name: string): string | null => {
-    const trimmed = name.trim();  // Trim leading/trailing spaces
-  
-    // Check if the name is empty after trimming
+  const validateNickname = (name: string): string | null => {
+    const trimmed = name.trim();
+    
     if (!trimmed) {
       return 'กรุณากรอกชื่อเล่น';
     }
-  
-    // Check for leading or trailing spaces
+    
     if (name !== trimmed) {
       return 'ชื่อเล่นห้ามมีช่องว่างก่อนและหลัง';
     }
-  
-    // Check for spaces within the name (only one word allowed)
+    
     if (trimmed.includes(' ')) {
       return 'ชื่อเล่นต้องเป็นคำเดียวโดยไม่มีช่องว่าง';
     }
-  
-    // Check for special characters (only Thai or English letters allowed)
+    
     const specialCharRegex = /[^a-zA-Zก-๙]/;
     if (specialCharRegex.test(trimmed)) {
       return 'ชื่อเล่นสามารถประกอบด้วยตัวอักษรภาษาไทยหรืออังกฤษเท่านั้น';
     }
-  
-    // If everything is fine, return null (no error)
+    
     return null;
   };
-  
-
-
-  
-
-
 
   const validateAge = (age: string): string | null => {
     if (!age.trim()) {
@@ -384,28 +246,27 @@ const ProfileForm: React.FC = () => {
 
     return null;
   };
+
   const validateFacebookUrl = (url: string): string | undefined => {
-    if (!url.trim()) return undefined; // Empty is OK
+    if (!url.trim()) return undefined;
     
-    // Check if it's a valid Facebook URL or username
     const facebookUrlRegex = /^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com)\/.+/i;
-    const usernameRegex = /^[a-zA-Z0-9.]{5,}$/; // Basic username format
+    const usernameRegex = /^[a-zA-Z0-9.]{5,}$/;
     
     if (facebookUrlRegex.test(url) || usernameRegex.test(url)) {
-      return undefined; // Valid
+      return undefined;
     }
     
     return "กรุณาใส่ Facebook URL ที่ถูกต้อง หรือ Username";
   };
-  
+
   const validateLineId = (lineId: string): string | undefined => {
-    if (!lineId.trim()) return undefined; // Empty is OK
+    if (!lineId.trim()) return undefined;
     
-    // LINE ID validation: letters, numbers, dots, underscores, hyphens, 4-20 characters
     const lineIdRegex = /^[a-zA-Z0-9._-]{4,20}$/;
     
     if (lineIdRegex.test(lineId)) {
-      return undefined; // Valid
+      return undefined;
     }
     
     return "LINE ID ต้องมี 4-20 ตัวอักษร และใช้ได้เฉพาะ a-z, 0-9, ., _, -";
@@ -413,175 +274,45 @@ const ProfileForm: React.FC = () => {
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
-  
-    // Validate full name
+
     const fullNameError = validateFullName(formData.fullName);
     if (fullNameError) newErrors.fullName = fullNameError;
-  
-    const nicknameError = validatenickName(formData.nickname);
+
+    const nicknameError = validateNickname(formData.nickname);
     if (nicknameError) newErrors.nickname = nicknameError;
-  
-    // Validate age
+
     const ageError = validateAge(formData.age);
     if (ageError) newErrors.age = ageError;
-  
-    // Validate gender
+
     if (!formData.gender) {
       newErrors.gender = 'กรุณาเลือกเพศ';
     }
-  
-    // Validate email
+
     const emailError = validateEmail(formData.email);
     if (emailError) newErrors.email = emailError;
-  
-    // Validate Facebook URL (only if filled)
+
     const facebookError = validateFacebookUrl(formData.facebookUrl);
     if (facebookError) newErrors.facebookUrl = facebookError;
-  
-    // Validate LINE ID (only if filled)
+
     const lineError = validateLineId(formData.lineId);
     if (lineError) newErrors.lineId = lineError;
-  
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  ///////////////////////////////////
-  const fetchUserProfile = async () => {
-    try {
-      const response = await axiosInstance.get(`/users/profile/${userId}`)
-      console.log(response.data.data);
-      setUser(response.data.data)
-      // Consider setting the data to state here instead of just logging
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
+  // Utility functions
+  const sanitizeValue = (value: any): string => {
+    if (value === "N/A" || value === null || value === undefined) {
+      return '';
     }
-  }
-  
-
-
-  useEffect(() => {
-    if (userId) {
-      fetchUserProfile()
-    }
-  }, [userId])
-
-
-  const [originalData, setOriginalData] = useState<{
-    formData: ProfileFormData;
-    selectedDestinations: string[];
-    selectedTravelStyles: string[];
-  }>({
-    formData: {
-      fullName: '',
-      nickname: '',
-      age: '',
-      gender: '',
-      customGender: '',
-      email: '',
-      facebookUrl: '',
-      lineId: '',
-      travelInterests: [],
-      favouriteDestinations: [],
-      travelStyles: [],
-    },
-    selectedDestinations: [],
-    selectedTravelStyles: [],
-  });
-
-  useEffect(() => {
-    console.log("User Details Updated: ", user);
-    if (user) {
-      // Handle "N/A" values and convert them to empty strings for form display
-      const sanitizeValue = (value: any): string => {
-        if (value === "N/A" || value === null || value === undefined) {
-          return '';
-        }
-        return String(value);
-      };
-  
-      const newFormData: ProfileFormData = {
-        fullName: sanitizeValue(user.fullname),
-        nickname: sanitizeValue(user.nickname),
-        email: sanitizeValue(user.email),
-        age: user.age !== 999 ? user.age.toString() : '', // Handle age 999 as empty
-        gender: sanitizeValue(user.gender),
-        customGender: '',
-        facebookUrl: sanitizeValue(user.facebookUrl),
-        lineId: sanitizeValue(user.lineId),
-        travelInterests: [],
-        favouriteDestinations: user.destinations?.filter(dest => dest !== "N/A") || [],
-        travelStyles: user.travelStyles || [],
-      };
-  
-      // Filter out "N/A" values from arrays
-      const newSelectedDestinations = user.destinations?.filter(dest => dest !== "N/A") || [];
-      const newSelectedTravelStyles = user.travelStyles || [];
-  
-      // Set current form data
-      setFormData(newFormData);
-      setSelected(newSelectedDestinations);
-      setSelectedItems(newSelectedTravelStyles);
-  
-      // Store original data for reset
-      setOriginalData({
-        formData: newFormData,
-        selectedDestinations: newSelectedDestinations,
-        selectedTravelStyles: newSelectedTravelStyles,
-      });
-  
-      console.log("Original data stored:", {
-        formData: newFormData,
-        selectedDestinations: newSelectedDestinations,
-        selectedTravelStyles: newSelectedTravelStyles,
-      });
-    }
-  }, [user]);
-
-  
-  
-  
-
-  const removeSelectedInterest = (interest: string): void => {
-    setSelectedInterests(selectedInterests.filter(item => item !== interest));
+    return String(value);
   };
-// Modified handleBack function with reset functionality
-const handleBack = (): void => {
-  console.log("Resetting form to original values...");
-  console.log("Original data:", originalData);
-  
-  // Reset form to original values
-  setFormData({ ...originalData.formData });
-  setSelected([...originalData.selectedDestinations]);
-  setSelectedItems([...originalData.selectedTravelStyles]);
-  
-  // Clear any errors
-  setErrors({});
-  
-  // Clear image selection
-  setImageFile(null);
-  setResponseMessage(null);
-  
-  // Reset other form-related states
-  setDropdownOpen(false);
-  setSearchText('');
-  setShowGenderDropdown(false);
-  
-  console.log("Form reset completed");
-  console.log("Reset formData:", originalData.formData);
-  console.log("Reset selected destinations:", originalData.selectedDestinations);
-  console.log("Reset selected travel styles:", originalData.selectedTravelStyles);
-  
-  // Navigate back
-  router.push('/findTrips');
-};
-
 
   const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
-    // Extract base64 data
     const base64Data = base64Uri.split(',')[1];
     return {
-      uri: base64Uri, // Keep original for display
+      uri: base64Uri,
       base64Data: base64Data,
       type: mimeType,
       name: filename,
@@ -589,8 +320,135 @@ const handleBack = (): void => {
     };
   };
 
-   const pickImage = () => {
-    // Compatible options for different versions of react-native-image-picker
+  // API functions
+  const fetchUserProfile = useCallback(async () => {  
+    try {
+      const userId=await AsyncStorage.getItem('userId')
+      const response = await axiosInstance.get(`/users/profile/${userId}`);
+      console.log('User profile fetched:', response.data.data);
+      setUser(response.data.data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+    }
+  }, [userId]);
+
+  const fetchInitialData = useCallback(async () => {
+    setLoading(true);
+    
+    try {
+      // Animate progress
+      setTimeout(() => {
+        Animated.timing(progressAnimation, {
+          toValue: 100,
+          duration: 300,
+          useNativeDriver: false,
+        }).start();
+      }, 300);
+
+      // Fetch user ID from storage
+      const storedID = await AsyncStorage.getItem('userId');
+      console.log('User Id:', storedID);
+      setEmail(storedID);
+
+      // Fetch destinations and travel styles in parallel
+      const [destinationsResponse, travelStylesResponse] = await Promise.all([
+        axiosInstance.get('/destinations'),
+        axiosInstance.get('/travel-styles')
+      ]);
+
+      // Set destinations
+      setDestinations(destinationsResponse.data.data || []);
+
+      // Set travel styles
+      const result: ApiResponse = travelStylesResponse.data;
+      const mappedCategories: Category[] = result.data.map(item => ({
+        id: item.id,
+        title: item.title,
+        iconImageUrl: item.iconImageUrl,
+        activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
+      }));
+      setCategories(mappedCategories);
+
+      console.log('Initial data loaded successfully');
+    } catch (error) {
+      console.error('Failed to load initial data:', error);
+      setDestinations([]);
+      setCategories([]);
+      Alert.alert('Error', 'Failed to load initial data. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [progressAnimation]);
+
+  // Event handlers
+  const toggleSelection = (id: string): void => {
+    setSelectedItems(prev => 
+      prev.includes(id) 
+        ? prev.filter(item => item !== id)
+        : [...prev, id]
+    );
+  };
+
+  const addDestination = (dest: string) => {
+    if (!selected.includes(dest)) {
+      setSelected([...selected, dest]);
+    }
+    setDropdownOpen(false);
+    setSearchText('');
+  };
+
+  const removeDestination = (dest: string) => {
+    setSelected(selected.filter(d => d !== dest));
+  };
+
+  const handleBack = (): void => {
+    console.log("Resetting form to original values...");
+    
+    // Set reset flag to prevent useEffect from interfering
+    isResetting.current = true;
+    
+    // Reset to original data
+    setFormData({ ...originalData.formData });
+    setSelected([...originalData.selectedDestinations]);
+    setSelectedItems([...originalData.selectedTravelStyles]);
+    
+    // Reset other form states
+    setErrors({});
+    setImageFile(null);
+    setResponseMessage(null);
+    setDropdownOpen(false);
+    setSearchText('');
+    setShowGenderDropdown(false);
+    
+    console.log("Form reset completed");
+    
+    // Clear reset flag after a brief delay
+    setTimeout(() => {
+      isResetting.current = false;
+    }, 100);
+    
+   if(userId){
+    router.push('/(tabs)/findTrips');
+   }else{
+    router.push('/(tabs)/account-verification');
+   }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const auth = getAuth();
+      await signOut(auth);
+      console.log('User logged out successfully');
+
+      await AsyncStorage.multiRemove(['googleIdToken', 'googleAccessToken', 'userId']);
+      
+      router.push('/');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const pickImage = () => {
     const options: any = {
       mediaType: 'photo',
       includeBase64: false,
@@ -600,7 +458,6 @@ const handleBack = (): void => {
         skipBackup: true,
         path: 'images',
       },
-      // Force file URI instead of base64
       presentationStyle: 'overFullScreen',
     };
 
@@ -619,7 +476,6 @@ const handleBack = (): void => {
       if (response.assets && response.assets.length > 0) {
         const pickedImage = response.assets[0];
         
-        // Handle base64 data URIs (common in web environment)
         if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
           console.log('🟡 Base64 data detected, converting...');
           const convertedFile = convertBase64ToFile(
@@ -640,7 +496,6 @@ const handleBack = (): void => {
           return;
         }
 
-        // Validate that we have a proper file URI
         if (!pickedImage.uri) {
           Alert.alert('Error', 'No image URI received. Please try again.');
           return;
@@ -653,12 +508,7 @@ const handleBack = (): void => {
           size: pickedImage.fileSize,
         });
 
-        console.log('🟢 Image picked successfully:', {
-          uri: pickedImage.uri.substring(0, 50) + '...',
-          type: pickedImage.type,
-          name: pickedImage.fileName,
-          size: pickedImage.fileSize,
-        });
+        console.log('🟢 Image picked successfully');
       }
     });
   };
@@ -674,7 +524,6 @@ const handleBack = (): void => {
     const formData = new FormData();
     
     if (imageFile.isBase64 && imageFile.base64Data) {
-      // Convert base64 to Blob for FormData
       console.log('🟡 Converting base64 to Blob...');
       
       const byteCharacters = atob(imageFile.base64Data);
@@ -687,7 +536,6 @@ const handleBack = (): void => {
       
       formData.append('file', blob, imageFile.name);
     } else {
-      // Create proper file object for FormData
       const fileObj = {
         uri: imageFile.uri,
         type: imageFile.type,
@@ -697,23 +545,15 @@ const handleBack = (): void => {
       formData.append('file', fileObj);
     }
 
-    console.log('🟢 FormData upload with file:', {
-      uri: imageFile.uri.substring(0, 50) + '...',
-      type: imageFile.type,
-      name: imageFile.name,
-      size: imageFile.size,
-    });
-
     setUploading(true);
     setResponseMessage(null);
 
     try {
       const userId = await AsyncStorage.getItem('userId');
       
-      // Use your configured axios instance (already has token interceptor)
       const response = await axiosInstance.patch(`/users/profile/image/${userId}`, formData, {
         headers: {
-         
+          'Content-Type': 'multipart/form-data',
         },
       });
     
@@ -734,109 +574,169 @@ const handleBack = (): void => {
         setResponseMessage(`Error: ${error.message}`);
         Alert.alert('Upload Error', error.message);
       }
-    }finally {
+    } finally {
       setUploading(false);
-    }
-  };
- 
-  const handleLogout = async () => {
-    console.log("FFFFFF");
-    
-    try {
-    
-      const auth = getAuth();
-
-    
-      await signOut(auth);
-      console.log('User logged out successfully');
-
-     
-      await AsyncStorage.removeItem('googleIdToken');
-      await AsyncStorage.removeItem('googleAccessToken');
-      await AsyncStorage.removeItem('userId');
-      
-
-      router.push('/'); 
-
-    } catch (error) {
-      console.error('Logout failed:', error);
     }
   };
 
   const handleSubmit = async (): Promise<void> => {
     if (!validateForm()) {
-      console.log('ข้อผิดพลาด', 'กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง');
+      console.log('Validation failed');
       return;
     }
-  
-    else{
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) {
-        console.log('ข้อผิดพลาด', 'ไม่พบ userID');
-        return;
-      }
-    
-      const selectedStyleNames = categories
-        .filter(cat => selectedItems.includes(cat.id))
-        .map(cat => cat.id);
-    
-   try{
-    const profileData = {
-      fullname: formData.fullName,
-      nickname: formData.nickname,
-      email: formData.email,
-      gender: formData.gender,
-      age: Number(formData.age),
-      travelStyles: selectedStyleNames,
-      destinations: Array.from(new Set(selected)),
-      lineId: formData.lineId || '',
-      facebookUrl: formData.facebookUrl || '',
-    };
-    const profileResponse=await axiosInstance.patch(`/users/profile/${userId}`,profileData,{
-      headers:{
-        "Content-Type":'application/json'
-      }
-    })
-    console.log("Profile updated successfully:", profileResponse.data);
-    router.push('/findTrips')
-   }catch(error){
-    console.error("Error Updating User Profile: ",error);
-    
-   }
-    try{
-      uploadImageWithFetch()
-      router.push('/findTrips')
-    }catch(error){
-      console.error("Error uploading Profile Image: ",error);
-      
+
+    const userId = await AsyncStorage.getItem('userId');
+    if (!userId) {
+      console.log('No userId found');
+      return;
     }
 
+    try {
+      const selectedStyleIds = selectedItems;
+
+      const profileData = {
+        fullname: formData.fullName,
+        nickname: formData.nickname,
+        email: formData.email,
+        gender: formData.gender,
+        age: Number(formData.age),
+        travelStyles: selectedStyleIds,
+        destinations: Array.from(new Set(selected)),
+        lineId: formData.lineId || '',
+        facebookUrl: formData.facebookUrl || '',
+      };
+
+      console.log('Submitting profile data:', profileData);
+
+      const profileResponse = await axiosInstance.patch(
+        `/users/profile/${userId}`,
+        profileData,
+        {
+          headers: {
+            "Content-Type": 'application/json'
+          }
+        }
+      );
+
+      console.log("Profile updated successfully:", profileResponse.data);
+
+      if (imageFile) {
+        await uploadImageWithFetch();
+      }
+
+      router.push('/findTrips');
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Alert.alert('Error', 'Failed to update profile. Please try again.');
     }
   };
-    const renderError = (error?: string) => {
+
+  // Effects
+  useEffect(() => {
+    fetchInitialData();
+  }, [fetchInitialData]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    // Don't process if we're in the middle of a reset
+    if (isResetting.current) {
+      console.log("Skipping useEffect due to reset in progress");
+      return;
+    }
+    
+    if (!user || categories.length === 0) return;
+  
+    console.log("Processing user data:", user);
+  
+    const newFormData: ProfileFormData = {
+      fullName: sanitizeValue(user.fullname),
+      nickname: sanitizeValue(user.nickname),
+      email: sanitizeValue(user.email),
+      age: user.age !== -999 ? user.age.toString() : '',
+      gender: sanitizeValue(user.gender),
+      customGender: '',
+      facebookUrl: sanitizeValue(user.facebookUrl),
+      lineId: sanitizeValue(user.lineId),
+      travelInterests: [],
+      favouriteDestinations: user.destinations?.filter(dest => dest !== "N/A") || [],
+      travelStyles: user.travelStyles || [],
+    };
+  
+    const newSelectedDestinations = user.destinations?.filter(dest => dest !== "N/A") || [];
+    
+    let newSelectedTravelStyles: string[] = [];
+    if (user.travelStyles && Array.isArray(user.travelStyles)) {
+      newSelectedTravelStyles = user.travelStyles.filter(styleId => 
+        categories.some(cat => cat.id === styleId)
+      );
+      
+      if (newSelectedTravelStyles.length === 0 && categories.length > 0) {
+        newSelectedTravelStyles = user.travelStyles
+          .map(styleName => categories.find(cat => cat.title === styleName)?.id)
+          .filter(Boolean) as string[];
+      }
+    }
+  
+    // Only update if originalData hasn't been set yet, or if user data has actually changed
+    const shouldUpdate = 
+      originalData.formData.fullName === '' || // First time loading
+      JSON.stringify(originalData.formData) !== JSON.stringify(newFormData) || 
+      JSON.stringify(originalData.selectedDestinations) !== JSON.stringify(newSelectedDestinations) ||
+      JSON.stringify(originalData.selectedTravelStyles) !== JSON.stringify(newSelectedTravelStyles);
+  
+    if (shouldUpdate) {
+      setFormData(newFormData);
+      setSelected(newSelectedDestinations);
+      setSelectedItems(newSelectedTravelStyles);
+  
+      const originalDataSnapshot = {
+        formData: { ...newFormData },
+        selectedDestinations: [...newSelectedDestinations],
+        selectedTravelStyles: [...newSelectedTravelStyles],
+      };
+      setOriginalData(originalDataSnapshot);
+  
+      console.log("Form data processed successfully");
+    } else {
+      console.log("Skipping form data update - no changes detected");
+    }
+  }, [user, categories]);
+
+  // Render functions
+  const renderError = (error?: string) => {
     if (!error) return null;
     return <Text style={styles.errorText}>{error}</Text>;
   };
 
+  const filteredDestinations = destinations.filter(dest =>
+    dest.toLowerCase().includes(searchText.toLowerCase())
+  );
 
-
-
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#6366f1" />
+      </SafeAreaView>
+    );
+  }
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
+      
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
           <FontAwesome name="angle-left" size={24} color="#333" />
         </TouchableOpacity>
         <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
-        <TouchableOpacity onPress={
-         handleLogout
-        }>
-         <Text style={{color:'blue'}}> Logout</Text>
-        </TouchableOpacity>
+            {userId?  (<TouchableOpacity onPress={handleLogout}>
+          <Text style={{color:'blue'}}>Logout</Text>
+        </TouchableOpacity>):null}
       </View>
-
+  
       {/* Progress Bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
@@ -845,15 +745,15 @@ const handleBack = (): void => {
               styles.progressFill,
               {
                 width: progressAnimation.interpolate({
-                  inputRange: [0, 33.33],
-                  outputRange: ['0%', '33.33%'],
+                  inputRange: [0, 100],
+                  outputRange: ['0%', '100%'],
                 }),
               },
             ]} 
           />
         </View>
       </View>
-
+  
       <ScrollView 
         style={styles.scrollView} 
         showsVerticalScrollIndicator={false}
@@ -861,35 +761,34 @@ const handleBack = (): void => {
       >
         {/* Profile Picture */}
         <View style={styles.profileSection}>
-  <TouchableOpacity 
-    style={styles.profileImageContainer}
-    onPress={pickImage}
-  >
-    <Image
-  source={
-    imageFile?.uri ? { uri: imageFile.uri } :  // Show picked image first
-    user?.profileImageUrl ? { uri: user.profileImageUrl } :
-    { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }
-  }
-  style={styles.profileImage}
-/>
-    <View style={styles.cameraButton}>
-    <Image
-        source={require('../assets/images/images/images/image6.png')} 
-        style={{height:16,width:16}}
-        resizeMode="contain"
-      />
-    </View>
-  </TouchableOpacity>
-  <Text style={styles.uploadText}>อัพโหลดรูปโปรไฟล์ของคุณ</Text>
-</View>
-
-
+          <TouchableOpacity 
+            style={styles.profileImageContainer}
+            onPress={pickImage}
+          >
+            <Image
+              source={
+                imageFile?.uri && imageFile.uri!=="" ? { uri: imageFile.uri } :  
+                user?.profileImageUrl ? { uri: user.profileImageUrl } :
+                { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }
+              }
+              style={styles.profileImage}
+            />
+            <View style={styles.cameraButton}>
+              <Image
+                source={require('../assets/images/images/images/image6.png')} 
+                style={{height:16,width:16}}
+                resizeMode="contain"
+              />
+            </View>
+          </TouchableOpacity>
+          <Text style={styles.uploadText}>อัพโหลดรูปโปรไฟล์ของคุณ</Text>
+        </View>
+  
         {/* Form Fields */}
         <View style={styles.formSection}>
           {/* Full Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>ชื่อ </Text>
+            <Text style={styles.label}>ชื่อ</Text>
             <TextInput
               style={[styles.input, errors.fullName && styles.inputError]}
               placeholder="ชื่อจริง และ นามสกุล"
@@ -904,28 +803,27 @@ const handleBack = (): void => {
             />
             {renderError(errors.fullName)}
           </View>
-
-
+  
+          {/* Nickname */}
           <View style={styles.inputGroup}>
-  <Text style={styles.label}>ชื่อเล่น</Text>
-  <TextInput
-    style={[styles.input, errors.nickname && styles.inputError]}
-    placeholder="ชื่อสำหรับแสดงในแอป"
-    value={formData.nickname}
-    onChangeText={(text: string) => {
-      setFormData({ ...formData, nickname: text });
-      if (errors.nickname) {
-        setErrors({ ...errors, nickname: undefined });
-      }
-    }}
-    placeholderTextColor="#999"
-  />
-  {renderError(errors.nickname)}
-</View>
-
-
-                {/* Email */}
-                <View style={styles.inputGroup}>
+            <Text style={styles.label}>ชื่อเล่น</Text>
+            <TextInput
+              style={[styles.input, errors.nickname && styles.inputError]}
+              placeholder="ชื่อสำหรับแสดงในแอป"
+              value={formData.nickname}
+              onChangeText={(text: string) => {
+                setFormData({ ...formData, nickname: text });
+                if (errors.nickname) {
+                  setErrors({ ...errors, nickname: undefined });
+                }
+              }}
+              placeholderTextColor="#999"
+            />
+            {renderError(errors.nickname)}
+          </View>
+  
+          {/* Email */}
+          <View style={styles.inputGroup}>
             <Text style={styles.label}>อีเมล</Text>
             <TextInput
               style={[styles.input, errors.email && styles.inputError]}
@@ -943,744 +841,257 @@ const handleBack = (): void => {
             />
             {renderError(errors.email)}
           </View>
-
-          <View style={[{ flexDirection: 'row',gap:10 }, styles.inputGroup]}>
-
-          <View style={[{ flex: 1 }]}>
-  <Text style={styles.label}>อายุ</Text>
-  <TextInput
-    value={formData.age}
-    style={styles.input}
-    onChangeText={(text) => {
-      // Only allow numeric input by filtering out non-numeric characters
-      const numericText = text.replace(/[^0-9]/g, ''); // Only numbers allowed
-
-      setFormData({ ...formData, age: numericText });
-
-      // Clear error if age is being updated
-      if (errors.age) setErrors({ ...errors, age: undefined });
-    }}
-    keyboardType="numeric"
-    placeholder="อายุของคุณ"
-    placeholderTextColor="#999"
-  />
-  {renderError(errors.age)}
-</View>
-
-
-        {/* Gender Dropdown */}
-        <View style={{ flex: 1 }}>
-  <Text style={styles.label}>เพศ</Text>
   
-  {/* Container with input/text and icon */}
-  <View style={styles.inputWithIcon}>
-    {/* Left side - Always show text display */}
-    <View style={styles.textDisplayArea}>
-      <Text style={styles.displayText}>
-        {formData.gender || 'เลือกเพศ'}
-      </Text>
-    </View>
-
-    {/* Right side - Always visible clickable icon */}
-    <TouchableOpacity
-      onPress={() => setShowGenderDropdown(!showGenderDropdown)}
-      style={styles.iconButton}
-    >
-      <Image
-        source={require('../assets/images/images/images/image10.png')}
-        style={styles.dropdownIcon}
-      />
-    </TouchableOpacity>
-  </View>
-
-  {/* Dropdown list */}
-  {showGenderDropdown && (
-    <View style={styles.dropdownList}>
-      {genderOptions.map((option) => (
-        <TouchableOpacity
-          key={option}
-          onPress={() => {
-            setFormData({
-              ...formData,
-              gender: option,
-              customGender: ''
-            });
-            setShowGenderDropdown(false);
-            if (errors.gender) setErrors({ ...errors, gender: undefined });
-          }}
-          style={[
-            styles.dropdownItem,
-            formData.gender === option && styles.dropdownItemSelected,
-          ]}
-        >
-          <Text>{option}</Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  )}
+          {/* Age and Gender Row */}
+          <View style={[{ flexDirection: 'row', gap: 10 }, styles.inputGroup]}>
+            {/* Age */}
+            <View style={[{ flex: 1 }]}>
+              <Text style={styles.label}>อายุ</Text>
+              <TextInput
+                value={formData.age}
+                style={[styles.input, errors.age && styles.inputError]}
+                onChangeText={(text) => {
+                  const numericText = text.replace(/[^0-9]/g, '');
+                  setFormData({ ...formData, age: numericText });
+                  if (errors.age) setErrors({ ...errors, age: undefined });
+                }}
+                keyboardType="numeric"
+                placeholder="อายุของคุณ"
+                placeholderTextColor="#999"
+              />
+              {renderError(errors.age)}
+            </View>
   
-  {renderError(errors.gender)}
-</View>
-      </View>
+            {/* Gender Dropdown */}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>เพศ</Text>
+              
+              <View style={[styles.inputWithIcon, errors.gender && styles.inputError]}>
+                <View style={styles.textDisplayArea}>
+                  <Text style={styles.displayText}>
+                    {formData.gender || 'เลือกเพศ'}
+                  </Text>
+                </View>
+  
+                <TouchableOpacity
+                  onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+                  style={styles.iconButton}
+                >
+                  <Image
+                    source={require('../assets/images/images/images/image10.png')}
+                    style={styles.dropdownIcon}
+                  />
+                </TouchableOpacity>
+              </View>
+  
+              {showGenderDropdown && (
+                <View style={styles.dropdownList}>
+                  {genderOptions.map((option) => (
+                    <TouchableOpacity
+                      key={option}
+                      onPress={() => {
+                        setFormData({
+                          ...formData,
+                          gender: option,
+                          customGender: ''
+                        });
+                        setShowGenderDropdown(false);
+                        if (errors.gender) setErrors({ ...errors, gender: undefined });
+                      }}
+                      style={[
+                        styles.dropdownItem,
+                        formData.gender === option && styles.dropdownItemSelected,
+                      ]}
+                    >
+                      <Text>{option}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              
+              {renderError(errors.gender)}
+            </View>
+          </View>
+  
           {/* Additional Contacts */}
-          
           <Text style={styles.label}>ช่องทางการติดต่อเพิ่มเติม (ไม่บังคับ)</Text>
+          
+          {/* Facebook */}
+          <View style={styles.socialInputContainer}>
+            <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+            <TextInput
+              style={[styles.socialInput, errors.facebookUrl && styles.inputError]}
+              placeholder="Facebook URL หรือ Username"
+              value={formData.facebookUrl}
+              onChangeText={(text: string) => {
+                setFormData({...formData, facebookUrl: text});
+                if (errors.facebookUrl) {
+                  setErrors({...errors, facebookUrl: undefined});
+                }
+              }}
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+            />
+          </View>
+          {renderError(errors.facebookUrl)}
+  
+          {/* LINE */}
+          <View style={styles.socialInputContainer}>
+            <Image
+              source={require('../assets/images/images/images/image7.png')}
+              style={{height:16,width:16}}
+              resizeMode="contain"
+            />
+            <TextInput
+              style={[styles.socialInput, errors.lineId && styles.inputError]}
+              placeholder="LINE ID"
+              value={formData.lineId}
+              onChangeText={(text: string) => {
+                setFormData({...formData, lineId: text});
+                if (errors.lineId) {
+                  setErrors({...errors, lineId: undefined});
+                }
+              }}
+              placeholderTextColor="#999"
+              autoCapitalize="none"
+            />
+          </View>
+          {renderError(errors.lineId)}
+  
+          {/* Travel Interests Section */}
+          <View style={styles.content}>
+            <Text style={styles.title}>ความสนใจเที่ยว</Text>
             
-         {/* Facebook */}
-<View style={styles.socialInputContainer}>
-  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
-  <TextInput
-    style={[styles.socialInput, errors.facebookUrl && styles.inputError]}
-    placeholder="Facebook URL หรือ Username"
-    value={formData.facebookUrl}
-    onChangeText={(text: string) => {
-      setFormData({...formData, facebookUrl: text});
-      if (errors.facebookUrl) {
-        setErrors({...errors, facebookUrl: undefined});
-      }
-    }}
-    placeholderTextColor="#999"
-    autoCapitalize="none"
-  />
-</View>
-{renderError(errors.facebookUrl)}
-
-{/* LINE */}
-<View style={styles.socialInputContainer}>
-  <Image
-    source={require('../assets/images/images/images/image7.png')}
-    style={{height:16,width:16}}
-    resizeMode="contain"
-  />
-  <TextInput
-    style={[styles.socialInput, errors.lineId && styles.inputError]}
-    placeholder="LINE ID"
-    value={formData.lineId}
-    onChangeText={(text: string) => {
-      setFormData({...formData, lineId: text});
-      if (errors.lineId) {
-        setErrors({...errors, lineId: undefined});
-      }
-    }}
-    placeholderTextColor="#999"
-    autoCapitalize="none"
-  />
-</View>
-{renderError(errors.lineId)}
-
-            <View style={styles.content}>
-        <Text style={styles.title}>
-        ความสนใจเที่ยว 
-        </Text>
-      
-        <Text style={styles.subtitle}>
-        เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว (เลือกได้หลายข้อ)
-        </Text>
-
-        {loading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>กำลังโหลด...</Text>
+            <Text style={styles.subtitle}>
+              เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว (เลือกได้หลายข้อ)
+            </Text>
+  
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#6366f1" />
+                <Text style={styles.loadingText}>กำลังโหลด...</Text>
+              </View>
+            ) : (
+              <View style={styles.categoriesContainer}>
+                {categories.map((category: Category) => (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryItem,
+                      selectedItems.includes(category.id) && styles.selectedItem
+                    ]}
+                    onPress={() => toggleSelection(category.id)}
+                  >
+                    <Image
+                      source={{ 
+                        uri: selectedItems.includes(category.id) 
+                          ? category.activeIconImageUrl 
+                          : category.iconImageUrl 
+                      }}
+                      style={{
+                        width: 15.75,
+                        height: 14,
+                        tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
+                      }}
+                      resizeMode="contain"
+                    />
+  
+                    <Text style={[
+                      styles.categoryText,
+                      selectedItems.includes(category.id) && styles.selectedText
+                    ]}>
+                      {category.title}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
-        ) : (
-          <View style={styles.categoriesContainer}>
-            {categories.map((category: Category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryItem,
-                  selectedItems.includes(category.id) && styles.selectedItem
-                ]}
-                onPress={() => toggleSelection(category.id)}
-              >
-  <Image
-  source={{ uri: selectedItems.includes(category.id)?category.activeIconImageUrl :category.iconImageUrl }}
-  style={{
-    width: 15.75,
-    height: 14,
- 
-    tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
-  }}
-  resizeMode="contain"
-/>
-
-                <Text style={[
-                  styles.categoryText,
-                  selectedItems.includes(category.id) && styles.selectedText
-                ]}>
-                  {category.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
-      </View>
-         <View style={styles.inputGroup}>
+  
+          {/* Destinations Section */}
+          <View style={styles.inputGroup}>
             <Text style={styles.title}>จุดหมายปลายทางที่อยากไป</Text>
-            <Text style={styles.subtitle}>เลือกประเภทที่คุณสนใจ</Text>
-            
-            {/* Selected Interests */}
-            {selectedInterests.length > 0 && (
+            <Text style={styles.subtitle}>เลือกประเทศที่คุณสนใจ</Text>
+  
+            {/* Destination Search and Dropdown */}
+            <View style={styles.destinationContainer}>
+              <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
+                <View style={styles.inputContainer}>
+                  {dropdownOpen ? (
+                    <TextInput
+                      style={styles.input}
+                      placeholder="ค้นหาสถานที่"
+                      value={searchText}
+                      onChangeText={setSearchText}
+                      autoFocus={true}
+                    />
+                  ) : (
+                    <Text style={styles.input}>
+                      <Image 
+                        source={require('../assets/images/images/images/image9.png')} 
+                        style={{width:16,height:16}}
+                      />
+                      {' '}ค้นหาสถานที่
+                    </Text>
+                  )}
+                </View>
+              </TouchableOpacity>
+  
+              {dropdownOpen && (
+                <View style={styles.dropdown}>
+                  {loading ? (
+                    <ActivityIndicator size="small" />
+                  ) : (
+                    <FlatList
+                      data={filteredDestinations}
+                      keyExtractor={item => item}
+                      renderItem={({ item }) => (
+                        <TouchableOpacity
+                          style={styles.dropdownItem}
+                          onPress={() => addDestination(item)}
+                        >
+                          <Text>{item}</Text>
+                        </TouchableOpacity>
+                      )}
+                      ListEmptyComponent={
+                        <Text style={styles.emptyText}>ไม่พบสถานที่ที่ค้นหา</Text>
+                      }
+                    />
+                  )}
+                </View>
+              )}
+                   {/* Selected Destinations Display */}
+            {selected.length > 0 && (
               <View style={styles.tagsContainer}>
-                {selectedInterests.map((interest: string, index: number) => (
+                {selected.map((dest: string, index: number) => (
                   <TouchableOpacity 
                     key={index}
                     style={styles.selectedTag}
-                    onPress={() => removeSelectedInterest(interest)}
+                    onPress={() => removeDestination(dest)}
                   >
-                    <Text style={styles.selectedTagText}>{interest}</Text>
+                    <Text style={styles.selectedTagText}>{dest}</Text>
                     <Ionicons name="close" size={16} color="#fff" />
                   </TouchableOpacity>
                 ))}
               </View>
             )}
-  <View>
-
-  </View>
-<View style={styles.container}>
-  <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
-    <View style={styles.inputContainer}>
-      {dropdownOpen ? (
-    
-        <TextInput
-          style={styles.input}
-          placeholder="ค้นหาสถานที่"
-          value={searchText}
-          onChangeText={setSearchText}
-          autoFocus={true}
-        />
-      ) : (
-        <Text style={styles.input}><Image source={require('../assets/images/images/images/image9.png')} style={{width:16,height:16,}}/>{' '} ค้นหาสถานที่</Text>
-      )}
-    </View>
-  </TouchableOpacity>
-
-  {dropdownOpen && (
-    <View style={styles.dropdown}>
-      {loading ? (
-        <ActivityIndicator size="small" />
-      ) : (
-        <FlatList
-          data={filteredDestinations} // Use filtered data
-          keyExtractor={item => item}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={styles.dropdownItem}
-              onPress={() => addDestination(item)}
-            >
-              <Text>{item}</Text>
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <Text style={styles.emptyText}>ไม่พบสถานที่ที่ค้นหา</Text>
-          }
-        />
-      )}
-    </View>
-  )}
-
-  <View style={styles.selectedContainer}>
-    <View style={styles.selectedGrid}>
-      {selected.map(dest => (
-        <TouchableOpacity
-          key={dest}
-          style={styles.selectedButton}
-          onPress={() => removeDestination(dest)}
-        >
-          <Text style={styles.selectedButtonText}>
-            {dest} <Text style={{fontSize: 16}}>×</Text>
-          </Text>
-        </TouchableOpacity>
-      ))}
-    </View>
-  </View>
-</View>
-
-
+            </View>
+          </View>
         </View>
-    </View>
-
-      
-
-        
       </ScrollView>
+  
       {/* Submit Button */}
       <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
-          <Image
-        source={require('../assets/images/images/images/image8.png')} // Replace with your image path
-        style={{height:16,width:16}}
-        resizeMode="contain"
-      />
-        </TouchableOpacity>
+        <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
+        <Image
+          source={require('../assets/images/images/images/image8.png')}
+          style={{height:16,width:16}}
+          resizeMode="contain"
+        />
+      </TouchableOpacity>
     </SafeAreaView>
   );
-};
-
-const styles = StyleSheet.create({
-  container: {
-    
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  inputContainer:{
-  
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
-    backgroundColor: '#fff',
-  },
-  backButton: {
-    marginRight: 12,
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 30,
-  },
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: 24,
-    backgroundColor: '#fff',
-  },
-  profileImageContainer: {
-    position: 'relative',
-    marginBottom: 8,
-  },
-  profileImage: {
-    width: 112,
-    height: 112,
-    borderRadius: 9999,
-    borderWidth: 2,
-    borderColor: '#29C4AF', 
-  },
-  
-  cameraButton: {
-    position: 'absolute',
-    bottom: 0,
-    right: 0,
-    backgroundColor: '#29C4AF',
-    borderRadius: 9999,
-    width: 36,
-    height: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  uploadText: {
-    fontSize: 14,
-    fontFamily:'InterTight-Regular',
-    color: '#6B7280',
-    textAlign: 'center',
-    marginTop: 4,
-    lineHeight:14
-  },
-  formSection: {
-    paddingHorizontal: 16,
-  },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 14,
-    fontFamily:'InterTight-Regular',
-    marginBottom: 8,
-  },
-  subLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
-    lineHeight: 20,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontFamily:'InterTight-Regular',
-    lineHeight:24,
-    color: '#374151',
-    height:50,
-    backgroundColor: '#FFFFFF',
-  },
-  inputError: {
-    borderColor: '#ef4444',
-  },
-  errorText: {
-    color: '#ef4444',
-    fontSize: 14,
-    marginTop: 4,
-  },
-  textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  genderContainer: {
-    gap: 12,
-  },
-  genderOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 8,
-  },
-  genderOptionSelected: {
-    // Additional styling for selected option if needed
-  },
-  radioButton: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#d1d5db',
-    marginRight: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioButtonSelected: {
-    borderColor: '#6B46C1',
-  },
-  radioButtonInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: '#6B46C1',
-  },
-  genderText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  genderTextSelected: {
-    color: '#6B46C1',
-    fontWeight: '500',
-  },
-  customGenderInput: {
-    marginTop: 12,
-  },
-  socialInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 12,
-    backgroundColor: '#fff',
-  },
-  socialInput: {
-    flex: 1,
-    paddingVertical: 12,
-    paddingLeft: 12,
-    fontSize: 16,
-    fontFamily:'InterTight-Regular',
-    color: '#374151',
-    lineHeight:24,
-    marginLeft:10,
-    width:'100%'
-  },
-  lineIcon: {
-    backgroundColor: '#00B900',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  lineText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-  },
-  selectedTag: {
-    backgroundColor: '#6B46C1',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  selectedTagText: {
-    color: '#fff',
-    fontSize: 14,
-    marginRight: 4,
-  },
-  availableTag: {
-    backgroundColor: '#f5f5f5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  availableTagText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  submitButton: {
-    backgroundColor: '#29C4AF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    marginHorizontal: 16,
-    marginVertical: 24,
-    borderRadius: 8,
-    shadowColor: '#6B46C1',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  headerText: {
-    fontSize: 18,
-    fontFamily:'InterTight-Regular',
-    color: '#1F2937',
-    flex: 1,
-    textAlign: 'center',
-    marginBottom:12,
-    marginTop:12,
-    marginLeft:-25
-  },
-  placeholder: {
-    width: 50,
-    height: 50,
-  },
-  progressContainer: {
-    paddingBottom: 15,
-   },
-   progressBar: {
-     height: 4,
-     backgroundColor: '#e0e0e0',
-     borderRadius: 2,
-     overflow: 'hidden',
-   },
-   progressFill: {
-     height: '100%',
-     backgroundColor: '#29C4AF',
-     borderRadius: 2,
-   },
- 
-   dropdownButton: {
-     padding: 12,
-     borderWidth: 1,
-     borderColor: '#999',
-     borderRadius: 6,
-     backgroundColor: '#eee',
-   },
-   dropdownButtonText: { fontSize: 16 },
-   dropdown: {
-     marginTop: 5,
-     borderWidth: 1,
-     borderColor: '#999',
-     borderRadius: 6,
-     maxHeight: 200,
-   },
-   dropdownItem: {
-     padding: 10,
-     borderBottomWidth: 1,
-     borderBottomColor: '#ddd',
-   },
-   selectedContainer: { marginTop: 20 },
-   selectedItem: {
-     flexDirection: 'row',
-     padding: 8,
-     marginBottom: 5,
-     backgroundColor: '#4F46E51A',
-     borderRadius: 9999,
-     alignItems: 'center',
-     justifyContent: 'space-between',
-   },
-   deleteButton: { marginLeft: 5 },
-   selectedGrid: {
-     flexDirection: 'row',
-     flexWrap: 'wrap',
-   },
-   selectedButton: {
-     backgroundColor: '#4F46E51A',
-     borderWidth: 1,
-     paddingHorizontal:8,
-     paddingTop:7,
-     borderRadius: 9999,
-     margin: 5,
-     borderColor:'#4F46E5',
-     minWidth: 84.09,   
-     height:38,
-     alignItems: 'center',
-   },
-   selectedButtonText: {
-     color: '#4F46E5',
-     fontFamily:'InterTight-Regular',
-     fontSize: 14,
-   },
+}
 
 
-  dropdownTrigger: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 8,
-    borderRadius: 6,
-    marginTop: 4,
-    backgroundColor: '#fff',
-  },
-  dropdownList: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    marginTop: 4,
-    backgroundColor: '#f9f9f9',
-  },
- 
-  dropdownItemSelected: {
-    backgroundColor: '#d0c4f7',
-  },
-  content: {
-    flex: 1,
-    paddingTop: 10,
-    marginBottom:24,
-  },
-  title: {
-    fontSize: 14,
-    color: '#374151',
-    marginBottom: 6,
-    fontFamily:'InterTight-Regular'
-  },
-
-
-  subtitle: {
-    fontSize: 12,
-    lineHeight:13,
-    color: '#6B7280',
-    marginBottom: 12,
-    fontFamily:'InterTight-Regular'
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    alignItems:'center'
-    
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
-    marginBottom: 8,
-    height:38,
-    minWidth:87.61,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    
-  },
-  emptyText: {
-    padding: 10,
-    textAlign: 'center',
-    color: '#999',
-    fontStyle: 'italic'
-  },
-  categoryText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#374151',
-    textAlign:'center',
-    verticalAlign:'middle',
-    fontFamily:'Inter_400Regular',
-  },
-  selectedText: {
-    color: '#6366f1',
-  },
-  // Updated styles to match your existing input style
-inputWithIcon: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  borderWidth: 1,
-  borderColor: '#D1D5DB', // Match your input borderColor
-  borderRadius: 8,
-  backgroundColor: '#FFFFFF', // Match your input backgroundColor
-  height: 50, // Match your input height
-  overflow: 'visible', // Ensure icon is not clipped
-},
-
-textInputField: {
-  flex: 1,
-  paddingHorizontal: 12,
-  paddingVertical: 12, // Match your input paddingVertical
-  fontSize: 16,
-  color: '#333',
-  fontFamily: 'Inter_400Regular', // Match your input fontFamily
-  lineHeight: 24, // Match your input lineHeight
-  height: '100%', // Take full height of container
-},
-
-textDisplayArea: {
-  flex: 1,
-  paddingHorizontal: 12,
-  paddingVertical: 12, // Match your input paddingVertical
-  justifyContent: 'center',
-  height: '100%', // Take full height of container
-},
-
-displayText: {
-  fontSize: 16,
-  color: '#ADAEBC', 
-  fontFamily: 'InterTight-Regular', 
-  lineHeight: 24, 
-},
-
-iconButton: {
-  paddingHorizontal: 8, 
-  paddingVertical: 0, 
-  justifyContent: 'center',
-  alignItems: 'center',
-  minWidth: 40, 
-  height: 48, 
-},
-
-dropdownIcon: {
-  width: 18, 
-  height: 18, 
-  tintColor: '#666',
-  resizeMode: 'contain',
-},
-  
-
-});
-
-export default ProfileForm;
+export default ProfileForm

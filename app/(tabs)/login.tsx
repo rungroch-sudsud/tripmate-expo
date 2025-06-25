@@ -118,9 +118,20 @@ const Login = () => {
             hasCheckedInitialAuth = true;
             const tokenStored = await storeUserTokens(user, null);
             if (tokenStored) {
-              setIsAuthenticated(true);
-              console.log("Auth state listener: Redirecting existing user to /findTrips");
-              router.push('/findTrips');
+             
+              
+             try{
+              const response=await axiosInstance.get(`/users/profile/${user.uid}`)
+              console.log(response.data.data);
+              if(response.data.data.age!==-999){
+                setIsAuthenticated(true);
+                console.log("Auth state listener: Redirecting existing user to /findTrips");
+                router.push('/findTrips');
+              }
+             }catch{
+              setIsAuthenticated(false)
+              await clearStoredTokens();
+             }
             } else {
               throw new Error('Failed to store user tokens');
             }
