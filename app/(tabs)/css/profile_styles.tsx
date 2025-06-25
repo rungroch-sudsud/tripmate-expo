@@ -20,7 +20,8 @@ const styles = StyleSheet.create({
     },
     backButton: {
       marginRight: 12,
-      padding: 4,
+      padding: 10,
+
     },
     headerTitle: {
       fontSize: 18,
