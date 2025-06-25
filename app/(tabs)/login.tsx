@@ -220,10 +220,23 @@ const Login = () => {
             return { success: true, route: '/findTrips', isExistingUser: true };
           
           case API_STATUS.BAD_REQUEST:
-            console.log("User profile incomplete, directing to travel-style...");
-            await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-            return { success: true, route: '/travel-style', isIncompleteProfile: true };
-          
+            try{
+              const response=await axiosInstance.get(`/users/profile/${user.uid}`)
+              if(response.data.data.age!==-999){
+                console.log("Existing User profile, directing to find trips...");
+                await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+                return { success: true, route: '/findTrips', isIncompleteProfile: true };
+              }
+              else{
+                console.log("User profile incomplete, directing to travel-style...");
+                await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+                return { success: true, route: '/travel-style', isIncompleteProfile: true };
+              }
+            }catch{
+              console.log("User profile incomplete, directing to travel-style...");
+              await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+              return { success: true, route: '/travel-style', isIncompleteProfile: true };
+            }
           default:
             console.error("API Error:", apiError.response?.data || apiError.message);
             throw new Error(`API Error: ${apiError.response?.status || 'Unknown'}`);
