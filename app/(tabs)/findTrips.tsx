@@ -20,8 +20,6 @@ import {useFonts} from 'expo-font'
 import TripCard from './TripCard'
 import BottomNavigation from './customNavigation'
 
-
-
 interface TravelStyle {
   id: string;
   title: string;
@@ -93,11 +91,11 @@ interface ApiResponse {
   message: string;
   data: Trip[];
 }
+
 interface TripDetailResponse {
   message: string;
   data: Trip;
 }
-
 
 const FindTripScreen: React.FC = () => {
  
@@ -105,7 +103,8 @@ const FindTripScreen: React.FC = () => {
   const [filteredTrips, setFilteredTrips] = useState<Trip[]>([]);
   const [displayedTrips, setDisplayedTrips] = useState<Trip[]>([]);
   const [travelStyles, setTravelStyles] = useState<TravelStyle[]>([]);
-  const [selectedTravelStyle, setSelectedTravelStyle] = useState<string>('all');
+  // Changed to array to support multiple selection
+  const [selectedTravelStyles, setSelectedTravelStyles] = useState<string[]>(['all']);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
@@ -116,27 +115,28 @@ const FindTripScreen: React.FC = () => {
     'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
   });
   
+  const router = useRouter();
 
-  const router=useRouter()
-
-
+  // Auto-refresh data when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-
+      // Always fetch fresh data when screen is focused
+      fetchTrips();
+      fetchTravelStyles();
+      
       if (userId) {
         loadBookmarkedTrips();
       }
     }, [userId])
   );
 
-  const handlesavedTrips=async()=>{
+  const handlesavedTrips = async() => {
     router.push('/savedTrips')
   }
 
-  const handleProfile=async()=>{
+  const handleProfile = async() => {
      console.log(userId);
      router.push(`/profile?userId=${userId}`)
-     
   }
 
   useEffect(() => {
@@ -157,7 +157,6 @@ const FindTripScreen: React.FC = () => {
     loadUserId();
   }, []);
 
-
   // Load bookmarked trips when userId is available
   useEffect(() => {
     if (userId) {
@@ -173,7 +172,6 @@ const FindTripScreen: React.FC = () => {
     }
   
     try {
-     
       const response = await axiosInstance.get('/bookmarks');
       console.log('Bookmarks API response:', response.data);
       
@@ -186,15 +184,12 @@ const FindTripScreen: React.FC = () => {
         console.log(`Loaded bookmarked trips for user ${userId}:`, tripIds);
         
         // Auto-refresh trips after loading bookmarks
-        // For SavedTripsScreen: refetch saved trips
-        // For FindTripScreen: this will update the bookmark status on existing trips
         if (tripIds.length > 0 || allTrips.length > 0) {
           fetchTrips();
         }
       } else {
         console.log('Unexpected response structure or empty data');
         setBookmarkedTripIds([]);
-        // For SavedTripsScreen, clear the trips when no bookmarks
         if (window.location?.pathname?.includes('savedTrips')) {
           setAllTrips([]);
           setFilteredTrips([]);
@@ -213,7 +208,6 @@ const FindTripScreen: React.FC = () => {
     } 
   };
   
-
   // Function to toggle bookmark status
   const handleBookmarkToggle = async (trip: Trip) => {
     if (!userId) {
@@ -253,16 +247,13 @@ const FindTripScreen: React.FC = () => {
     } catch (error) {
       // Revert the optimistic update on error
       if (isCurrentlyBookmarked) {
-        // Was bookmarked, restore it
         setBookmarkedTripIds(prev => [...prev, trip.id]);
       } else {
-        // Wasn't bookmarked, remove it again
         setBookmarkedTripIds(prev => prev.filter(id => id !== trip.id));
       }
       
       console.error('Failed to toggle bookmark:', error);
       
-      // Handle specific error cases
       if (axios.isAxiosError(error)) {
         console.error('Error response:', error.response?.data);
         if (error.response?.status === 401) {
@@ -272,8 +263,6 @@ const FindTripScreen: React.FC = () => {
           console.error('Bookmark not found');
         }
       }
-      
-      // TODO: Show error toast/alert to user here
     }
   };
 
@@ -282,14 +271,11 @@ const FindTripScreen: React.FC = () => {
     return bookmarkedTripIds.includes(tripId);
   };
 
-
-
   const fetchTravelStyles = async (): Promise<void> => {
     try {
       const response = await axiosInstance.get<TravelStylesResponse>('/travel-styles');
       setTravelStyles(response.data.data);
-      console.log("CD2xc3bg4dge4w",travelStyles);
-      
+      console.log("Travel styles fetched:", response.data.data);
     } catch (error) {
       console.error('Error fetching travel styles:', error);
     }
@@ -297,25 +283,22 @@ const FindTripScreen: React.FC = () => {
 
   const fetchTrips = async (): Promise<void> => {
     const accessToken = await AsyncStorage.getItem('googleAccessToken');
-   
-    console.log("GOOGLE TOKEN",accessToken);
+    console.log("GOOGLE TOKEN", accessToken);
     
     const config = {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
     };
+    
     try {
-      const response = await axiosInstance.get(`${requirements.baseURL}/trips`,
-        config
-       
-      );
+      const response = await axiosInstance.get(`${requirements.baseURL}/trips`, config);
      
       if (response.data && response.data.data && Array.isArray(response.data.data)) {
-        const publishedTrips=response.data.data.filter(trip=>trip.status=="published")
+        const publishedTrips = response.data.data.filter(trip => trip.status === "published");
         console.log('Fetched Published trips:', publishedTrips.length);
         setAllTrips(publishedTrips);
-        filterTrips(publishedTrips, selectedTravelStyle);
+        filterTrips(publishedTrips, selectedTravelStyles);
       } else {
         setAllTrips([]);
         setFilteredTrips([]);
@@ -331,39 +314,43 @@ const FindTripScreen: React.FC = () => {
     }
   };
 
-  const filterTrips = (trips: Trip[], styleId: string): void => {
-    console.log('Filtering trips for style:', styleId);
+  // Updated filter function to handle multiple travel styles
+  const filterTrips = (trips: Trip[], styleIds: string[]): void => {
+    console.log('Filtering trips for styles:', styleIds);
     console.log('Total trips to filter:', trips.length);
     
     let filtered: Trip[];
     
-    if (styleId === 'all') {
+    if (styleIds.includes('all') || styleIds.length === 0) {
       console.log('Showing all trips');
       filtered = trips;
     } else {
-      // Find the style title for the given ID
-      const selectedStyle = travelStyles.find(style => style.id === styleId);
-      const styleTitle = selectedStyle?.title;
-      console.log(`Filtering for styleId: ${styleId}, styleTitle: ${styleTitle}`);
+      // Get style titles for the given IDs
+      const selectedStyles = travelStyles.filter(style => styleIds.includes(style.id));
+      const styleTitles = selectedStyles.map(style => style.title);
+      console.log(`Filtering for styleIds: ${styleIds}, styleTitles: ${styleTitles}`);
 
       filtered = trips.filter(trip => {
-        // Check if trip has travel styles (by ID or title)
-        const hasStyleById = trip.travelStyles?.includes(styleId);
-        const hasStyleByTitle = styleTitle && trip.travelStyles?.includes(styleTitle);
+        // Check if trip has any of the selected travel styles (by ID or title)
+        const hasStyleById = trip.travelStyles?.some(style => styleIds.includes(style));
+        const hasStyleByTitle = trip.travelStyles?.some(style => styleTitles.includes(style));
         
-        // Also check tripOwner's travel styles (these seem to use IDs consistently)
-        const ownerHasStyle = trip.tripOwner?.travelStyles?.includes(styleId);
+        // Also check tripOwner's travel styles
+        const ownerHasStyle = trip.tripOwner?.travelStyles?.some(style => styleIds.includes(style));
         
-        console.log(`Trip "${trip.name}":`, {
-          tripStyles: trip.travelStyles,
-          ownerStyles: trip.tripOwner?.travelStyles,
-          hasStyleById,
-          hasStyleByTitle,
-          ownerHasStyle,
-          matches: hasStyleById || hasStyleByTitle
-        });
+        const matches = hasStyleById || hasStyleByTitle;
         
-        return hasStyleById || hasStyleByTitle;
+        if (matches) {
+          console.log(`Trip "${trip.name}" matches selected styles:`, {
+            tripStyles: trip.travelStyles,
+            ownerStyles: trip.tripOwner?.travelStyles,
+            hasStyleById,
+            hasStyleByTitle,
+            ownerHasStyle
+          });
+        }
+        
+        return matches;
       });
     }
     
@@ -381,29 +368,82 @@ const FindTripScreen: React.FC = () => {
     }
 
     const searchResults = trips.filter(trip =>
-      trip.name.toLowerCase().includes(query.toLowerCase())
+      trip.name.toLowerCase().includes(query.toLowerCase()) ||
+      trip.destinations.some(dest => dest.toLowerCase().includes(query.toLowerCase()))
     );
     
     console.log('Search results count:', searchResults.length);
     setDisplayedTrips(searchResults);
   };
-  const handleTripPress = async (trip: Trip): Promise<void> => {
-    console.log('Trip pressed:', trip);
-  };
 
+  const handleTripPress = useCallback(async (trip: Trip) => {
+    try {
+      console.log("Trip card pressed");
+      
+      const userId = await AsyncStorage.getItem('userId');
+      console.log("Trip Pressed");
+      console.log("Trip ID:", trip.id);
+      console.log("Trip Owner ID:", trip.tripOwnerId || trip.tripOwner?.id);
+      console.log("Current User ID:", userId);
+      
+      if (!userId) {
+        console.error('No user ID found in storage');
+        Alert.alert('Error', 'Please log in to continue');
+        return;
+      }
+      
+      const ownerId = trip.tripOwnerId;
+      
+      if (userId === ownerId) {
+        console.log("Edit Trip - User is owner");
+        router.push(`/EditTrip?tripId=${trip.id}`);
+      } else {
+        console.log("View Trip - User is not owner");
+        console.log("User is not the owner, no action taken");
+      }
+      
+    } catch (error) {
+      console.error('Error handling trip press:', error);
+      Alert.alert('Error', 'An error occurred. Please try again.');
+    }
+  }, [router]);
+
+  // Updated travel style press handler for multiple selection
   const handleTravelStylePress = (styleId: string): void => {
     console.log('Travel style selected:', styleId);
-    setSelectedTravelStyle(styleId);
-    filterTrips(allTrips, styleId);
+    
+    if (styleId === 'all') {
+      // If "all" is selected, clear other selections
+      setSelectedTravelStyles(['all']);
+    } else {
+      setSelectedTravelStyles(prev => {
+        // Remove 'all' if it was selected
+        const withoutAll = prev.filter(id => id !== 'all');
+        
+        if (withoutAll.includes(styleId)) {
+          // If style is already selected, remove it
+          const newSelection = withoutAll.filter(id => id !== styleId);
+          // If no styles selected, default to 'all'
+          return newSelection.length === 0 ? ['all'] : newSelection;
+        } else {
+          // Add the new style
+          return [...withoutAll, styleId];
+        }
+      });
+    }
   };
 
-  
+  // Update filter when selectedTravelStyles changes
+  useEffect(() => {
+    if (allTrips.length > 0) {
+      filterTrips(allTrips, selectedTravelStyles);
+    }
+  }, [selectedTravelStyles, allTrips, travelStyles]);
 
   const handleJoinTrip = async (trip: Trip): Promise<void> => {
     try {
       console.log('Join trip:', trip.id);
       
-      // Retrieve tokens
       const accessToken = await AsyncStorage.getItem('googleAccessToken');
       const idToken = await AsyncStorage.getItem('googleIdToken');
       
@@ -412,14 +452,11 @@ const FindTripScreen: React.FC = () => {
       
       if (!accessToken && !idToken) {
         console.error('No access token or ID token found');
-        // You might want to show an error message to the user here
-        // showErrorMessage('Authentication tokens not found. Please log in again.');
         return;
       }
       
-      const bodyParameters = {}; // Empty payload
+      const bodyParameters = {};
       
-      // Helper function to make the API call
       const makeJoinRequest = async (token: string, tokenType: string) => {
         const config = {
           headers: {
@@ -439,64 +476,46 @@ const FindTripScreen: React.FC = () => {
       
       let lastError: any = null;
       
-      // Try ID token first if available
       if (idToken) {
         try {
           await makeJoinRequest(idToken, 'ID Token');
           router.push(`/stramChat?tripId=${trip.id}`);
-          return; // Success, exit function
+          return;
         } catch (err) {
           console.warn('Failed with ID Token:', err);
           lastError = err;
-          // Continue to try access token
         }
       }
       
-      // Fallback to access token
       if (accessToken) {
         try {
           await makeJoinRequest(accessToken, 'Access Token');
           router.push(`/stramChat?tripId=${trip.id}`);
-          return; // Success, exit function
+          return;
         } catch (err) {
           console.error('Failed with Access Token:', err);
           lastError = err;
         }
       }
       
-      // If we reach here, both attempts failed
       throw lastError || new Error('Failed to join trip with available tokens');
       
     } catch (error) {
       console.error('Error joining trip:', error);
       if (error.response?.status === 404) {
-       
+        return;
       } else if (error.response?.status === 400) {
         const message = error.response?.data?.message;
         if (message === 'คุณเป็นสมาชิกของทริปนี้แล้ว') {
-         
           router.push(`/stramChat?tripId=${trip.id}`);
         } else if (message === 'ทริปนี้เต็มแล้ว') {
-         return
+          return;
         }
       } else {
-       return
+        return;
       }
     }
   };
-  
-  
-
-
-  
-    
-  
-  
-  
-  
-  
-  
-  
 
   const handleSearchChange = (text: string): void => {
     setSearchQuery(text);
@@ -507,17 +526,21 @@ const FindTripScreen: React.FC = () => {
     console.log('Floating button pressed');
     Alert.alert('สร้างทริป', 'คุณต้องการสร้างทริปใหม่หรือไม่?');
     router.push('/createTrip')
-    // Navigate to create trip screen
   };
 
   const onRefresh = (): void => {
     setRefreshing(true);
-    fetchTrips();
+    // Fetch fresh data from server
+    Promise.all([
+      fetchTrips(),
+      fetchTravelStyles(),
+      userId ? loadBookmarkedTrips() : Promise.resolve()
+    ]).finally(() => {
+      setRefreshing(false);
+    });
   };
 
-
-
-
+  // Initial data load
   useEffect(() => {
     const loadData = async () => {
       await Promise.all([
@@ -528,6 +551,7 @@ const FindTripScreen: React.FC = () => {
     loadData();
   }, []);
 
+  // Updated render function to show multiple selection
   const renderTravelStyleItem = (style: TravelStyle, isSelected: boolean) => (
     <TouchableOpacity
       key={style.id}
@@ -559,23 +583,19 @@ const FindTripScreen: React.FC = () => {
     </TouchableOpacity>
   );
 
-
-
-
-  
-  //Render All Catagories
+  // Render All Categories
   const renderAllCategory = () => (
     <TouchableOpacity
       key="all"
       style={[
         styles.categoryItem,
-        selectedTravelStyle === 'all' && styles.categoryItemActive
+        selectedTravelStyles.includes('all') && styles.categoryItemActive
       ]}
       onPress={() => handleTravelStylePress('all')}
     >
       <Text style={[
         styles.categoryText,
-        selectedTravelStyle === 'all' && styles.categoryTextActive
+        selectedTravelStyles.includes('all') && styles.categoryTextActive
       ]}>
         ทั้งหมด
       </Text>
@@ -585,16 +605,17 @@ const FindTripScreen: React.FC = () => {
   const renderTripCountText = () => (
     <View style={styles.tripCountContainer}>
       <Text style={styles.tripCountText}>
-      พบ {displayedTrips.length} ทริป
+        พบ {displayedTrips.length} ทริป
       </Text>
       <View style={{flex:0.1,backgroundColor:'#E5E7EB',justifyContent:'center',alignItems:'center',width:32,height:34,borderRadius:6}}>
-            <Image source={require('../assets/images/images/images/image29.png')} style={{width:16,height:16}}/>
+        <Image source={require('../assets/images/images/images/image29.png')} style={{width:16,height:16}}/>
       </View>
       <View style={{flex:0.1,backgroundColor:'#FFFFFF',justifyContent:'center',alignItems:'center',width:34,height:34,borderRadius:6,borderWidth:1,borderColor:'#E5E7EB',marginLeft:5}}>
-            <Image source={require('../assets/images/images/images/image30.png')} style={{width:16,height:20}}/>
+        <Image source={require('../assets/images/images/images/image30.png')} style={{width:16,height:20}}/>
       </View>
     </View>
   );
+
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={styles.searchInputContainer}>
@@ -622,89 +643,87 @@ const FindTripScreen: React.FC = () => {
     </View>
   );
 
-
-
   const renderFloatingButton = () => (
     <TouchableOpacity
       style={styles.floatingButton}
       onPress={handleFloatingButtonPress}
       activeOpacity={0.8}
     >
-    <Image source={require('../assets/images/images/images/image27.png')} style={{height:21,width:21}}/>
+      <Image source={require('../assets/images/images/images/image27.png')} style={{height:21,width:21}}/>
     </TouchableOpacity>
   );
 
-
-
   return (
     <View style={styles.container}>
-    <Stack.Screen options={{ headerShown: false }} />
-    
-    {/* Header */}
-    <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white',marginLeft:16,marginRight:16}}>
-      <Text style={styles.headerTitle}>หาเพื่อนเที่ยว</Text>
-      <Image 
-        source={require('../assets/images/images/images/image16.png')} 
-        style={{width:18,height:18,flex:0.05}} 
-      />
-      <Image 
-        source={require('../assets/images/images/images/image17.png')} 
-        style={{width:15.75,height:18,flex:0.05,marginLeft:10}} 
-      />
-    </View>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      {/* Header */}
+      <View style={{flexDirection:'row',alignItems:'center',backgroundColor:'white',marginLeft:16,marginRight:16}}>
+        <Text style={styles.headerTitle}>หาเพื่อนเที่ยว</Text>
+        <Image 
+          source={require('../assets/images/images/images/image16.png')} 
+          style={{width:18,height:18,flex:0.05}} 
+        />
+        <Image 
+          source={require('../assets/images/images/images/image17.png')} 
+          style={{width:15.75,height:18,flex:0.05,marginLeft:10}} 
+        />
+      </View>
 
-    {/* Travel Styles Categories */}
-    <View style={styles.categoriesContainer}>
+      {/* Travel Styles Categories */}
+      <View style={styles.categoriesContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesScrollContent}
+        >
+          {renderAllCategory()}
+          {travelStyles.map(style => 
+            renderTravelStyleItem(style, selectedTravelStyles.includes(style.id))
+          )}
+        </ScrollView>
+      </View>
+
+      {/* Search Bar */}
+      {renderSearchBar()}
+      
+      {/* Trip Count */}
+      {renderTripCountText()}
+      
+      {/* Trips List */}
       <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoriesScrollContent}
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {renderAllCategory()}
-        {travelStyles.map(style => 
-          renderTravelStyleItem(style, selectedTravelStyle === style.id)
+        {displayedTrips.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>
+              {searchQuery ? `ไม่พบทริปที่ชื่อ "${searchQuery}"` : 'ไม่พบทริปในหมวดหมู่นี้'}
+            </Text>
+          </View>
+        ) : (
+          displayedTrips.map(trip => (
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              isBookmarked={isTripBookmarked(trip.id)}
+              onBookmarkToggle={handleBookmarkToggle}
+              onTripPress={handleTripPress}
+              onJoinTrip={handleJoinTrip}
+            />
+          ))
         )}
       </ScrollView>
+
+      {/* Floating Action Button */}
+      {renderFloatingButton()}
+     
+      {/* Bottom Navigation */}
+      <BottomNavigation currentScreen="findTrips" userId={userId} />
     </View>
-
-    {/* Search Bar */}
-    {renderSearchBar()}
-    {/* Trip Count */}
-    {renderTripCountText()}
-    {/* Trips List */}
-    <ScrollView
-      style={styles.scrollView}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {displayedTrips.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>
-          {searchQuery ? `ไม่พบทริปที่ชื่อ "${searchQuery}"` : 'ไม่พบทริปในหมวดหมู่นี้'}
-          </Text>
-        </View>
-      ) : (
-        displayedTrips.map(trip => (
-          <TripCard
-          key={trip.id}
-          trip={trip}
-          isBookmarked={isTripBookmarked(trip.id)}
-          onBookmarkToggle={handleBookmarkToggle}
-          onTripPress={handleTripPress}
-          onJoinTrip={handleJoinTrip}
-          />
-        ))
-      )}
-    </ScrollView>
-
-    {/* Floating Action Button */}
-    {renderFloatingButton()}
-   
-    {/* Bottom Navigation */}
-    <BottomNavigation currentScreen="findTrips" userId={userId} />
-  </View>
   );
 };
 

@@ -785,7 +785,10 @@ const [selfieErrorMessage, setSelfieErrorMessage] = useState('');   // Error mes
     onChangeText={(text) => {
       // Allow only digits (0-9)
       const filteredText = text.replace(/[^0-9]/g, '');
-      setPhoneNumber(filteredText);
+
+      if(filteredText.length<=10){
+        setPhoneNumber(filteredText);
+      }
     }}
     placeholder="เช่น 0891234567"
     placeholderTextColor="#C0C0C0"

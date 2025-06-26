@@ -6,7 +6,7 @@ import {
   Window,
   Thread,
   MessageList,
-  MessageInput
+  MessageInput,
 } from 'stream-chat-react';
 import TripCard from './TripCard';
 import type { Channel as StreamChannel } from 'stream-chat';
@@ -20,7 +20,8 @@ import {
   Alert, 
   ActivityIndicator,
   SafeAreaView,
-  BackHandler 
+  BackHandler ,
+  Image
 } from 'react-native';
 import { axiosInstance } from '../lib/axios';
 import { requirements } from '../requirement';
@@ -251,6 +252,10 @@ export default function TripGroupChat() {
   const isMountedRef = useRef(true);
   const clientRef = useRef<StreamChat | null>(null);
   const retryCountRef = useRef(0);
+  const [showTripCard, setShowTripCard] = useState(false);
+  const toggleTripCard = () => {
+    setShowTripCard(prevState => !prevState);
+  };
 
   // Memoized values
   const isLoading = useMemo(() => 
@@ -571,15 +576,32 @@ export default function TripGroupChat() {
               onBack={handleBack}
             />
             
-        
-          <TripCard
-              key={trip.id}
-              trip={trip}
-              isBookmarked={isTripBookmarked(trip.id)}
-              onBookmarkToggle={handleBookmarkToggle}
-              onTripPress={handleTripPress}
-              onJoinTrip={handleJoinTrip}
-            />
+         {/* Trip Name with Dropdown Icon to toggle TripCard visibility */}
+         <View style={styles.tripNameWrapper}>
+              <Text style={styles.tripName}>{trip.name}</Text>
+              <TouchableOpacity onPress={toggleTripCard}>
+                <Image
+                  source={require('../assets/images/images/images/icon.png')} // Use your dropdown icon
+                  style={styles.dropdownIcon}
+                />
+              </TouchableOpacity>
+            </View>
+            {showTripCard && (
+              <View style={styles.tripCardContainer}>
+                <TripCard
+                key={trip.id}
+                  trip={trip}
+                  isBookmarked={isTripBookmarked(trip.id)}
+                  onBookmarkToggle={handleBookmarkToggle}
+                  onTripPress={handleTripPress}
+                  onJoinTrip={handleJoinTrip}
+                />
+                {/* Wrap Up Button to collapse the TripCard */}
+                <TouchableOpacity onPress={toggleTripCard} style={styles.wrapUpButton}>
+                  <Text style={styles.wrapUpText}>Wrap Up</Text>
+                </TouchableOpacity>
+              </View>
+            )}
        
             
    
@@ -664,5 +686,44 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: '600',
+  },
+  tripNameWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  tripName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  dropdownIcon: {
+    width: 12,
+    height: 12,
+    marginLeft: 8,
+    transform: [{ rotate: '90deg' }], // Rotate icon for dropdown
+  },
+  tripCardContainer: {
+    marginTop: 10,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  wrapUpButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  wrapUpText: {
+    fontSize: 14,
+    color: '#007AFF',
+    fontWeight: '500',
   },
 });

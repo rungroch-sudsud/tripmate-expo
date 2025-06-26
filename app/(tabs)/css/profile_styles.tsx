@@ -101,6 +101,7 @@ const styles = StyleSheet.create({
       color: '#374151',
       height:50,
       backgroundColor: '#FFFFFF',
+       outlineColor: '#e0e0e0'
     },
     inputError: {
       borderColor: '#ef4444',
@@ -164,6 +165,7 @@ const styles = StyleSheet.create({
       paddingHorizontal: 12,
       marginBottom: 12,
       backgroundColor: '#fff',
+      justifyContent:'space-between'
     },
     socialInput: {
       flex: 1,
@@ -174,7 +176,7 @@ const styles = StyleSheet.create({
       color: '#374151',
       lineHeight:24,
       marginLeft:10,
-      width:'100%'
+      outlineColor: '#e0e0e0'
     },
     lineIcon: {
       backgroundColor: '#00B900',

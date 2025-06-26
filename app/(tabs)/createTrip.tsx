@@ -21,6 +21,7 @@ import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useFonts} from 'expo-font'
 import TripCard from './TripCard'
+import styles from './css/create_EditTrip'
 const MAX_WORDS = 40;
 interface Service {
   id: string;
@@ -68,35 +69,37 @@ const ThaiFormScreen = () => {
   const [fontsLoaded] = useFonts({
     'InterTight-Black': require('../assets/fonts/InterTight-Black.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
   });
 
-    const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
-    const [isFocused, setIsFocused] = useState(false);
-    const [categories, setCategories] = useState<Category[]>([]);
+  // State declarations
+  const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [services, setServices] = useState<Service[]>([]);
-const [selectedServices, setSelectedServices] = useState<string[]>([]);
-const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-const [errors, setErrors] = useState({
-  coverImage: '',
-  tripName: '',
-  startDate: '',
-  endDate: '',
-  maxParticipants: '',
-  pricePerPerson: '',
-  services: '',
-  travelStyles: '',
-  destinations: '',
-  atmosphere: '',
-  details: '',
-  terms: ''
-});
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  
+  const [errors, setErrors] = useState({
+    coverImage: '',
+    tripName: '',
+    startDate: '',
+    endDate: '',
+    maxParticipants: '',
+    pricePerPerson: '',
+    services: '',
+    travelStyles: '',
+    destinations: '',
+    atmosphere: '',
+    details: '',
+    terms: ''
+  });
 
-const [isValidating, setIsValidating] = useState(false);
- 
+  const [isValidating, setIsValidating] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     startDate: '',
@@ -104,42 +107,52 @@ const [isValidating, setIsValidating] = useState(false);
     description: '',
     selectedOptions: [] as string[],
     attachments: 0,
-    details:''
+    details: ''
   });
 
-
-const handleBack=async()=>{
-  resetForm()
-  router.push('/(tabs)/findTrips')
-}
-
-
- // For services
-const toggleServiceCheckbox = (id: string) => {
-  setSelectedServices(prev =>
-    prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
-  );
-};
-
-const isServiceChecked = (id: string) => selectedServices.includes(id);
-
-
-
-
+  const [formData2, setFormData2] = useState({ name: '' });
+  const [maxParticipant, setMaxParticipant] = useState<number | ''>('');
+  const [pricePerPerson, setPricePerPerson] = useState<number | ''>('');
+  const [isChecked, setIsChecked] = useState(false);
   
+  // Destination state
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [searchText, setSearchText] = useState('');
+  const [destinations, setDestinations] = useState<string[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [responseMessage, setResponseMessage] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<any>(null);
+
+  // Constants
+  const MAX_WORDS = 20; // Define this constant
+
+  // Helper functions
+  const handleBack = async () => {
+    resetForm();
+    router.push('/(tabs)/findTrips');
+  };
+
+  const toggleServiceCheckbox = (id: string) => {
+    setSelectedServices(prev =>
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  const isServiceChecked = (id: string) => selectedServices.includes(id);
+
   const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
-    // Extract base64 data
     const base64Data = base64Uri.split(',')[1];
     return {
-      uri: base64Uri, // Keep original for display
+      uri: base64Uri,
       base64Data: base64Data,
       type: mimeType,
       name: filename,
       isBase64: true,
     };
   };
+
   const pickImage2 = () => {
-    // Compatible options for different versions of react-native-image-picker
     const options: any = {
       mediaType: 'photo',
       includeBase64: false,
@@ -149,7 +162,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         skipBackup: true,
         path: 'images',
       },
-      // Force file URI instead of base64
       presentationStyle: 'overFullScreen',
     };
 
@@ -168,7 +180,6 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       if (response.assets && response.assets.length > 0) {
         const pickedImage = response.assets[0];
         
-        // Handle base64 data URIs (common in web environment)
         if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
           console.log('🟡 Base64 data detected, converting...');
           const convertedFile = convertBase64ToFile(
@@ -183,13 +194,12 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
             name: convertedFile.name,
             base64Data: convertedFile.base64Data,
             isBase64: true,
-          } as any);
+          } as PickedFile);
 
           console.log('🟢 Base64 image processed successfully');
           return;
         }
 
-        // Validate that we have a proper file URI
         if (!pickedImage.uri) {
           Alert.alert('Error', 'No image URI received. Please try again.');
           return;
@@ -219,18 +229,18 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         : [...prev, id]
     );
   };
+
   const fetchServices = async (): Promise<void> => {
     try {
       setLoading(true);
-  
       const response = await axiosInstance.get('/services');
       const result: ServicesResponse = response.data;
-  
+
       const mappedServices: Service[] = result.data.map(item => ({
         id: item.id,
         title: item.title,
       }));
-  
+
       setServices(mappedServices);
     } catch (error) {
       console.error('Failed to fetch services:', error);
@@ -240,22 +250,12 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       setLoading(false);
     }
   };
-  
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
-  
-  
   const fetchTravelStyles = async (): Promise<void> => {
     try {
-      setLoading(true); 
-    
- 
-      const response = await axiosInstance.get('/travel-styles'); 
-    
-      const result: ApiResponse = response.data; 
-      
+      setLoading(true);
+      const response = await axiosInstance.get('/travel-styles');
+      const result: ApiResponse = response.data;
       
       const mappedCategories: Category[] = result.data.map(item => ({
         id: item.id,
@@ -263,8 +263,8 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         iconImageUrl: item.iconImageUrl,
         activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
       }));
-    
-      setCategories(mappedCategories); 
+
+      setCategories(mappedCategories);
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
       Alert.alert(
@@ -272,15 +272,11 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
         'Failed to load travel styles. Please try again.',
         [{ text: 'OK' }]
       );
-    
       setCategories([]);
     } finally {
       setLoading(false);
     }
   };
-  useEffect(() => {
-    fetchTravelStyles();
-  }, []);
 
   const formatDateInput = (text: string): string => {
     const cleaned = text.replace(/\D/g, '');
@@ -294,7 +290,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     }
   };
 
-
+  // Validation functions
   const validateCoverImage = () => {
     if (!pickedFile2) {
       return 'กรุณาเลือกรูปภาพหน้าปก';
@@ -313,31 +309,30 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
   };
 
   const validateDates = () => {
-    const errors = { startDate: '', endDate: '' };
+    const dateErrors = { startDate: '', endDate: '' };
     
     if (!formData.startDate) {
-      errors.startDate = 'กรุณาเลือกวันที่เริ่มต้น';
+      dateErrors.startDate = 'กรุณาเลือกวันที่เริ่มต้น';
     } else if (!validateDate(formData.startDate)) {
-      errors.startDate = 'รูปแบบวันที่ไม่ถูกต้อง';
+      dateErrors.startDate = 'รูปแบบวันที่ไม่ถูกต้อง';
     }
     
     if (!formData.endDate) {
-      errors.endDate = 'กรุณาเลือกวันที่สิ้นสุด';
+      dateErrors.endDate = 'กรุณาเลือกวันที่สิ้นสุด';
     } else if (!validateDate(formData.endDate)) {
-      errors.endDate = 'รูปแบบวันที่ไม่ถูกต้อง';
+      dateErrors.endDate = 'รูปแบบวันที่ไม่ถูกต้อง';
     }
     
-    // Check if end date is after start date
     if (formData.startDate && formData.endDate && validateDate(formData.startDate) && validateDate(formData.endDate)) {
       const startDateObj = new Date(formData.startDate.split('/').reverse().join('-'));
       const endDateObj = new Date(formData.endDate.split('/').reverse().join('-'));
       
       if (endDateObj <= startDateObj) {
-        errors.endDate = 'วันที่สิ้นสุดต้องหลังจากวันที่เริ่มต้น';
+        dateErrors.endDate = 'วันที่สิ้นสุดต้องหลังจากวันที่เริ่มต้น';
       }
     }
     
-    return errors;
+    return dateErrors;
   };
   
   const validateMaxParticipants = () => {
@@ -394,22 +389,12 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     if (!formData.description.trim()) {
       return 'กรุณาอธิบายบรรยากาศ/โทนกลุ่ม';
     }
-    const words = formData.description.trim().split(/\s+/).filter(word => word.length > 0);
-    if (words.length < 5) {
-      return 'คำอธิบายต้องมีอย่างน้อย 5 คำ';
-    }
-    if (words.length > 100) {
-      return 'คำอธิบายต้องไม่เกิน 100 คำ';
-    }
     return '';
   };
   
   const validateDetails = () => {
     if (!formData.details.trim()) {
       return 'กรุณาใส่รายละเอียดทั่วไป';
-    }
-    if (formData.details.trim().length < 20) {
-      return 'รายละเอียดต้องมีอย่างน้อย 20 ตัวอักษร';
     }
     return '';
   };
@@ -420,8 +405,7 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     }
     return '';
   };
-  
-  // Main validation function
+
   const validateForm = () => {
     const dateErrors = validateDates();
     
@@ -439,24 +423,17 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
       details: validateDetails(),
       terms: validateTerms()
     };
-  
+
     setErrors(newErrors);
     
-    // Check if there are any errors
     const hasErrors = Object.values(newErrors).some(error => error !== '');
     return !hasErrors;
   };
-  
-  // Clear specific error when user starts typing/selecting
-  const clearError = (field) => {
+
+  const clearError = (field: keyof typeof errors) => {
     setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-
-
-
-
-  
   const validateDate = (dateString: string): boolean => {
     const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
     const match = dateString.match(regex);
@@ -471,16 +448,15 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     return date.getDate() === day && 
            date.getMonth() === month - 1 && 
            date.getFullYear() === year;
-  }
+  };
+
   const formatDateToCalendar = (dateString: string): string => {
-    // Convert dd/mm/yyyy to yyyy-mm-dd format for calendar
     if (!dateString || !validateDate(dateString)) return '';
     const [day, month, year] = dateString.split('/');
     return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
   
   const formatDateFromCalendar = (dateString: string): string => {
-    // Convert yyyy-mm-dd to dd/mm/yyyy format
     const [year, month, day] = dateString.split('-');
     return `${day}/${month}/${year}`;
   };
@@ -496,410 +472,386 @@ const isServiceChecked = (id: string) => selectedServices.includes(id);
     setFormData(prev => ({ ...prev, endDate: selectedDate }));
     setShowEndDatePicker(false);
   };
-  
-  const [formData2, setFormData2] = useState({ name: '' });
 
-
-  
   const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
-  
 
-  // Calculate word count from current text
   const wordCount = formData2.name.trim() === ''
     ? 0
     : formData2.name.trim().split(/\s+/).length;
 
+  const handleMaxParticipant = (text: string) => {
+    const filteredText = text.replace(/[^0-9]/g, '');
+    const numberValue = filteredText ? parseInt(filteredText, 10) : '';
+    setMaxParticipant(numberValue);
+  };
 
+  const handlePricePerPerson = (text: string) => {
+    const filteredText = text.replace(/[^0-9]/g, '');
+    const numberValue = filteredText ? parseInt(filteredText, 10) : '';
+    setPricePerPerson(numberValue);
+  };
 
-    const [maxParticipant,setmaxParticipant]=useState<number | ''>('')
-    const handleMaxParticipant=(text: String)=>{
-      const filteredText = text.replace(/[^0-9]/g, '');
-      const numberValue = filteredText ? parseInt(filteredText, 10) : '';
-      setmaxParticipant(numberValue)
+  // Destination functions
+  const addDestination = (dest: string) => {
+    if (!selected.includes(dest)) {
+      setSelected([...selected, dest]);
     }
-    const [pricePerPerson,setpricePerPerson]=useState<number | ''>('')
-    const handlepricePerPerson=(text: String)=>{
-      const filteredText = text.replace(/[^0-9]/g, '');
-      const numberValue = filteredText ? parseInt(filteredText, 10) : '';
-      setpricePerPerson(numberValue)
-    }
+    setDropdownOpen(false);
+    setSearchText(''); 
+  };
 
-    const [isChecked, setIsChecked] = useState(false);
-   //Destination
-    const [dropdownOpen, setDropdownOpen] = useState(false);
-    const [selected, setSelected] = useState<string[]>([]);
-    const [searchText, setSearchText] = useState('');
-    const [destinations, setDestinations] = useState<string[]>([]);
-    const [uploading, setUploading] = useState(false);
-    const [responseMessage, setResponseMessage] = useState<string | null>(null);
-    function addDestination(dest: string) {
-      if (!selected.includes(dest)) {
-        setSelected([...selected, dest]);
-      }
-      setDropdownOpen(false);
-      setSearchText(''); 
-    }
-    const filteredDestinations = destinations.filter(dest =>
-      dest.toLowerCase().includes(searchText.toLowerCase())
-    );
-    function removeDestination(dest: string) {
-      setSelected(selected.filter(d => d !== dest));
-    }
-    useEffect(() => {
-      setLoading(true);
-      axiosInstance.get('/destinations')
-        .then(response => {
-          setDestinations(response.data.data || []);
-        })
-        .catch(err => {
-          console.error('Axios error:', err);
-          setDestinations([]);
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    }, []);
-   
-// Add this reset function to your component
-const resetForm = () => {
-  // Reset image picker
-  setPickedFile2(null);
-  
-  // Reset focus state
-  setIsFocused(false);
-  
-  // Reset selections
-  setSelectedItems([]);
-  setSelectedServices([]);
-  setSelected([]); // destinations
-  
-  // Reset date pickers
-  setShowStartDatePicker(false);
-  setShowEndDatePicker(false);
-  
-  // Reset validation states
-  setIsValidating(false);
-  setLoading(false);
-  setUploading(false);
-  setResponseMessage(null);
-  
-  // Reset errors
-  setErrors({
-    coverImage: '',
-    tripName: '',
-    startDate: '',
-    endDate: '',
-    maxParticipants: '',
-    pricePerPerson: '',
-    services: '',
-    travelStyles: '',
-    destinations: '',
-    atmosphere: '',
-    details: '',
-    terms: ''
-  });
-  
-  // Reset form data
-  setFormData({
-    name: '',
-    startDate: '',
-    endDate: '',
-    description: '',
-    selectedOptions: [],
-    attachments: 0,
-    details: ''
-  });
-  
-  setFormData2({ name: '' });
-  
-  // Reset numeric inputs
-  setmaxParticipant('');
-  setpricePerPerson('');
-  
-  // Reset checkbox
-  setIsChecked(false);
-  
-  // Reset dropdown
-  setDropdownOpen(false);
-  setSearchText('');
-};
-    type StatusType = 'published' | 'draft';
-    //Submit
-    const create = async (status: StatusType): Promise<void> => {
-      setIsValidating(true);
+  const filteredDestinations = destinations.filter(dest =>
+    dest.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const removeDestination = (dest: string) => {
+    setSelected(selected.filter(d => d !== dest));
+  };
+
+  const resetForm = () => {
+    setPickedFile2(null);
+    setIsFocused(false);
+    setSelectedItems([]);
+    setSelectedServices([]);
+    setSelected([]);
+    setShowStartDatePicker(false);
+    setShowEndDatePicker(false);
+    setIsValidating(false);
+    setLoading(false);
+    setUploading(false);
+    setResponseMessage(null);
     
-      // Validate form
-      const isValid = validateForm();
+    setErrors({
+      coverImage: '',
+      tripName: '',
+      startDate: '',
+      endDate: '',
+      maxParticipants: '',
+      pricePerPerson: '',
+      services: '',
+      travelStyles: '',
+      destinations: '',
+      atmosphere: '',
+      details: '',
+      terms: ''
+    });
     
-      if (!isValid) {
-        setIsValidating(false);
-        
-        // Find first error and scroll to it (optional)
-        const firstErrorField = Object.keys(errors).find(key => errors[key] !== '');
-        
-        // Show alert with first error
-        const firstError = Object.values(errors).find(error => error !== '');
-        Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
-        
+    setFormData({
+      name: '',
+      startDate: '',
+      endDate: '',
+      description: '',
+      selectedOptions: [],
+      attachments: 0,
+      details: ''
+    });
+    
+    setFormData2({ name: '' });
+    setMaxParticipant('');
+    setPricePerPerson('');
+    setIsChecked(false);
+    setDropdownOpen(false);
+    setSearchText('');
+  };
+
+
+  
+  // Main create function
+  type StatusType = 'published' | 'draft';
+
+  const create = async (status: StatusType): Promise<void> => {
+    setIsValidating(true);
+
+    const isValid = validateForm();
+
+    if (!isValid) {
+      setIsValidating(false);
+      const firstError = Object.values(errors).find(error => error !== '');
+      Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+      return;
+    }
+
+    try {
+      console.log("🚀 Starting trip creation...");
+      
+      if (!formData2.name || !formData.startDate || !formData.endDate || 
+          selected.length === 0 || !maxParticipant || !pricePerPerson || 
+          selectedItems.length === 0) { // Fixed: check selectedItems instead of categories
         return;
       }
-    
-      try {
-        console.log("🚀 Starting trip creation...");
-        
-        // Validation - check if required fields are filled
-        if (!formData2.name || !formData.startDate || !formData.endDate || 
-            selected.length === 0 || !maxParticipant || !pricePerPerson || 
-            categories.length === 0) {
-          return;
-        }
-    
-        setUploading(true);
-        setResponseMessage(null);
-    
-        const formatDate = (dateStr: string): string => {
-          try {
-            let date: Date;
-        
-            if (dateStr.includes('/')) {
-              const [day, month, year] = dateStr.split('/');
-              date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            } else {
-              date = new Date(dateStr);
-            }
-        
-            if (isNaN(date.getTime())) {
-              throw new Error(`Invalid date: ${dateStr}`);
-            }
-        
-            // Return in YYYY-MM-DD format
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-based
-            const day = String(date.getDate()).padStart(2, '0');
-        
-            return `${year}-${month}-${day}`;
-          } catch (error) {
-            console.error('Date formatting error:', error);
-            throw new Error(`Invalid date format: ${dateStr}`);
+
+      setUploading(true);
+      setResponseMessage(null);
+
+      const formatDate = (dateStr: string): string => {
+        try {
+          let date: Date;
+      
+          if (dateStr.includes('/')) {
+            const [day, month, year] = dateStr.split('/');
+            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+          } else {
+            date = new Date(dateStr);
           }
-        };
+      
+          if (isNaN(date.getTime())) {
+            throw new Error(`Invalid date: ${dateStr}`);
+          }
+      
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+      
+          return `${year}-${month}-${day}`;
+        } catch (error) {
+          console.error('Date formatting error:', error);
+          throw new Error(`Invalid date format: ${dateStr}`);
+        }
+      };
+
+      // Fixed: Get travel style IDs from selectedItems, not categories
+      const travelStyleIds: string[] = selectedItems;
+      const requestFormData = new FormData();
+
+      requestFormData.append('name', formData2.name.trim());
+      
+      try {
+        requestFormData.append('startDate', formatDate(formData.startDate));
+        requestFormData.append('endDate', formatDate(formData.endDate));
+      } catch (dateError) {
+        Alert.alert('Error', 'Invalid date format. Please check your dates.');
+        return;
+      }
+      
+      if (selected.length > 0) {
+        // Fixed: Append each destination separately
+          requestFormData.append('destinations',selected);
+      }
+      
+      requestFormData.append('maxParticipants', maxParticipant.toString());
+      requestFormData.append('pricePerPerson', pricePerPerson.toString());
+      
+      if (selectedServices.length > 0) {
+        // Fixed: Append each service separately
+      
+          requestFormData.append('includedServices', selectedServices);
     
-        const travelStyleIds: string[] = categories.map((category: any) => category.id);
-        const requestFormData = new FormData();
-    
-        // Append form data
-        requestFormData.append('name', formData2.name.trim());
+      }
+      
+      requestFormData.append('detail', formData.details || '');
+
+      if (travelStyleIds.length > 0) {
+        // Fixed: Append each travel style separately
+          requestFormData.append('travelStyles', travelStyleIds);
+       
+      }
+      
+      requestFormData.append('groupAtmosphere', formData.description || '');
+      requestFormData.append('status', status);
+      
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId) {
+        requestFormData.append('tripOwnerId', userId);
+      }
+
+      if (pickedFile2) {
+        console.log("📷 Adding image to request...", {
+          name: pickedFile2.name,
+          type: pickedFile2.type,
+          size: pickedFile2.size || 'unknown'
+        });
         
         try {
-          requestFormData.append('startDate', formatDate(formData.startDate));
-          requestFormData.append('endDate', formatDate(formData.endDate));
-        } catch (dateError) {
-          Alert.alert('Error', 'Invalid date format. Please check your dates.');
-          return;
-        }
-        
-        if (selected.length > 0) {
-          requestFormData.append('destinations', selected);
-        }
-        
-        requestFormData.append('maxParticipants', maxParticipant.toString());
-        requestFormData.append('pricePerPerson', pricePerPerson.toString());
-        
-        if (selectedServices.length > 0) {
-          requestFormData.append('includedServices', selectedServices);
-        }
-        
-        requestFormData.append('detail', formData.details || '');
-    
-        if (travelStyleIds.length > 0) {
-          requestFormData.append('travelStyles', travelStyleIds);
-        }
-        
-        requestFormData.append('groupAtmosphere', formData.description || '');
-        requestFormData.append('status', status);
-        const userId = await AsyncStorage.getItem('userId');
-        requestFormData.append('tripOwnerId', userId);
-    
-        if (pickedFile2) {
-          console.log("📷 Adding image to request...", {
-            name: pickedFile2.name,
-            type: pickedFile2.type,
-            size: pickedFile2.size || 'unknown'
-          });
-          
-          try {
-            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
-              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
-              const blob = await response.blob();
-              requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
-            } else if (pickedFile2.uri) {
-              const fileObj = {
-                uri: pickedFile2.uri,
-                type: pickedFile2.type || 'image/jpeg',
-                name: pickedFile2.name || 'image.jpg',
-              } as any;
-              
-              requestFormData.append('tripCoverImageFile', fileObj);
-            } else {
-              console.warn('⚠️ No valid image data found');
-            }
-          } catch (imageError) {
-            console.error('Image processing error:', imageError);
-            Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
-          }
-        }
-    
-        console.log("📤 Sending trip creation request...");
-        
-        console.log("📋 Request data summary:", {
-          name: formData2.name,
-          startDate: formData.startDate,
-          endDate: formData.endDate,
-          destinations: selected.length,
-          maxParticipants: maxParticipant,
-          pricePerPerson: pricePerPerson,
-          services: selectedServices.length,
-          categories: categories.length,
-          hasImage: !!pickedFile2
-        });
-    
-        const accessToken = await AsyncStorage.getItem('googleAccessToken');
-        const idToken = await AsyncStorage.getItem('googleIdToken');
-    
-        const response = await axiosInstance.post('/trips', requestFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${idToken}`
-          },
-          timeout: 60000,
-          maxContentLength: Infinity,
-          maxBodyLength: Infinity,
-        });
-    
-        console.log("✅ Trip created successfully:", response.data);
-        
-        // Reset form after successful creation
-        resetForm();
-        
-        router.push('/findTrips');
-    
-      } catch (error: unknown) {
-        console.error('🔴 Trip creation error:', error);
-        
-        let errorMessage = 'Failed to create trip';
-        let debugInfo = '';
-        
-        if (error && typeof error === 'object' && 'response' in error) {
-          const axiosError = error as any;
-          console.error('Server Error Response:', axiosError.response?.data);
-          console.error('Server Error Status:', axiosError.response?.status);
-          console.error('Server Error Headers:', axiosError.response?.headers);
-          
-          const serverMessage = axiosError.response?.data?.message;
-          const statusCode = axiosError.response?.status;
-          
-          if (serverMessage) {
-            errorMessage = serverMessage;
+          if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+            const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
+            const blob = await response.blob();
+            requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
+          } else if (pickedFile2.uri) {
+            const fileObj = {
+              uri: pickedFile2.uri,
+              type: pickedFile2.type || 'image/jpeg',
+              name: pickedFile2.name || 'image.jpg',
+            } as any;
+            
+            requestFormData.append('tripCoverImageFile', fileObj);
           } else {
-            errorMessage = `Server Error (${statusCode})`;
+            console.warn('⚠️ No valid image data found');
           }
-          
-          debugInfo = `Status: ${statusCode}`;
-        } else if (error && typeof error === 'object' && 'request' in error) {
-          console.error('Network Error:', (error as any).request);
-          errorMessage = 'Network error. Please check your connection.';
-        } else if (error instanceof Error) {
-          console.error('General Error:', error.message);
-          errorMessage = error.message || 'Unknown error occurred';
+        } catch (imageError) {
+          console.error('Image processing error:', imageError);
+          Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
         }
-        
-        setResponseMessage(`Error: ${errorMessage}`);
-        
-      } finally {
-        setIsValidating(false);
-        setUploading(false);
       }
-    };
- 
-    const ErrorMessage = ({ error }) => {
-      if (!error) return null;
-      return (
-        <Text style={styles.errorText}>{error}</Text>
-      );
-    };
-    
-    const [userInfo, setUserInfo] = useState(null);
-    const getUserInfo = async () => {
-      try {
-        const userId = await AsyncStorage.getItem('userId');
+
+      console.log("📤 Sending trip creation request...");
+      
+      console.log("📋 Request data summary:", {
+        name: formData2.name,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        destinations: selected.length,
+        maxParticipants: maxParticipant,
+        pricePerPerson: pricePerPerson,
+        services: selectedServices.length,
+        travelStyles: selectedItems.length, // Fixed
+        hasImage: !!pickedFile2
+      });
+
+      const accessToken = await AsyncStorage.getItem('googleAccessToken');
+      const idToken = await AsyncStorage.getItem('googleIdToken');
+
+      const response = await axiosInstance.post('/trips', requestFormData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${idToken}`
+        },
+        timeout: 60000,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
+
+      console.log("✅ Trip created successfully:", response.data);
+      
+      resetForm();
+      
+       router.push('/findTrips');
+
+    } catch (error: unknown) {
+      console.error('🔴 Trip creation error:', error);
+      
+      let errorMessage = 'Failed to create trip';
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        console.error('Server Error Response:', axiosError.response?.data);
+        console.error('Server Error Status:', axiosError.response?.status);
+        
+        const serverMessage = axiosError.response?.data?.message;
+        const statusCode = axiosError.response?.status;
+        
+        if (serverMessage) {
+          errorMessage = serverMessage;
+        } else {
+          errorMessage = `Server Error (${statusCode})`;
+        }
+      } else if (error && typeof error === 'object' && 'request' in error) {
+        console.error('Network Error:', (error as any).request);
+        errorMessage = 'Network error. Please check your connection.';
+      } else if (error instanceof Error) {
+        console.error('General Error:', error.message);
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+      
+      setResponseMessage(`Error: ${errorMessage}`);
+      
+    } finally {
+      setIsValidating(false);
+      setUploading(false);
+    }
+  };
+
+  // Error component
+  const ErrorMessage = ({ error }: { error: string }) => {
+    if (!error) return null;
+    return (
+      <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{error}</Text>
+    );
+  };
+
+  const getUserInfo = async () => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (userId) {
         const response = await axiosInstance.get(`/users/profile/${userId}`);
         console.log(response.data.data);
         setUserInfo(response.data.data);
-      } catch (error) {
-        console.error('Error fetching user info:', error);
       }
-    };
-  
-    useEffect(() => {
-      getUserInfo();
-    }, []);
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    }
+  };
 
-    const convertDate = (dateStr: string) => {
-      if (!dateStr) return new Date().toISOString();
-      const [day, month, year] = dateStr.split('/');
-      const date = new Date(`${month}/${day}/${year}`);
-      return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
-    };
+  const convertDate = (dateStr: string) => {
+    if (!dateStr) return new Date().toISOString();
+    const [day, month, year] = dateStr.split('/');
+    const date = new Date(`${month}/${day}/${year}`);
+    return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+  };
 
-    const createTripFromFormData = () => {
-      const trip = {
-        id: 'preview-trip', 
-        name: formData2.name,
-        destinations: selected, 
-        startDate: convertDate(formData.startDate),
-        endDate: convertDate(formData.endDate),
-        maxParticipants: parseInt(maxParticipant) || 0,
-        participants: [], 
-        pricePerPerson: pricePerPerson, 
-        detail: formData.details,
-        groupAtmosphere: formData.description, 
-        includedServices: services
-          .filter(service => isServiceChecked(service.id))
-          .map(service => service.title),
-        travelStyles: categories
-          .filter(category => selectedItems.includes(category.id))
-          .map(category => category.title),
-        tripCoverImageUrl: pickedFile2?.uri,
-        tripOwner: {
-          id: userInfo?.userId || 'current-user',
-          displayName: userInfo?.fullname || 'ผู้สร้างทริป',
-          firstName: userInfo?.fullname?.split(' ')[0] || '',
-          lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
-          profileImageUrl: userInfo?.profileImageUrl || 'https://via.placeholder.com/40',
-          age: userInfo?.age,
-          travelStyles: userInfo?.travelStyles || [],
-          fullname: userInfo?.fullname || 'ผู้สร้างทริป'
-        },
-        fullname: formData2.name || 'ชื่อทริป'
-      };
-      
-      return trip;
+  const createTripFromFormData = () => {
+    const trip = {
+      id: 'preview-trip', 
+      name: formData2.name,
+      destinations: selected, 
+      startDate: convertDate(formData.startDate),
+      endDate: convertDate(formData.endDate),
+      maxParticipants: parseInt(maxParticipant.toString()) || 0,
+      participants: [], 
+      pricePerPerson: pricePerPerson, 
+      detail: formData.details,
+      groupAtmosphere: formData.description, 
+      includedServices: services
+        .filter(service => isServiceChecked(service.id))
+        .map(service => service.title),
+      travelStyles: categories
+        .filter(category => selectedItems.includes(category.id))
+        .map(category => category.title),
+      tripCoverImageUrl: pickedFile2?.uri,
+      tripOwner: {
+        id: userInfo?.userId || 'current-user',
+        displayName: userInfo?.fullname || 'ผู้สร้างทริป',
+        firstName: userInfo?.fullname?.split(' ')[0] || '',
+        lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
+        profileImageUrl: userInfo?.profileImageUrl || 'https://via.placeholder.com/40',
+        age: userInfo?.age,
+        travelStyles: userInfo?.travelStyles || [],
+        fullname: userInfo?.fullname || 'ผู้สร้างทริป'
+      },
+      fullname: formData2.name || 'ชื่อทริป'
     };
- 
-    const handleBookmarkToggle = (trip) => {
     
-      console.log('Bookmark toggled for trip:', trip.id);
-    };
-  
-    const handleTripPress = (trip) => {
-   
-      console.log('Trip pressed:', trip.id);
-    };
-  
-    const handleJoinTrip = (trip) => {
-  
-      console.log('Join trip pressed:', trip.id);
-    };
+    return trip;
+  };
+
+  const handleBookmarkToggle = (trip: any) => {
+    console.log('Bookmark toggled for trip:', trip.id);
+  };
+
+  const handleTripPress = (trip: any) => {
+    console.log('Trip pressed:', trip.id);
+  };
+
+  const handleJoinTrip = (trip: any) => {
+    console.log('Join trip pressed:', trip.id);
+  };
+
+  // Effects
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  useEffect(() => {
+    fetchTravelStyles();
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    axiosInstance.get('/destinations')
+      .then(response => {
+        setDestinations(response.data.data || []);
+      })
+      .catch(err => {
+        console.error('Axios error:', err);
+        setDestinations([]);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  useEffect(() => {
+    getUserInfo();
+  }, []);
 
     
   return (
@@ -908,7 +860,7 @@ const resetForm = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-         <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:16.75,height:18}}/>
+         <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:20,height:18}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
@@ -979,6 +931,10 @@ const resetForm = () => {
     multiline
     maxLength={50} 
   />
+   <ErrorMessage error={errors.tripName} /> 
+    {
+      !errors.tripName && (
+        
   <Text style={[
     styles.wordCount,
    
@@ -986,8 +942,9 @@ const resetForm = () => {
   ]}>
     {formData2.name.length}/50
   </Text>
+      )
+    }
 </View>
- <ErrorMessage error={errors.tripName} /> 
 
 
 
@@ -1004,9 +961,12 @@ const resetForm = () => {
   styles.dateContainer,
   (errors.startDate || errors.endDate) && styles.inputError
 ]}>
-  <Image source={require('../assets/images/images/images/image25.png')} 
-         style={{width: 14, height: 16, marginHorizontal: 10}} />
+  <Image 
+    source={require('../assets/images/images/images/image25.png')} 
+    style={{ width: 14, height: 16, marginHorizontal: 10 }} 
+  />
   
+  {/* Start Date Picker */}
   <TouchableOpacity onPress={() => {
     clearError('startDate');
     setShowStartDatePicker(true);
@@ -1026,16 +986,22 @@ const resetForm = () => {
       maxLength={10}
       accessibilityLabel="วันที่เริ่มต้น"
       editable={true}
-      pointerEvents="none"
+      pointerEvents="none"  // Allows the calendar to appear on click
     />
   </TouchableOpacity>
   
-  <Text style={{marginRight: 40, marginLeft: -20, fontSize: 20, fontWeight: '500'}}>-</Text>
+  <Text style={{ marginRight: 40, marginLeft: -20, fontSize: 20, fontWeight: '500' }}>-</Text>
   
-  <TouchableOpacity onPress={() => {
-    clearError('endDate');
-    setShowEndDatePicker(true);
-  }}>
+  {/* End Date Picker */}
+  <TouchableOpacity 
+    onPress={() => {
+      if (formData.startDate) {
+        clearError('endDate');
+        setShowEndDatePicker(true);
+      }
+    }}
+    disabled={!formData.startDate} // Disable until Start Date is set
+  >
     <TextInput
       style={[
         formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
@@ -1047,14 +1013,17 @@ const resetForm = () => {
         if (errors.endDate) clearError('endDate');
       }}
       placeholder="dd/mm/yyyy"
+ 
+      placeholderTextColor={!formData.startDate ? '#B0B0B0' : undefined}
       keyboardType="numeric"
       maxLength={10}
       accessibilityLabel="วันที่สิ้นสุด"
       editable={true}
-      pointerEvents="none"
+      pointerEvents="none" // Disables direct editing, use calendar picker
     />
   </TouchableOpacity>
 </View>
+
 <View style={styles.dateErrorContainer}>
   <Text style={styles.dateErrorText}>{errors.startDate || ''}</Text>
   <Text style={styles.dateErrorText}>{errors.endDate || ''}</Text>
@@ -1153,7 +1122,7 @@ const resetForm = () => {
 
 <View style={[
   {
-    width: '45%',
+    width: '40%',
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFBFF',
@@ -1161,23 +1130,23 @@ const resetForm = () => {
     paddingHorizontal: 4,
     borderRadius: 8,
     marginHorizontal: 20,
-    marginBottom: 30
+    marginBottom: 30,
   },
   errors.maxParticipants && styles.inputError
 ]}>
   <Image
     source={require('../assets/images/images/images/image11.png')}
-    style={{ height: 16, width: 16, marginHorizontal: 3 }}
+    style={{ height: 16, width: 16, marginHorizontal: 10 }}
     resizeMode="contain"
   />
 <TextInput
   style={{
-    width: 100,
+    
     height: '80%',
     paddingHorizontal: 5,
     outlineColor: 'white',
     backgroundColor: '#F9FAFBFF',
-    flex: 0.45
+    width:'35%'
   }}
   placeholder=''
   value={maxParticipant !== '' ? maxParticipant.toString() : ''}
@@ -1192,9 +1161,11 @@ const resetForm = () => {
   keyboardType='numeric'
 />
 
-  <Text style={{ marginLeft: 3, flex: 0.2, fontFamily: 'InterTight-Regular' }}>คน</Text>
+<View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <Text style={{ fontFamily: 'InterTight-Regular', textAlign: 'center' }}>คน</Text>
+  </View>
 </View>
- <ErrorMessage error={errors.maxParticipants} /> 
+<View style={{paddingLeft:20}}> <ErrorMessage error={errors.maxParticipants} /> </View>
 
     
     {/* Price Per Person with Error */}
@@ -1216,7 +1187,8 @@ const resetForm = () => {
     borderRadius: 8,
     justifyContent: 'space-between',
     marginBottom: 30,
-    marginHorizontal: 20
+    marginHorizontal: 20,
+    width:'70%'
   },
   errors.pricePerPerson && styles.inputError
 ]}>
@@ -1228,7 +1200,7 @@ const resetForm = () => {
   <Text style={{
     marginLeft: 5,
     marginRight: 10,
-    width: '100%',
+    width: '75%',
     fontWeight: '500',
     color: '#333',
     fontFamily: 'InterTight-Regular',
@@ -1239,7 +1211,7 @@ const resetForm = () => {
     placeholder=''
     value={pricePerPerson != '' ? pricePerPerson.toString() : ''}
     onChangeText={(text) => {
-      handlepricePerPerson(text);
+      handlePricePerPerson(text);
       if (errors.pricePerPerson) clearError('pricePerPerson');
     }}
     keyboardType='numeric'
@@ -1252,11 +1224,11 @@ const resetForm = () => {
     fontSize: 16
   }}>บาท</Text>
 </View>
- <ErrorMessage error={errors.pricePerPerson} /> 
+<View style={{paddingLeft:20}}> <ErrorMessage error={errors.pricePerPerson} /> </View>
 
 
   {/* Services with Error */}
-<View style={styles.checkboxSection}>
+<View style={[styles.checkboxSection,errors.services && {marginBottom:0}]}>
   <Text style={styles.label}>สิ่งที่รวมในราคา</Text>
   <View style={styles.checkboxContainer}>
     {services.map(service => (
@@ -1286,8 +1258,9 @@ const resetForm = () => {
       </TouchableOpacity>
     ))}
   </View>
+  
 </View>
- <ErrorMessage error={errors.services} /> 
+<View style={{paddingLeft:20}}> <ErrorMessage error={errors.services} /> </View>
 
        {/* Travel Styles with Error */}
        <View style={styles.content}>
@@ -1340,7 +1313,7 @@ const resetForm = () => {
     </View>
   )}
 </View>
- <ErrorMessage error={errors.travelStyles} /> 
+<View style={{paddingLeft:20}}> <ErrorMessage error={errors.travelStyles} /> </View>
 
   
 
@@ -1398,7 +1371,9 @@ const resetForm = () => {
       )}
     </View>
   </TouchableOpacity>
-
+  {errors.destinations && selected.length === 0 && (
+    <ErrorMessage error={errors.destinations} />
+  )}
   {dropdownOpen && (
     <View style={{
       position: 'absolute', 
@@ -1494,7 +1469,6 @@ const resetForm = () => {
     </View>
   </View>
 </View>
- <ErrorMessage error={errors.destinations} /> 
 
 
 {/* Group Atmosphere with Character Count */}
@@ -1523,15 +1497,19 @@ const resetForm = () => {
       placeholderTextColor="#888"
       maxLength={100} // Prevents typing beyond 100 characters
     />
-    <Text style={[
+
+   {!errors.atmosphere && (
+     <Text style={[
       styles.wordCountText,
       // Optional: Change color when approaching limit (90+ characters)
       formData.description.length > 90 && { color: 'red' }
     ]}>
       {formData.description.length}/100
     </Text>
+   )}
+    <ErrorMessage error={errors.atmosphere}/>
   </View>
-</View><ErrorMessage error={errors.atmosphere}/>
+</View>
       
       {/* General Details with Error */}
 <View style={styles.container3}>
@@ -1551,8 +1529,9 @@ const resetForm = () => {
     placeholder='เขียนรายละเอียดทริปของคุณ...'
     placeholderTextColor="#888"
   />
+  <ErrorMessage error={errors.details} /> 
 </View>
-<ErrorMessage error={errors.details} /> 
+
  
         
         
@@ -1580,10 +1559,11 @@ const resetForm = () => {
           </View>
         </TouchableOpacity>
         <Text style={styles.text}>
-          ฉันได้อ่านและยอมรับ{' '}
-          <Text style={styles.linkText}>นโยบายและข้อตกลง</Text>
-          ของแอปพลิเคชัน
-        </Text>
+  ฉันได้อ่านและยอมรับ{' '}
+  <Text style={styles.linkText}>นโยบายและข้อตกลง</Text> {/* Text nested correctly */}
+  {' '} ของแอปพลิเคชัน {/* Ensure spaces or other strings are inside */}
+</Text>
+
       </View>  
      </View>
 
@@ -1613,7 +1593,7 @@ const resetForm = () => {
       disabled={!isChecked || isValidating}
     >
       <Text style={styles.submitText}>
-        {isValidating ? 'กำลังสร้าง...' : 'โอเคดีงาม'}
+      สร้างทริป
       </Text>
     </TouchableOpacity>
   </View>
@@ -1624,1102 +1604,6 @@ const resetForm = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderBottomWidth:1,
-    paddingVertical: 12,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    marginRight: 10,
-  },
-  headerTitle: {
-    fontSize: 18,
-    color: '#1F2937',
-    flex: 1,
-    textAlign: 'center',
-    fontWeight:500,
-    fontFamily:'InterTight-Regular',
-    marginLeft:-20,
-   
-  },
-  content: {
-    flex: 1,
-    marginBottom:30,
-    marginHorizontal:20,
-  },
-  imageSection: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  imagePlaceholder: {
-    width: 120,
-    height: 120,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
-    borderStyle: 'dashed',
-  },
-  imageText: {
-    marginTop: 8,
-    fontSize: 12,
-    color: '#666',
-  },
-  formSection: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 10,       // Add consistent bottom margin
-  },
-  fieldContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontWeight: '500',
-    color: '#333',
-    marginBottom:4,
-    fontFamily:'InterTight-Regular',
-    fontSize:16
-  },
-  requiredText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  disabledButton: {
-    opacity: 0.5, 
-    backgroundColor: '#4285f4', 
-  },
-  textInput: {
-    borderWidth:1,
-    borderColor: '#e0e0e0',
-    marginTop:5,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    fontWeight:400,
-    fontFamily:'InterTight-Regular'
-  },
-  textInputFocused: {
-    borderColor: 'transparent',
-    outlineColor:'#e0e0e0',
-    outlineWidth:1,
-  },
-  dateContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,       // Reduced from 30 to 20
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    height: 50,
-    alignItems: 'center'
-  },
-  dateField: {
-    flex: 0.48,
-  },
-  dateLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
-  },
-  dateInput: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    backgroundColor: '#fff',
-  },
-  alignmentIcon: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: 'bold',
-  },
-  tagsContainer: {
-    marginBottom: 20,
-  },
-  tagButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: 8,
-  },
-  tagButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#f0f0f0',
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  activeTag: {
-    backgroundColor: '#4285f4',
-  },
-  tagText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  activeTagText: {
-    fontSize: 14,
-    color: '#fff',
-  },
-  textArea: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 14,
-    backgroundColor: '#fff',
-    minHeight: 80,
-    textAlignVertical: 'top',
-    outlineColor:'#e0e0e0',
-    fontFamily:'InterTight-Regular'
-  },
-  attachmentSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  attachmentText: {
-    fontSize: 14,
-    color: '#333',
-  },
-  attachmentCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  countNumber: {
-    fontSize: 14,
-    color: '#666',
-  },
-  checkboxSection: {
-    marginBottom: 20,
-    marginHorizontal:20
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 12,
-    
-  },
-  checkboxRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 0.48,
-    borderRadius:5,
-    height:30,
-    paddingHorizontal:4,
-    backgroundColor:"#F9FAFBFF",
-    marginHorizontal:5
-    
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 2,
-  },
-  checked: {
-    backgroundColor: '#4285f4',
-  },
-  checkboxText: {
-    fontSize: 14,
-    color: '#333',
-    fontFamily:'InterTight-Regular'
-  },
-  bottomSection: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-  },
-  addButtonText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-  },
-  submitContainer: {
-    flex:0.5,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  drafContainer: {
-    flex:0.5,
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-  },
-  submitButton: {
-    flex:0.5,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#29C4AF',
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  draftButton:{
-    flex:0.5,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#E5E7EB',
-    paddingVertical: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  draftText:{
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitText: {
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  submitNote: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginTop:-25,
-    marginBottom:20
-  },
-  uploadBox: {
-    borderWidth: 2,
-    borderColor: '#E5E7EB',
-    borderStyle: 'solid',
-    borderRadius: 12,
-    alignItems: 'center',
-    minHeight: 270,
-    backgroundColor: '#E5E7EB',
-    verticalAlign: 'middle',
-    marginBottom: 20,       // Reduced from 30 to 20
-    justifyContent: 'center',
-  },
-  uploadPlaceholder: {
-    alignItems: 'center',
-    verticalAlign:'middle'
-  },
-  container2:{
-  
-     
-  },
-  personIcon: {
-    width: 64,
-    height: 64,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 9999,
-    justifyContent: 'center',
-    alignItems: 'center',
-   
-  },
-  uploadText: {
-    fontSize: 14,
-    fontFamily:"Inter_500Medium",
-    color: '#374151',
-    marginBottom: 4,
-    lineHeight: 14,
-  },
-  uploadedImage: {
-    width: '100%',
-    flex: 1,
-    borderRadius: 8,
-    resizeMode: 'cover',
-    minHeight: 200,
-  },
-  uploadSubtext: {
-    fontSize: 16,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 12,
-    fontFamily:'InterTight-Regular',
-  },
-  title: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '800',
-    marginBottom: 14,
-    lineHeight: 24,
-    fontFamily:'Inter_900Black'
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-  },
-  categoriesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    alignItems: 'center',
-    marginTop: 5,
-    marginBottom: 10, // Add space after categories
-  },
-  categoryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    height: 38,
-    borderRadius: 30,
-    // Remove marginBottom: 20
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-  },
-  selectedItem: {
-    backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
-    borderColor: '#29C4AF',
-  },
-  selectedText: {
-    color: '#29C4AF',
-    fontFamily:'InterTight-Regular'
-  },
-  categoryText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#666',
-    fontWeight: '500',
-    fontFamily:'InterTight-Regular'
-  },
-  toolbarButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-  activeButton: {
-    backgroundColor: '#007bff',
-  },
-  toolbarButtonText: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: '500',
-  },
-  activeButtonText: {
-    color: '#fff',
-  },
 
-  toolbar: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowRadius: 2,
-    flexWrap: 'wrap',
-    alignItems: 'center',
-  }, 
-   dropdown: {
-    position: 'absolute',         
-    top: 52,                     
-    left: 0,                    
-    right: 0,                    
-    backgroundColor: '#FFFFFF',  
-    borderWidth: 1,
-    borderColor: 'black',      
-    borderTopWidth: 0,         
-    borderBottomLeftRadius: 8,   
-    borderBottomRightRadius: 8,
-    maxHeight: 200,              
-    zIndex: 1002,                
-    elevation: 5,              
-    shadowColor: '#000',        
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },shadowOpacity: 0.1,
-    shadowRadius: 4,
-    
-  },
-  
-  dropdownText: {
-    fontSize: 14,
-    color: '#333',
-    marginRight: 4,
-  },
-  dropdownArrow: {
-    fontSize: 10,
-    color: '#666',
-  },
-
-  formatButton: {
-    minWidth: 32,
-    alignItems: 'center',
-  },
-  italicButton: {
-    fontStyle: 'italic',
-  },
-  underlineButton: {
-    textDecorationLine: 'underline',
-  },
-  listButton: {
-    minWidth: 32,
-    alignItems: 'center',
-  },
-  toolButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    marginRight: 4,
-  },
-  toolButtonText: {
-    fontSize: 14,
-    color: '#666',
-  },
-
-  editorContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    borderWidth:0.1
-  },
-  textEditor: {
-    flex: 1,
-    padding: 16,
-    fontSize: 16,
-    lineHeight: 24,
-    borderRadius:8,
-    color: '#333',
-    fontFamily: 'System', // Supports Thai characters
-    minHeight: 200,
-    outlineColor:'#e0e0e0'
-  },
-  dateInputError: {
-    borderColor: '#FF6B6B',
-    borderWidth: 1,
-  },
-  calendarIcon: {
-    width: 20,
-    height: 20,
-    borderRadius: 3,
-    position: 'relative',
-  },
-  calendarTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: 2,
-    paddingHorizontal: 3,
-  },
-  calendarHook: {
-    width: 2,
-    height: 3,
-    backgroundColor: 'white',
-    borderRadius: 1,
-  },
-  calendarBody: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingHorizontal: 3,
-    paddingTop: 2,
-    flex: 1,
-  },
-  calendarDot: {
-    width: 2,
-    height: 2,
-    backgroundColor: 'white',
-    borderRadius: 1,
-    margin: 1,
-  },
-  wordCount: {
-    position: 'absolute',
-    bottom: 8,
-    right: 12,
-    fontSize: 12,
-    fontFamily:'InterTight-Regular',
-  },
-  text: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  linkText: {
-    color: 'blue',
-    textDecorationLine: 'underline',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    fontSize: 16,
-    fontFamily: 'Inter_400Regular',
-    lineHeight: 24,
-    color: '#374151',
-    height: 50,
-    backgroundColor: '#FFFFFF',
-    outlineColor:'#e0e0e0'
-  },
-  dropdownItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    backgroundColor: '#FFFFFF',
-  },
-  emptyText: {
-    padding: 10,
-    textAlign: 'center',
-    color: '#999',
-    fontStyle: 'italic',
-    fontFamily:'InterTight-Regular'
-  },
-  selectedContainer: { 
-    marginTop: 10,
-   
-    },
-  selectedGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap:5,
-    
-  },
-  container4: {
-    flex: 4,
-    backgroundColor: 'white',
-    position: 'relative',         
-    zIndex: 1000,
-    maxHeight:120,
-    overflowY:'auto',
-    marginTop:20,
-  },
-  selectedButton: {
-    backgroundColor: '#4F46E51A',
-    borderWidth: 1,
-    paddingHorizontal:8,
-    paddingVertical:7,
-    borderRadius: 9999,
-    borderColor:'#4F46E5',
-    minWidth: 84.09,   
-    height:38,
-    alignItems: 'center',
-    justifyContent:'center'
-  },
-  selectedButtonText: {
-    color: '#4F46E5',
-    fontFamily:'Inter_400Regular',
-    fontSize: 14,
-  },
-  container3: {
-    flex: 4,
-    backgroundColor: 'white',        
-    marginHorizontal: 20,
-    marginBottom: 20,       // Add consistent bottom margin
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  colorPickerContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    margin: 20,
-    maxWidth: 300,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 16,
-    color: '#333',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  colorOption: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    margin: 4,
-    borderWidth: 2,
-    borderColor: '#ddd',
-  },
-  selectedColor: {
-    borderColor: '#007bff',
-    borderWidth: 3,
-  },
-  modalCloseButton: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  modalCloseText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  fontSizeContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    margin: 20,
-    maxWidth: 250,
-  },
-  fontSizeOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  selectedFontSize: {
-    backgroundColor: '#f0f8ff',
-  },
-  fontSizeText: {
-    color: '#333',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  colorButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 4,
-    borderWidth: 2,
-    borderColor: '#ddd',
-  },
-  colorButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  statusBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginTop: 8,
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#666',
-  },
-  textFormatIcon: {
-    fontSize: 14,
-    color: '#333',
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  textFormatX: {
-    fontSize: 10,
-    color: '#666',
-    position: 'absolute',
-    right: 2,
-    bottom: 2,
-  },
-  selectedTravelStylesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginVertical: 10,
-    gap: 8, 
-  },
-  inputModalContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 24,
-    margin: 20,
-    minWidth: 300,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-    marginBottom: 20,
-    backgroundColor: '#f9f9f9',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  modalCancelButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    flex: 1,
-    marginRight: 8,
-  },
-  modalSubmitButton: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
-    backgroundColor: '#007bff',
-    flex: 1,
-    marginLeft: 8,
-  },
-  modalCancelText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  modalSubmitText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
-    margin: 16,
-  },
-  imageContainer: {
-    height: 270,
-    position: 'relative',
-  },
-  backgroundImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  placeholderImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-    borderRadius: 12,
-  },
-  dateBadge: {
-    position: 'absolute',
-    top: 16,
-    left: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  dateIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  dateText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: '#333',
-  },
-  participantBadge: {
-    position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: '#6366f1',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  participantIcon: {
-    fontSize: 14,
-    marginRight: 4,
-  },
-  participantText: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'white',
-  },
-  content2: {
-    padding: 16,
-  },
-  tripName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginBottom: 8,
-  },
-  destinationRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    marginBottom: 8,
-  },
-  locationIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  sectionWithError: {
-    marginBottom: 5,        // Minimal margin, let ErrorMessage handle spacing
-  },
-  destinationContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    flex: 1,
-  },
-  destinationText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  description: {
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  tagsContainer2: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 12,
-  },
-  serviceTag: {
-    backgroundColor: '#dbeafe',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  serviceTagText: {
-    color: '#2563eb',
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  travelStylesContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 16,
-    marginHorizontal:20
-  },
-  categoryItem2: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 4,
-  },
-  categoryIcon: {
-    width: 14,
-    height: 12,
-    tintColor: '#6366f1',
-    marginRight: 6,
-  },
-  categoryText2: {
-    fontSize: 12,
-    color: '#6366f1',
-    fontWeight: '500',
-  },
-  joinButton: {
-    backgroundColor: '#6366f1',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 9,
-    alignSelf: 'flex-end',
-  },
-  joinButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '400',
-    textAlign: 'center',
-  },
-
-  calendarContainer: {
-    backgroundColor: 'white',
-    borderRadius: 10,
-    margin: 20,
-    maxHeight: '80%',
-    width: '90%',
-  },
-  calendarHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
-  calendarTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  closeButton: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    fontSize: 18,
-    color: '#666',
-  },
-
-  fontDropdownContainer: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 16,
-    margin: 20,
-    maxHeight: 400,
-    minWidth: 200,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  dropdownTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-    color: '#333',
-  },
-  fontList: {
-    maxHeight: 300,
-  },
-  fontItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    borderRadius: 4,
-    marginBottom: 2,
-  },
-  selectedFontItem: {
-    backgroundColor: '#007AFF',
-  },
-  fontItemText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedFontText: {
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  fontButtonText: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '500',
-  },
-
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#ffffff',
-    padding: 16,
-    borderRadius: 8,
-    elevation: 4,
-  },
-
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 8,
-  },
-  wordCountText: {
-    position: 'absolute',
-    bottom: 8,
-    right: 12,
-    fontSize: 12,
-    color: '#666',
-    backgroundColor: 'rgba(255, 255, 255, 0.8)', 
-    paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  errorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    marginTop: 5,           
-    marginHorizontal: 20,
-    fontFamily: 'InterTight-Regular',
-    marginBottom: 15,       
-  },
-  inputError: {
-    borderColor: '#EF4444',
-    borderWidth: 1,
-  },
-  uploadBoxError: {
-    borderColor: '#EF4444',
-    borderWidth: 2,
-  },
-  dateErrorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: 20,
-    marginTop: 5,
-    marginBottom: 15,
-  },
-  dateErrorText: {
-    color: '#EF4444',
-    fontSize: 12,
-    fontFamily: 'InterTight-Regular',
-    flex: 1,
-  }
-});
 
 export default ThaiFormScreen;

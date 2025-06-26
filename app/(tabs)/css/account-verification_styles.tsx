@@ -195,6 +195,7 @@ const styles = StyleSheet.create({
       fontSize: 16,
       color: '#1F2937',
       backgroundColor: '#F9FAFB80',
+      outlineColor: '#e0e0e0'
     },
     bottomSection: {
       padding: 16,
@@ -256,6 +257,7 @@ const styles = StyleSheet.create({
       padding: 24,
       alignItems: 'center',
       height: 58,
+      outlineColor: '#e0e0e0'
      }
   });
 
