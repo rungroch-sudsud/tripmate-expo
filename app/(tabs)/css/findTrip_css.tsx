@@ -313,11 +313,7 @@ const styles = StyleSheet.create({
   categoryTextActive: {
     color: '#ffffff',
   },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-  },
+
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -392,6 +388,106 @@ const styles = StyleSheet.create({
     flex:0.8,
     color: '#1F2937',
     fontFamily:'InterTight-SemiBold'
+  },
+  searchHistoryContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginTop: 4,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    zIndex: 1000,
+    maxHeight: 300,
+  },
+
+  // Search History Header
+  searchHistoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+
+  searchHistoryTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    fontFamily: 'InterTight-SemiBold',
+  },
+
+  clearAllButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+
+  clearAllText: {
+    fontSize: 14,
+    color: '#EF4444',
+    fontFamily: 'InterTight-Regular',
+  },
+
+  // History List
+  historyList: {
+    maxHeight: 200,
+  },
+
+  // History Item
+  historyItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F9FAFB',
+  },
+
+  historyItemContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  historyIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 12,
+    tintColor: '#9CA3AF',
+  },
+
+  historyText: {
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'InterTight-Regular',
+    flex: 1,
+  },
+
+  removeHistoryButton: {
+    padding: 8,
+    marginLeft: 8,
+  },
+
+  removeHistoryText: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    fontWeight: '600',
+  },
+
+  // Update existing searchContainer to handle positioning
+  searchContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: '#FFFFFF',
+    position: 'relative', // Add this for dropdown positioning
+    zIndex: 1, // Add this for dropdown layering
   },
 });
 

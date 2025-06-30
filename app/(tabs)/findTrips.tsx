@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback  } from 'react';
+import React, { useState, useEffect, useCallback,useRef  } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
-
+  FlatList
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { axiosInstance } from '../lib/axios';
@@ -86,7 +86,8 @@ interface Trip {
   tripOwner: TripOwner;
 }
 
-
+const SEARCH_HISTORY_KEY = 'search_history';
+const MAX_SEARCH_HISTORY = 10;
 
 const FindTripScreen: React.FC = () => {
  
@@ -105,8 +106,82 @@ const FindTripScreen: React.FC = () => {
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
     'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
   });
-  
+
+
+   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [showSearchHistory, setShowSearchHistory] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+
+  const searchTimeout = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
   const router = useRouter();
+
+   useEffect(() => {
+    loadSearchHistory();
+    return () => {
+      isMountedRef.current = false;
+      if (searchTimeout.current) {
+        clearTimeout(searchTimeout.current);
+      }
+    };
+  }, []);
+
+   const loadSearchHistory = async () => {
+    try {
+      const history = await AsyncStorage.getItem(SEARCH_HISTORY_KEY);
+      if (history && isMountedRef.current) {
+        setSearchHistory(JSON.parse(history));
+      }
+    } catch (error) {
+      console.error('Failed to load search history:', error);
+    }
+  };
+
+    const saveSearchToHistory = async (query: string) => {
+    if (!query.trim()) return;
+    
+    try {
+      const updatedHistory = [
+        query,
+        ...searchHistory.filter(item => item !== query)
+      ].slice(0, MAX_SEARCH_HISTORY);
+      
+      if (isMountedRef.current) {
+        setSearchHistory(updatedHistory);
+        await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+      }
+    } catch (error) {
+      console.error('Failed to save search history:', error);
+    }
+  };
+
+
+   const removeFromSearchHistory = async (query: string) => {
+    try {
+      const updatedHistory = searchHistory.filter(item => item !== query);
+      
+      if (isMountedRef.current) {
+        setSearchHistory(updatedHistory);
+        await AsyncStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updatedHistory));
+      }
+    } catch (error) {
+      console.error('Failed to remove from search history:', error);
+    }
+  };
+
+    const clearAllSearchHistory = async () => {
+    try {
+      if (isMountedRef.current) {
+        setSearchHistory([]);
+        await AsyncStorage.removeItem(SEARCH_HISTORY_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to clear search history:', error);
+    }
+  };
+
+
 
   // Auto-refresh data when screen comes into focus
   useFocusEffect(
@@ -503,8 +578,43 @@ const FindTripScreen: React.FC = () => {
 
   const handleSearchChange = (text: string): void => {
     setSearchQuery(text);
-    applySearchFilter(filteredTrips, text);
+    
+    // Clear existing timeout
+    if (searchTimeout.current) {
+      clearTimeout(searchTimeout.current);
+    }
+    
+    // Debounce search to prevent excessive API calls
+    searchTimeout.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        applySearchFilter(filteredTrips, text);
+        
+        // Save to history when user finishes typing (after 1 second)
+        if (text.trim().length > 0) {
+          saveSearchToHistory(text.trim());
+        }
+      }
+    }, 300);
   };
+
+   const handleSearchSubmit = () => {
+    if (searchQuery.trim()) {
+      saveSearchToHistory(searchQuery.trim());
+      setShowSearchHistory(false);
+      setIsSearchFocused(false);
+    }
+  };
+
+
+    const handleHistorySelect = (query: string) => {
+    setSearchQuery(query);
+    applySearchFilter(filteredTrips, query);
+    setShowSearchHistory(false);
+    setIsSearchFocused(false);
+    // Move to top of history
+    saveSearchToHistory(query);
+  };
+
 
   const handleFloatingButtonPress = (): void => {
     console.log('Floating button pressed');
@@ -599,6 +709,7 @@ const FindTripScreen: React.FC = () => {
     </View>
   );
 
+
   const renderSearchBar = () => (
     <View style={styles.searchContainer}>
       <View style={styles.searchInputContainer}>
@@ -612,19 +723,79 @@ const FindTripScreen: React.FC = () => {
           placeholderTextColor="#999"
           value={searchQuery}
           onChangeText={handleSearchChange}
+          onFocus={() => {
+            setIsSearchFocused(true);
+            setShowSearchHistory(searchHistory.length > 0);
+          }}
+          onBlur={() => {
+            // Delay hiding to allow history selection
+            setTimeout(() => {
+              if (isMountedRef.current) {
+                setIsSearchFocused(false);
+                setShowSearchHistory(false);
+              }
+            }, 200);
+          }}
+          onSubmitEditing={handleSearchSubmit}
           returnKeyType="search"
         />
         {searchQuery.length > 0 && (
           <TouchableOpacity
             style={styles.clearButton}
-            onPress={() => handleSearchChange('')}
+            onPress={() => {
+              handleSearchChange('');
+              setShowSearchHistory(false);
+            }}
           >
             <Text style={styles.clearButtonText}>✕</Text>
           </TouchableOpacity>
         )}
       </View>
+      
+      {/* Search History Dropdown */}
+      {showSearchHistory && isSearchFocused && searchHistory.length > 0 && (
+        <View style={styles.searchHistoryContainer}>
+          <View style={styles.searchHistoryHeader}>
+            <Text style={styles.searchHistoryTitle}>Recent Searches</Text>
+            <TouchableOpacity 
+              onPress={clearAllSearchHistory}
+              style={styles.clearAllButton}
+            >
+              <Text style={styles.clearAllText}>Clear All</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <FlatList
+            data={searchHistory}
+            keyExtractor={(item, index) => `${item}-${index}`}
+            renderItem={({ item }) => (
+              <View style={styles.historyItem}>
+                <TouchableOpacity
+                  style={styles.historyItemContent}
+                  onPress={() => handleHistorySelect(item)}
+                >
+                  <Image 
+                    source={require('../assets/images/images/images/clock.png')} // clock icon
+                    style={styles.historyIcon}
+                  />
+                  <Text style={styles.historyText}>{item}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.removeHistoryButton}
+                  onPress={() => removeFromSearchHistory(item)}
+                >
+                  <Text style={styles.removeHistoryText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+            style={styles.historyList}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
+      )}
     </View>
   );
+
 
   const renderFloatingButton = () => (
     <TouchableOpacity
@@ -709,7 +880,5 @@ const FindTripScreen: React.FC = () => {
     </View>
   );
 };
-
-
 
 export default FindTripScreen;
