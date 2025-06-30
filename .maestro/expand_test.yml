@@ -1,0 +1,6 @@
+appId: dev.expo.eastestsexample
+---
+- launchApp
+- tapOn: 'Explore.*'
+- tapOn: '.*File-based routing'
+- assertVisible: 'This app has two screens.*'

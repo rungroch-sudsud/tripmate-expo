@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
       color: '#666',
     },
     submitContainer: {
-      flex:0.5,
+      flex:1,
       backgroundColor: '#fff',
       paddingHorizontal: 16,
       paddingVertical: 16,
@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
       paddingVertical: 16,
     },
     submitButton: {
-      flex:0.5,
+      flex:1,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
@@ -1101,7 +1101,141 @@ const styles = StyleSheet.create({
       fontFamily: 'InterTight-Regular',
       flex: 1,
       textAlign:'center'
-    }
+    },
+    selectedDestinations:{
+      backgroundColor: 'rgba(41, 196, 175, 0.1)',
+      borderWidth: 1,
+      paddingHorizontal: 8,
+      paddingTop: 7,
+      borderRadius: 9999,
+      margin: 5,
+      borderColor: '#29C4AF',
+      minWidth: 84.09,
+      height: 38,
+      alignItems: 'center',
+    },
+    selectedDestinationsText:{
+      color: '#29C4AF',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 14,
+    },
+    dropDownOpen:{
+      position: 'absolute', 
+      top: 55, 
+      left: 0,
+      right: 0,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#999',
+      borderRadius: 6,
+      maxHeight: 200,
+      zIndex: 1001, 
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 5, 
+    },
+    dropDownOpenTextInput:{
+      borderWidth: 1,
+      borderColor: '#D1D5DB',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      fontSize: 16,
+      fontFamily: 'InterTight-Regular',
+      lineHeight: 24,
+      color: '#374151',
+      height: 50,
+      backgroundColor: '#FFFFFF',
+    },
+    BeforedropDownOpenTextInput:{
+      borderWidth: 1,
+      borderColor: '#D1D5DB',
+      borderRadius: 8,
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      fontSize: 16,
+      fontFamily: 'InterTight-Regular',
+      lineHeight: 24,
+      color: '#374151',
+      height: 50,
+      backgroundColor: '#FFFFFF',
+    },
+    pPerPersonUnitText:{
+      marginHorizontal: 5,
+      fontWeight: '500',
+      color: '#333',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 16
+    },
+    pPerPersonText:{width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0',fontFamily:'InterTight-Regular'},
+    pPerPersonTextFront:{
+      marginLeft: 5,
+      marginRight: 10,
+      width: '100%',
+      fontWeight: '500',
+      color: '#333',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 16
+    },
+    pPerPersonErrorParentWrapper:{
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#F9FAFBFF',
+      height: 45,
+      borderRadius: 8,
+      justifyContent: 'space-between',
+      marginBottom: 30,
+      marginHorizontal: 20
+    },
+    pPersonHeader:{
+      marginHorizontal: 20,
+      marginBottom: 6,
+      fontWeight: '500',
+      color: '#333',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 16
+    },
+    mParticipantsInput:{
+      width: 100,
+      height: '80%',
+      paddingHorizontal: 5,
+      outlineColor: 'white',
+      backgroundColor: '#F9FAFBFF',
+      flex: 0.45
+    },
+    maxPContainer:{
+        width: '45%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F9FAFBFF',
+        height: 40,
+        paddingHorizontal: 4,
+        borderRadius: 8,
+        marginHorizontal: 20,
+        marginBottom: 30
+    },
+    maxPHeader:{
+      marginHorizontal: 20,
+      marginBottom: 6,
+      fontWeight: '500',
+      color: '#333',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 16
+    },
+    dateFieldHeader:{
+      marginBottom: 10,
+      fontWeight: '500',
+      color: '#333',
+      fontFamily: 'InterTight-Regular',
+      fontSize: 16
+    },
+    
+
   });
 
 
