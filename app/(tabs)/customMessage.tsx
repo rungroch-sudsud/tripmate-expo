@@ -19,29 +19,35 @@ const ProductionCustomMessage: React.FC = () => {
   const tripId = params.tripId as string;
   
   // Fix: Add proper typing and null checks
-  const handleUserClick = async () => {
-    if (!message?.user?.id || !tripId) return;
-    
-    console.log('Target Users:', message.user.id);
-    console.log("Current Trip: ", tripId);
-    console.log(client?.user?.id);
-    try {
-      const response = await axiosInstance.get(`/users/review/eligible/${message.user.id}`, {
-        params: { tripId }
-      });
-      
-      console.log(response.data);
-      
-      // If status is 200, navigate to review page
-      if (response.status === 200) {
-        router.push(`/Review?id=${message.user.id}&tripId=${tripId}`);
-      }
-    } catch (error) {
-      // Handle errors (404, 500, etc.) - just return normally
-      console.error('Error checking review eligibility:', error.response?.status, error.response?.data);
-      // The function will return normally without navigation
+ const handleUserClick = async () => {
+  if (!message?.user?.id || !tripId) return;
+       
+  console.log('Target Users:', message.user.id);
+  console.log("Current Trip: ", tripId);
+  console.log(client?.user?.id);
+  
+  try {
+    const response = await axiosInstance.get(`/users/review/eligible/${message.user.id}`, {
+      params: { tripId }
+    });
+         
+    console.log(response.data);
+         
+    // Check if status is 200 AND user is eligible (data: true)
+    if (response.status === 200 && response.data.data === true) {
+      router.push(`/Review?id=${message.user.id}&tripId=${tripId}`);
+    } else if (response.status === 200 && response.data.data === false) {
+      // User is not eligible for review - handle this case
+      console.log('User is not eligible for review');
+      // You can show a toast message, alert, or handle this however you want
+      // For example: toast.error('You are not eligible to review this user');
     }
-  };
+  } catch (error) {
+    // Handle errors (404, 500, etc.) - just return normally
+    console.error('Error checking review eligibility:', error.response?.status, error.response?.data);
+    // The function will return normally without navigation
+  }
+};
 
   // Fix: Add proper typing for timestamp parameter
   const formatTime = (timestamp: string | Date) => {
