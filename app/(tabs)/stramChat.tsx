@@ -6,7 +6,7 @@ import {
   Window,
   Thread,
   MessageList,
-  MessageInput,
+  MessageInput
 } from 'stream-chat-react';
 import TripCard from './TripCard';
 import type { Channel as StreamChannel } from 'stream-chat';
@@ -20,15 +20,13 @@ import {
   Alert, 
   ActivityIndicator,
   SafeAreaView,
-  BackHandler ,
-  Image
+  BackHandler 
 } from 'react-native';
 import { axiosInstance } from '../lib/axios';
 import { requirements } from '../requirement';
 import CustomChannelHeader from './customChannelHeader';
 import ProductionCustomMessage from './customMessage';
 import 'stream-chat-react/css/v2/index.css'
-
 
 // Enhanced interfaces with better typing
 interface TripParticipant {
@@ -89,6 +87,16 @@ const DEFAULT_AVATAR = 'https://via.placeholder.com/40x40/cccccc/666666?text=�
 const RECONNECTION_DELAY = 2000;
 const MAX_RETRY_ATTEMPTS = 3;
 
+// Singleton Stream Chat client to prevent multiple instances
+let globalStreamClient: StreamChat | null = null;
+
+const getStreamChatClient = () => {
+  if (!globalStreamClient) {
+    globalStreamClient = StreamChat.getInstance(requirements.stream_api_key);
+  }
+  return globalStreamClient;
+};
+
 // Custom hooks for better separation of concerns
 const useTripData = (tripId: string) => {
   const [trip, setTrip] = useState<Trip | null>(null);
@@ -98,19 +106,33 @@ const useTripData = (tripId: string) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Use AbortController to cancel pending requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
   const fetchTripDetails = useCallback(async () => {
     if (!tripId) return null;
+    
+    // Cancel previous request if still pending
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
     
     setLoading(true);
     setError(null);
     
     try {
-      const tripResponse = await axiosInstance.get(`/trips/${tripId}`);
+      const tripResponse = await axiosInstance.get(`/trips/${tripId}`, { signal });
       const tripData = tripResponse.data.data;
       
       if (!tripData) {
         throw new Error('Trip data not found');
       }
+      
+      // Check if request was aborted
+      if (signal.aborted) return null;
       
       setTrip(tripData);
 
@@ -128,13 +150,17 @@ const useTripData = (tripId: string) => {
         ...participantIds
       ]));
 
-      // Fetch all participants concurrently with error handling
+      // Fetch all participants concurrently with error handling and abort signal
       const participantResults = await Promise.allSettled(
         allParticipantIds.map(async (userId: string) => {
-          const userResponse = await axiosInstance.get(`/users/profile/${userId}`);
+          if (signal.aborted) throw new Error('Aborted');
+          const userResponse = await axiosInstance.get(`/users/profile/${userId}`, { signal });
           return userResponse.data?.data;
         })
       );
+
+      // Check if request was aborted after participant fetch
+      if (signal.aborted) return null;
 
       const validParticipants = participantResults
         .filter((result): result is PromiseFulfilledResult<TripParticipant> => 
@@ -148,37 +174,56 @@ const useTripData = (tripId: string) => {
       
       setParticipants(validParticipants);
 
-      // Fetch additional data (non-critical)
-      try {
-        const [travelStylesResponse, servicesResponse] = await Promise.all([
-          axiosInstance.get('/travel-styles'),
-          axiosInstance.get('/services')
-        ]);
+      // Fetch additional data (non-critical) - only if not aborted
+      if (!signal.aborted) {
+        try {
+          const [travelStylesResponse, servicesResponse] = await Promise.all([
+            axiosInstance.get('/travel-styles', { signal }),
+            axiosInstance.get('/services', { signal })
+          ]);
 
-        setTravelStyles(travelStylesResponse.data.data.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          iconImageUrl: item.iconImageUrl,
-          activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
-        })));
+          if (!signal.aborted) {
+            setTravelStyles(travelStylesResponse.data.data.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              iconImageUrl: item.iconImageUrl,
+              activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
+            })));
 
-        setServices(servicesResponse.data.data.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-        })));
-      } catch (additionalDataError) {
-        console.warn('Failed to fetch additional data:', additionalDataError);
+            setServices(servicesResponse.data.data.map((item: any) => ({
+              id: item.id,
+              title: item.title,
+            })));
+          }
+        } catch (additionalDataError) {
+          if (!signal.aborted) {
+            console.warn('Failed to fetch additional data:', additionalDataError);
+          }
+        }
       }
 
       return { tripData, participantProfiles: validParticipants };
     } catch (err) {
+      if (signal.aborted) return null;
+      
       const errorMessage = err instanceof Error ? err.message : 'Failed to load trip details';
       setError(errorMessage);
       throw new Error(errorMessage);
     } finally {
-      setLoading(false);
+      if (!signal.aborted) {
+        setLoading(false);
+      }
     }
   }, [tripId]);
+
+  // Cleanup function to cancel pending requests
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   return {
     trip,
@@ -222,10 +267,6 @@ export default function TripGroupChat() {
   const params = useLocalSearchParams();
   const tripId = params.tripId as string;
 
-
-
-  //Memory Leak Performance
-
   // Hooks
   const { 
     trip, 
@@ -248,14 +289,10 @@ export default function TripGroupChat() {
     error: null
   });
 
-  // Refs
+  // Refs for cleanup and state management
   const isMountedRef = useRef(true);
-  const clientRef = useRef<StreamChat | null>(null);
   const retryCountRef = useRef(0);
-  const [showTripCard, setShowTripCard] = useState(false);
-  const toggleTripCard = () => {
-    setShowTripCard(prevState => !prevState);
-  };
+  const initializationPromiseRef = useRef<Promise<void> | null>(null);
 
   // Memoized values
   const isLoading = useMemo(() => 
@@ -268,117 +305,132 @@ export default function TripGroupChat() {
     [tripError, chatState.error]
   );
 
-  // Chat initialization with retry logic
+  // Chat initialization with retry logic and proper cleanup
   const initializeChat = useCallback(async (tripData: any, participantProfiles: TripParticipant[]) => {
     if (!isMountedRef.current) return;
 
-    try {
-      setChatState(prev => ({ ...prev, isLoading: true, error: null }));
-
-      const user = await getCurrentUser(participantProfiles);
-      console.log('🔵 Initializing chat for user:', user.id);
-
-      let chatClient = clientRef.current;
-      
-      if (!chatClient) {
-        chatClient = StreamChat.getInstance(requirements.stream_api_key);
-        clientRef.current = chatClient;
-      }
-
-      // Handle user connection
-      if (chatClient.userID && chatClient.userID !== user.id) {
-        console.log('🔄 Disconnecting previous user:', chatClient.userID);
-        await chatClient.disconnectUser();
-      }
-
-      if (chatClient.userID !== user.id) {
-        console.log('🔵 Connecting user to Stream Chat:', user.id);
-        await chatClient.connectUser(user, chatClient.devToken(user.id));
-        console.log('✅ User connected successfully');
-      }
-
-      // Prepare all users
-      const allUsers = participantProfiles.map(participant => ({
-        id: participant.userId,
-        name: participant.nickname || participant.fullname,
-        image: participant.profileImageUrl !== 'N/A' 
-          ? participant.profileImageUrl 
-          : DEFAULT_AVATAR
-      }));
-
-      // Upsert users
-      try {
-        await chatClient.upsertUsers(allUsers);
-        console.log('✅ All users upserted successfully');
-      } catch (upsertError) {
-        console.warn('⚠️ Some users may already exist:', upsertError);
-      }
-
-      // Create or access channel
-      const channelId = `trip-${tripId}`;
-      const allMemberIds = allUsers.map(u => u.id);
-      
-      let channel;
-      try {
-        channel = chatClient.channel('messaging', channelId);
-        await channel.query();
-        
-        const currentMembers = Object.keys(channel.state.members || {});
-        const missingMembers = allMemberIds.filter(id => !currentMembers.includes(id));
-        
-        if (missingMembers.length > 0) {
-          console.log('Adding missing members:', missingMembers);
-          await channel.addMembers(missingMembers);
-        }
-      } catch (channelError) {
-        console.log('🆕 Creating new channel:', channelId);
-        
-        channel = chatClient.channel('messaging', channelId, {
-          name: `${tripData.name} - Group Chat`,
-          members: allMemberIds,
-          created_by_id: user.id,
-          trip_id: tripId,
-          trip_name: tripData.name,
-        });
-
-        await channel.create();
-        console.log('✅ Channel created successfully');
-      }
-
-      if (isMountedRef.current) {
-        setChatState({
-          client: chatClient,
-          channel,
-          currentUser: user,
-          isLoading: false,
-          error: null
-        });
-        retryCountRef.current = 0;
-        console.log('✅ Chat initialization complete');
-      }
-    } catch (error) {
-      console.error('❌ Error initializing chat:', error);
-      if (isMountedRef.current) {
-        setChatState(prev => ({
-          ...prev,
-          isLoading: false,
-          error: (error as Error).message || 'Failed to initialize chat'
-        }));
-      }
+    // Prevent multiple simultaneous initializations
+    if (initializationPromiseRef.current) {
+      return initializationPromiseRef.current;
     }
+
+    const initPromise = (async () => {
+      try {
+        setChatState(prev => ({ ...prev, isLoading: true, error: null }));
+
+        const user = await getCurrentUser(participantProfiles);
+        console.log('🔵 Initializing chat for user:', user.id);
+
+        const chatClient = getStreamChatClient();
+
+        // Handle user connection with proper cleanup
+        if (chatClient.userID && chatClient.userID !== user.id) {
+          console.log('🔄 Disconnecting previous user:', chatClient.userID);
+          try {
+            await chatClient.disconnectUser();
+          } catch (disconnectError) {
+            console.warn('Error disconnecting previous user:', disconnectError);
+          }
+        }
+
+        if (chatClient.userID !== user.id) {
+          console.log('🔵 Connecting user to Stream Chat:', user.id);
+          await chatClient.connectUser(user, chatClient.devToken(user.id));
+          console.log('✅ User connected successfully');
+        }
+
+        // Prepare all users
+        const allUsers = participantProfiles.map(participant => ({
+          id: participant.userId,
+          name: participant.nickname || participant.fullname,
+          image: participant.profileImageUrl !== 'N/A' 
+            ? participant.profileImageUrl 
+            : DEFAULT_AVATAR
+        }));
+
+        // Upsert users with error handling
+        try {
+          await chatClient.upsertUsers(allUsers);
+          console.log('✅ All users upserted successfully');
+        } catch (upsertError) {
+          console.warn('⚠️ Some users may already exist:', upsertError);
+        }
+
+        // Create or access channel
+        const channelId = `trip-${tripId}`;
+        const allMemberIds = allUsers.map(u => u.id);
+        
+        let channel;
+        try {
+          channel = chatClient.channel('messaging', channelId);
+          await channel.query();
+          
+          const currentMembers = Object.keys(channel.state.members || {});
+          const missingMembers = allMemberIds.filter(id => !currentMembers.includes(id));
+          
+          if (missingMembers.length > 0) {
+            console.log('Adding missing members:', missingMembers);
+            await channel.addMembers(missingMembers);
+          }
+        } catch (channelError) {
+          console.log('🆕 Creating new channel:', channelId);
+          
+          channel = chatClient.channel('messaging', channelId, {
+            name: `${tripData.name} - Group Chat`,
+            members: allMemberIds,
+            created_by_id: user.id,
+            trip_id: tripId,
+            trip_name: tripData.name,
+          });
+
+          await channel.create();
+          console.log('✅ Channel created successfully');
+        }
+
+        if (isMountedRef.current) {
+          setChatState({
+            client: chatClient,
+            channel,
+            currentUser: user,
+            isLoading: false,
+            error: null
+          });
+          retryCountRef.current = 0;
+          console.log('✅ Chat initialization complete');
+        }
+      } catch (error) {
+        console.error('❌ Error initializing chat:', error);
+        if (isMountedRef.current) {
+          setChatState(prev => ({
+            ...prev,
+            isLoading: false,
+            error: (error as Error).message || 'Failed to initialize chat'
+          }));
+        }
+      } finally {
+        initializationPromiseRef.current = null;
+      }
+    })();
+
+    initializationPromiseRef.current = initPromise;
+    return initPromise;
   }, [tripId, getCurrentUser]);
 
-  // Auto-retry logic
+  // Auto-retry logic with exponential backoff
   const retryInitialization = useCallback(async () => {
-    if (retryCountRef.current >= MAX_RETRY_ATTEMPTS) {
-      console.log('Max retry attempts reached');
+    if (retryCountRef.current >= MAX_RETRY_ATTEMPTS || !isMountedRef.current) {
+      console.log('Max retry attempts reached or component unmounted');
       return;
     }
 
     retryCountRef.current++;
     console.log(`Retrying chat initialization (${retryCountRef.current}/${MAX_RETRY_ATTEMPTS})`);
     
+    const delay = RECONNECTION_DELAY * Math.pow(2, retryCountRef.current - 1); // Exponential backoff
+    
     setTimeout(async () => {
+      if (!isMountedRef.current) return;
+      
       try {
         const tripData = await fetchTripDetails();
         if (tripData && isMountedRef.current) {
@@ -387,29 +439,35 @@ export default function TripGroupChat() {
       } catch (error) {
         console.error('Retry failed:', error);
       }
-    }, RECONNECTION_DELAY * retryCountRef.current);
+    }, delay);
   }, [fetchTripDetails, initializeChat]);
 
-  // Main initialization effect
+  // Main initialization effect with proper dependency management
   useEffect(() => {
     if (!tripId) return;
+
+    let isEffectActive = true;
 
     const initialize = async () => {
       try {
         const tripData = await fetchTripDetails();
-        if (tripData && isMountedRef.current) {
+        if (tripData && isEffectActive && isMountedRef.current) {
           await initializeChat(tripData.tripData, tripData.participantProfiles);
         }
       } catch (error) {
         console.error('Initial setup failed:', error);
-        if (chatState.error && retryCountRef.current < MAX_RETRY_ATTEMPTS) {
+        if (isEffectActive && isMountedRef.current && chatState.error && retryCountRef.current < MAX_RETRY_ATTEMPTS) {
           retryInitialization();
         }
       }
     };
 
     initialize();
-  }, [tripId]); // Removed dependencies to prevent loops
+
+    return () => {
+      isEffectActive = false;
+    };
+  }, [tripId]); // Keep minimal dependencies
 
   // Handle Android back button
   useEffect(() => {
@@ -421,27 +479,33 @@ export default function TripGroupChat() {
     return () => backHandler.remove();
   }, []);
 
-  // Cleanup effect
+  // Cleanup effect with proper Stream Chat disconnect
   useEffect(() => {
     return () => {
       isMountedRef.current = false;
-      if (clientRef.current) {
-        clientRef.current.disconnectUser().catch(console.error);
-        clientRef.current = null;
+      
+      // Cancel any pending initialization
+      if (initializationPromiseRef.current) {
+        initializationPromiseRef.current = null;
       }
+      
+      // Note: We don't disconnect the global client here as it might be used by other components
+      // The global client will be cleaned up when the app closes
     };
   }, []);
 
-  // Event handlers
+  // Memoized event handlers to prevent unnecessary re-renders
   const handleBack = useCallback(() => {
     router.push('/findTrips');
   }, [router]);
 
   const handleRetry = useCallback(async () => {
     retryCountRef.current = 0;
+    initializationPromiseRef.current = null;
+    
     try {
       const tripData = await fetchTripDetails();
-      if (tripData) {
+      if (tripData && isMountedRef.current) {
         await initializeChat(tripData.tripData, tripData.participantProfiles);
       }
     } catch (error) {
@@ -451,8 +515,8 @@ export default function TripGroupChat() {
 
   const handleJoinTrip = useCallback(async (trip: Trip) => {
     try {
-      // Implement join trip logic
       console.log("Join trip:", trip.id);
+      // Implement join trip logic
       // const response = await axiosInstance.post(`/trips/${trip.id}/join`);
       // Handle success
     } catch (error) {
@@ -465,19 +529,14 @@ export default function TripGroupChat() {
       console.log("Trip card pressed");
       
       const userId = await AsyncStorage.getItem('userId');
-      console.log("Trip Pressed");
-      console.log("Trip ID:", trip.id);
-      console.log("Trip Owner ID:", trip.tripOwnerId || trip.tripOwner?.id); // Handle both possible fields
-      console.log("Current User ID:", userId);
+      console.log("Trip Pressed - ID:", trip.id, "Owner:", trip.tripOwnerId, "User:", userId);
       
       if (!userId) {
         console.error('No user ID found in storage');
-        // Handle case where user is not logged in
         Alert.alert('Error', 'Please log in to continue');
         return;
       }
       
-      // Check if user is the trip owner (handle both possible owner ID locations)
       const ownerId = trip.tripOwnerId;
       
       if (userId === ownerId) {
@@ -485,8 +544,6 @@ export default function TripGroupChat() {
         router.push(`/EditTrip?tripId=${trip.id}`);
       } else {
         console.log("View Trip - User is not owner");
-    
-        console.log("User is not the owner, no action taken");
       }
       
     } catch (error) {
@@ -497,8 +554,8 @@ export default function TripGroupChat() {
   
   const handleBookmarkToggle = useCallback(async (trip: Trip) => {
     try {
-      // Implement bookmark logic
       console.log("Bookmark toggle:", trip.id);
+      // Implement bookmark logic
       // const response = await axiosInstance.post(`/trips/${trip.id}/bookmark`);
       // Handle success
     } catch (error) {
@@ -510,6 +567,22 @@ export default function TripGroupChat() {
     // Implement bookmark check logic
     return false;
   }, []);
+
+  // Memoize the trip card to prevent unnecessary re-renders
+  const memoizedTripCard = useMemo(() => {
+    if (!trip) return null;
+    
+    return (
+      <TripCard
+        key={trip.id}
+        trip={trip}
+        isBookmarked={isTripBookmarked(trip.id)}
+        onBookmarkToggle={handleBookmarkToggle}
+        onTripPress={handleTripPress}
+        onJoinTrip={handleJoinTrip}
+      />
+    );
+  }, [trip, isTripBookmarked, handleBookmarkToggle, handleTripPress, handleJoinTrip]);
 
   // Render loading state
   if (isLoading) {
@@ -568,48 +641,19 @@ export default function TripGroupChat() {
       <Stack.Screen options={{ headerShown: false }} />
       <Chat client={chatState.client} theme="messaging light">
         <Channel channel={chatState.channel}>
-      
-        <Window>
-        <CustomChannelHeader 
+          <Window>
+            <CustomChannelHeader 
               participants={participants}
               tripName={trip.name}
               onBack={handleBack}
             />
             
-         {/* Trip Name with Dropdown Icon to toggle TripCard visibility */}
-         <View style={styles.tripNameWrapper}>
-              <Text style={styles.tripName}>{trip.name}</Text>
-              <TouchableOpacity onPress={toggleTripCard}>
-                <Image
-                  source={require('../assets/images/images/images/icon.png')} // Use your dropdown icon
-                  style={styles.dropdownIcon}
-                />
-              </TouchableOpacity>
-            </View>
-            {showTripCard && (
-              <View style={styles.tripCardContainer}>
-                <TripCard
-                key={trip.id}
-                  trip={trip}
-                  isBookmarked={isTripBookmarked(trip.id)}
-                  onBookmarkToggle={handleBookmarkToggle}
-                  onTripPress={handleTripPress}
-                  onJoinTrip={handleJoinTrip}
-                />
-                {/* Wrap Up Button to collapse the TripCard */}
-                <TouchableOpacity onPress={toggleTripCard} style={styles.wrapUpButton}>
-                  <Text style={styles.wrapUpText}>Wrap Up</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-       
+            {memoizedTripCard}
             
-   
-          <MessageList Message={ProductionCustomMessage} />
-       
-              <MessageInput />
-          <Thread />
-        </Window>
+            <MessageList Message={ProductionCustomMessage} />
+            <MessageInput />
+            <Thread />
+          </Window>
         </Channel>
       </Chat>
     </SafeAreaView>
@@ -686,44 +730,5 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: '600',
-  },
-  tripNameWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-  },
-  tripName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  dropdownIcon: {
-    width: 12,
-    height: 12,
-    marginLeft: 8,
-    transform: [{ rotate: '90deg' }], // Rotate icon for dropdown
-  },
-  tripCardContainer: {
-    marginTop: 10,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  wrapUpButton: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  wrapUpText: {
-    fontSize: 14,
-    color: '#007AFF',
-    fontWeight: '500',
   },
 });
