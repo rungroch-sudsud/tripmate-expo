@@ -306,115 +306,148 @@ export default function TripGroupChat() {
   );
 
   // Chat initialization with retry logic and proper cleanup
-  const initializeChat = useCallback(async (tripData: any, participantProfiles: TripParticipant[]) => {
-    if (!isMountedRef.current) return;
+// Helper function to check if error is related to permissions
+const isPermissionError = (error: any) => {
+  return error?.status === 403 || 
+         error?.response?.status === 403 || 
+         error?.code === 403 ||
+         error?.message?.includes('forbidden') ||
+         error?.message?.includes('permission');
+};
 
-    // Prevent multiple simultaneous initializations
-    if (initializationPromiseRef.current) {
-      return initializationPromiseRef.current;
-    }
+// Fixed initializeChat function
+const initializeChat = useCallback(async (tripData: any, participantProfiles: TripParticipant[]) => {
+  if (!isMountedRef.current) return;
+  if (initializationPromiseRef.current) {
+    return initializationPromiseRef.current;
+  }
 
-    const initPromise = (async () => {
-      try {
-        setChatState(prev => ({ ...prev, isLoading: true, error: null }));
+  const initPromise = (async () => {
+    try {
+      setChatState(prev => ({ ...prev, isLoading: true, error: null }));
+      
+      const user = await getCurrentUser(participantProfiles);
+      const chatClient = getStreamChatClient();
 
-        const user = await getCurrentUser(participantProfiles);
-        console.log('🔵 Initializing chat for user:', user.id);
-
-        const chatClient = getStreamChatClient();
-
-        // Handle user connection with proper cleanup
-        if (chatClient.userID && chatClient.userID !== user.id) {
-          console.log('🔄 Disconnecting previous user:', chatClient.userID);
-          try {
-            await chatClient.disconnectUser();
-          } catch (disconnectError) {
-            console.warn('Error disconnecting previous user:', disconnectError);
-          }
+      // Disconnect if necessary (different user)
+      if (chatClient.userID && chatClient.userID !== user.id) {
+        try { 
+          await chatClient.disconnectUser(); 
+        } catch (disconnectError) {
+          console.warn('Disconnect error:', disconnectError);
         }
-
-        if (chatClient.userID !== user.id) {
-          console.log('🔵 Connecting user to Stream Chat:', user.id);
-          await chatClient.connectUser(user, chatClient.devToken(user.id));
-          console.log('✅ User connected successfully');
-        }
-
-        // Prepare all users
-        const allUsers = participantProfiles.map(participant => ({
-          id: participant.userId,
-          name: participant.nickname || participant.fullname,
-          image: participant.profileImageUrl !== 'N/A' 
-            ? participant.profileImageUrl 
-            : DEFAULT_AVATAR
-        }));
-
-        // Upsert users with error handling
-        try {
-          await chatClient.upsertUsers(allUsers);
-          console.log('✅ All users upserted successfully');
-        } catch (upsertError) {
-          console.warn('⚠️ Some users may already exist:', upsertError);
-        }
-
-        // Create or access channel
-        const channelId = `trip-${tripId}`;
-        const allMemberIds = allUsers.map(u => u.id);
-        
-        let channel;
-        try {
-          channel = chatClient.channel('messaging', channelId);
-          await channel.query();
-          
-          const currentMembers = Object.keys(channel.state.members || {});
-          const missingMembers = allMemberIds.filter(id => !currentMembers.includes(id));
-          
-          if (missingMembers.length > 0) {
-            console.log('Adding missing members:', missingMembers);
-            await channel.addMembers(missingMembers);
-          }
-        } catch (channelError) {
-          console.log('🆕 Creating new channel:', channelId);
-          
-          channel = chatClient.channel('messaging', channelId, {
-            name: `${tripData.name} - Group Chat`,
-            members: allMemberIds,
-            created_by_id: user.id,
-            trip_id: tripId,
-            trip_name: tripData.name,
-          });
-
-          await channel.create();
-          console.log('✅ Channel created successfully');
-        }
-
-        if (isMountedRef.current) {
-          setChatState({
-            client: chatClient,
-            channel,
-            currentUser: user,
-            isLoading: false,
-            error: null
-          });
-          retryCountRef.current = 0;
-          console.log('✅ Chat initialization complete');
-        }
-      } catch (error) {
-        console.error('❌ Error initializing chat:', error);
-        if (isMountedRef.current) {
-          setChatState(prev => ({
-            ...prev,
-            isLoading: false,
-            error: (error as Error).message || 'Failed to initialize chat'
-          }));
-        }
-      } finally {
-        initializationPromiseRef.current = null;
       }
-    })();
 
-    initializationPromiseRef.current = initPromise;
-    return initPromise;
-  }, [tripId, getCurrentUser]);
+      // Connect user if not already connected
+      if (chatClient.userID !== user.id) {
+        await chatClient.connectUser(user, chatClient.devToken(user.id));
+      }
+
+      // Prepare all users for the channel
+      const allUsers = participantProfiles.map(participant => ({
+        id: participant.userId,
+        name: participant.nickname || participant.fullname,
+        image: participant.profileImageUrl !== 'N/A' 
+          ? participant.profileImageUrl 
+          : DEFAULT_AVATAR
+      }));
+
+      // Upsert users (create/update user profiles)
+      try { 
+        await chatClient.upsertUsers(allUsers); 
+      } catch (upsertError) {
+        console.warn('Upsert users error:', upsertError);
+      }
+
+      const channelId = `trip-${tripId}`;
+      const allMemberIds = allUsers.map(u => u.id);
+      
+      // Create channel reference
+      let channel = chatClient.channel('messaging', channelId);
+
+      try {
+        // First, try to watch the channel (this will tell us if it exists and if we have access)
+        await channel.watch();
+        
+        // If we successfully watched the channel, check if all members are present
+        const currentMembers = Object.keys(channel.state.members || {});
+        const missingMembers = allMemberIds.filter(id => !currentMembers.includes(id));
+        
+        if (missingMembers.length > 0) {
+          console.log('Adding missing members:', missingMembers);
+          try {
+            await channel.addMembers(missingMembers);
+          } catch (addMembersError) {
+            console.warn('Error adding missing members:', addMembersError);
+            // Continue anyway - the channel exists and current user has access
+          }
+        }
+        
+      } catch (watchError) {
+        console.log('Channel watch failed, creating new channel:', watchError);
+        
+        // Handle permission errors specifically
+        if (isPermissionError(watchError)) {
+          console.error('Permission denied for channel access:', watchError);
+          throw new Error('You do not have permission to access this chat. Please contact the trip organizer.');
+        }
+        
+        // Channel doesn't exist - create it
+        channel = chatClient.channel('messaging', channelId, {
+          name: `${tripData.name} - Group Chat`,
+          members: allMemberIds,
+          created_by_id: user.id,
+          trip_id: tripId,
+          trip_name: tripData.name,
+        });
+        
+        try {
+          await channel.create();
+        } catch (createError) {
+          console.error('Error creating channel:', createError);
+          
+          if (isPermissionError(createError)) {
+            throw new Error('Permission denied when creating chat channel.');
+          }
+          
+          // If creation fails, try to get the channel again (might exist now)
+          channel = chatClient.channel('messaging', channelId);
+          try {
+            await channel.watch();
+          } catch (secondWatchError) {
+            throw new Error(`Failed to create or access channel: ${createError.message}`);
+          }
+        }
+      }
+
+      if (isMountedRef.current) {
+        setChatState({
+          client: chatClient,
+          channel,
+          currentUser: user,
+          isLoading: false,
+          error: null
+        });
+        retryCountRef.current = 0;
+      }
+      
+    } catch (error) {
+      console.error('Chat initialization error:', error);
+      if (isMountedRef.current) {
+        setChatState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: (error as Error).message || 'Failed to initialize chat'
+        }));
+      }
+    } finally {
+      initializationPromiseRef.current = null;
+    }
+  })();
+  
+  initializationPromiseRef.current = initPromise;
+  return initPromise;
+}, [tripId, getCurrentUser]);
 
   // Auto-retry logic with exponential backoff
   const retryInitialization = useCallback(async () => {
