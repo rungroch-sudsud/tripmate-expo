@@ -387,10 +387,69 @@ const initializeChat = useCallback(async (tripData: any, participantProfiles: Tr
         console.log('Channel watch failed, creating new channel:', watchError);
         
         // Handle permission errors specifically
-        if (isPermissionError(watchError)) {
-          console.error('Permission denied for channel access:', watchError);
-          throw new Error('You do not have permission to access this chat. Please contact the trip organizer.');
-        }
+      // Replace the permission error handling section with this:
+if (isPermissionError(watchError)) {
+  console.error('Permission denied for channel access:', watchError);
+  console.log("Owner Permission Required: ", tripData.tripOwnerId);
+  
+  try {
+    const response = await axiosInstance.get(`/users/profile/${tripData.tripOwnerId}`);
+    console.log("Owner Details: ", response.data.data);
+    
+    // Transform the owner data to match Stream Chat's expected format
+    const ownerUserData = {
+      id: response.data.data.userId, // Map userId to id
+      name: response.data.data.nickname || response.data.data.fullname,
+      image: response.data.data.profileImageUrl !== 'N/A' 
+        ? response.data.data.profileImageUrl 
+        : DEFAULT_AVATAR,
+      // Include other relevant fields if needed
+      email: response.data.data.email,
+      fullname: response.data.data.fullname,
+      nickname: response.data.data.nickname
+    };
+    
+    // Disconnect current user first
+    try {
+      await chatClient.disconnectUser();
+    } catch (disconnectError) {
+      console.warn('Disconnect error:', disconnectError);
+    }
+    
+    // Connect as trip owner
+    await chatClient.connectUser(ownerUserData, chatClient.devToken(tripData.tripOwnerId));
+    
+    // Get channel and add missing members
+    let channel = chatClient.channel('messaging', channelId);
+    await channel.watch(); // Watch first to get current state
+    
+    const currentMembers = Object.keys(channel.state.members || {});
+    const missingMembers = allMemberIds.filter(id => !currentMembers.includes(id));
+    
+    if (missingMembers.length > 0) {
+      console.log('Adding missing members as owner:', missingMembers);
+      await channel.addMembers(missingMembers);
+    }
+    
+    // Disconnect owner and reconnect as original user
+    await chatClient.disconnectUser();
+    await chatClient.connectUser(user, chatClient.devToken(user.id));
+    
+    // Get the channel again as the original user
+    channel = chatClient.channel('messaging', channelId);
+    await channel.watch();
+    
+    console.log('Successfully added members and reconnected as original user');
+    
+  } catch (ownerError) {
+    console.error('Error handling owner permission:', ownerError);
+    throw new Error('Failed to resolve permission issue. Please contact the trip organizer.');
+  }
+} else {
+  // Handle other types of watch errors
+  console.log('Channel watch failed, creating new channel:', watchError);
+  // ... rest of your existing channel creation logic
+}
         
         // Channel doesn't exist - create it
         channel = chatClient.channel('messaging', channelId, {
