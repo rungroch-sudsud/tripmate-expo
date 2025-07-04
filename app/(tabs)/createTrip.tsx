@@ -1,4 +1,6 @@
 import React, { useState,useEffect} from 'react';
+import {requirements} from '../requirement'
+import {StreamChat} from 'stream-chat'
 import {
   View,
   Text,
@@ -713,6 +715,60 @@ const ThaiFormScreen = () => {
       console.log("✅ Trip created successfully:", response.data);
       
       resetForm();
+
+       const createdTrip = response.data.data; 
+    const tripId = createdTrip.id;
+    
+    if (tripId && userId) {
+      try {
+        console.log("Creating Stream Chat channel for trip...");
+        
+        // Get or create Stream Chat client
+       
+        const streamClient = StreamChat.getInstance(requirements.stream_api_key);
+        
+        // Get current user profile for Stream Chat
+        const userProfileResponse = await axiosInstance.get(`/users/profile/${userId}`);
+        const userProfile = userProfileResponse.data.data;
+        
+        const streamUser = {
+          id: userId,
+          name: userProfile.nickname || userProfile.fullname,
+          image: userProfile.profileImageUrl !== 'N/A' 
+            ? userProfile.profileImageUrl 
+            : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
+          email: userProfile.email,
+          fullname: userProfile.fullname,
+          nickname: userProfile.nickname
+        };
+        
+        // Connect as trip owner
+        await streamClient.connectUser(streamUser, streamClient.devToken(userId));
+        
+        // Create channel
+        const channelId = `trip-${tripId}`;
+        const channel = streamClient.channel('messaging', channelId, {
+          name: `${formData2.name} - Group Chat`,
+          members: [userId], // Start with just the owner
+          created_by_id: userId,
+          trip_id: tripId,
+          trip_name: formData2.name,
+        });
+        
+        await channel.create();
+        
+        console.log("✅ Stream Chat channel created successfully:", channelId);
+        
+        // Disconnect after creation (optional - depends on your app flow)
+        await streamClient.disconnectUser();
+        
+      } catch (chatError) {
+        console.error('❌ Stream Chat channel creation failed:', chatError);
+        // Don't throw error here - trip creation was successful
+        // You might want to show a warning to the user
+        console.warn('Trip created successfully, but chat channel creation failed. Users can still join the chat later.');
+      }
+    }       
       
        router.push('/findTrips');
 
