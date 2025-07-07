@@ -1669,7 +1669,7 @@ const ThaiFormScreen = () => {
                 style={[
                   styles.wordCountText,
                   // Optional: Change color when approaching limit (90+ characters)
-                  formData.description.length > 90 && { color: 'red' },
+                  formData.description.length > 100 && { color: 'red' },
                 ]}
               >
                 {formData.description.length}/100
