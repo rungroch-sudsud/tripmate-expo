@@ -1149,7 +1149,6 @@ return (
           style={{ height: 16, width: 16, marginHorizontal: 3 }}
           resizeMode="contain"
         />
-        <Text style={styles.pPerPersonTextFront}>ราคาต่อคน</Text>
         <TextInput
           style={styles.pPerPersonText}
           placeholder=''
