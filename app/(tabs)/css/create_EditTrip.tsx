@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     backButton: {
       marginRight:-30,
       marginLeft:-10,
-      padding:15
+      padding:20
     },
     headerTitle: {
       fontSize: 18,
@@ -1172,7 +1172,7 @@ const styles = StyleSheet.create({
       fontFamily: 'InterTight-Regular',
       fontSize: 16
     },
-    pPerPersonText:{width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0',fontFamily:'InterTight-Regular'},
+    pPerPersonText:{width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#F9FAFBFF',fontFamily:'InterTight-Regular'},
     pPerPersonTextFront:{
       marginLeft: 5,
       marginRight: 10,
@@ -1234,7 +1234,10 @@ const styles = StyleSheet.create({
       fontFamily: 'InterTight-Regular',
       fontSize: 16
     },
-    
+    backButtonText: {
+      fontSize: 34,
+      color: '#007bff',
+    },
 
   });
 

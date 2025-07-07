@@ -200,7 +200,7 @@ const Login = () => {
     try {
       console.log("Creating user profile...");
       const response = await axiosInstance.post('/users/profile', profileData, {
-        timeout: 10000, // 10 second timeout
+        timeout: 10000, 
       });
 
       if (response.status === API_STATUS.SUCCESS) {
@@ -380,9 +380,7 @@ const Login = () => {
     // Add navigation to terms page
   }, []);
 
-  const handleBackPress = useCallback(() => {
-    router.push('/');
-  }, [router]);
+
 
   // Loading state
   if (!fontsLoaded) {

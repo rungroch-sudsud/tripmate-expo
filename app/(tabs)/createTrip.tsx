@@ -8,7 +8,6 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  StyleSheet,
   SafeAreaView,
   Image,
   Alert,
@@ -86,7 +85,6 @@ const ThaiFormScreen = () => {
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   
   const [errors, setErrors] = useState({
-    coverImage: '',
     tripName: '',
     startDate: '',
     endDate: '',
@@ -114,7 +112,7 @@ const ThaiFormScreen = () => {
 
   const [formData2, setFormData2] = useState({ name: '' });
   const [maxParticipant, setMaxParticipant] = useState<number | ''>('');
-  const [pricePerPerson, setPricePerPerson] = useState<number | ''>('');
+  const [pricePerPerson, setPricePerPerson] = useState<string>('');
   const [isChecked, setIsChecked] = useState(false);
   
   // Destination state
@@ -292,13 +290,7 @@ const ThaiFormScreen = () => {
     }
   };
 
-  // Validation functions
-  const validateCoverImage = () => {
-    if (!pickedFile2) {
-      return 'กรุณาเลือกรูปภาพหน้าปก';
-    }
-    return '';
-  };
+
   
   const validateTripName = () => {
     if (!formData2.name.trim()) {
@@ -412,7 +404,6 @@ const ThaiFormScreen = () => {
     const dateErrors = validateDates();
     
     const newErrors = {
-      coverImage: validateCoverImage(),
       tripName: validateTripName(),
       startDate: dateErrors.startDate,
       endDate: dateErrors.endDate,
@@ -475,7 +466,7 @@ const ThaiFormScreen = () => {
     setShowEndDatePicker(false);
   };
 
-  const pad = (n: number): string => (n < 10 ? `0${n}` : `${n}`);
+
 
   const wordCount = formData2.name.trim() === ''
     ? 0
@@ -487,11 +478,19 @@ const ThaiFormScreen = () => {
     setMaxParticipant(numberValue);
   };
 
-  const handlePricePerPerson = (text: string) => {
-    const filteredText = text.replace(/[^0-9]/g, '');
-    const numberValue = filteredText ? parseInt(filteredText, 10) : '';
-    setPricePerPerson(numberValue);
-  };
+
+const handlePricePerPerson = (text: string) => {
+  // Keep numbers and decimal point ONLY
+  const filteredText = text.replace(/[^0-9.]/g, '');
+  
+  // Handle multiple decimal points - keep only the first one
+  const parts = filteredText.split('.');
+  const cleanedText = parts.length > 2 
+    ? parts[0] + '.' + parts.slice(1).join('') 
+    : filteredText;
+  
+  setPricePerPerson(cleanedText);
+};
 
   // Destination functions
   const addDestination = (dest: string) => {
@@ -763,7 +762,7 @@ const ThaiFormScreen = () => {
         await streamClient.disconnectUser();
         
       } catch (chatError) {
-        console.error('❌ Stream Chat channel creation failed:', chatError);
+        console.error('Stream Chat channel creation failed:', chatError);
         // Don't throw error here - trip creation was successful
         // You might want to show a warning to the user
         console.warn('Trip created successfully, but chat channel creation failed. Users can still join the chat later.');
@@ -916,7 +915,7 @@ const ThaiFormScreen = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-         <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:20,height:18}}/>
+          <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
@@ -933,10 +932,8 @@ const ThaiFormScreen = () => {
 <TouchableOpacity
   style={[
     styles.uploadBox,
-    errors.coverImage && styles.uploadBoxError
   ]}
   onPress={() => {
-    clearError('coverImage');
     pickImage2();
   }}
 >
@@ -955,7 +952,6 @@ const ThaiFormScreen = () => {
     </View>
   )}
 </TouchableOpacity>
- <ErrorMessage error={errors.coverImage} /> 
 
 
 {/* Trip Name Field with Character Count */}
@@ -1262,16 +1258,15 @@ const ThaiFormScreen = () => {
     fontFamily: 'InterTight-Regular',
     fontSize: 16
   }}>ราคาต่อคน</Text>
-  <TextInput
-    style={{ width: '100%', height: '70%', paddingHorizontal: 5, outlineColor: '#e0e0e0',fontFamily:'InterTight-Regular' }}
-    placeholder=''
-    value={pricePerPerson != '' ? pricePerPerson.toString() : ''}
-    onChangeText={(text) => {
-      handlePricePerPerson(text);
-      if (errors.pricePerPerson) clearError('pricePerPerson');
-    }}
-    keyboardType='numeric'
-  />
+<TextInput 
+  style={styles.pPerPersonText}
+  placeholder=''
+  value={pricePerPerson}
+  onChangeText={(text) => {
+    handlePricePerPerson(text);
+    if (errors.pricePerPerson) clearError('pricePerPerson');
+  }}
+/>
   <Text style={{
     marginHorizontal: 5,
     fontWeight: '500',

@@ -538,7 +538,7 @@ const FindTripScreen: React.FC = () => {
       if (idToken) {
         try {
           await makeJoinRequest(idToken, 'ID Token');
-          router.push(`/stramChat?tripId=${trip.id}`);
+          router.push(`/streamChat?tripId=${trip.id}`);
           return;
         } catch (err) {
           console.warn('Failed with ID Token:', err);

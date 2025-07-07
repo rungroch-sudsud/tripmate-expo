@@ -73,7 +73,7 @@ interface FormData {
 }
 
 interface ValidationErrors {
-  coverImage: string;
+
   tripName: string;
   startDate: string;
   endDate: string;
@@ -204,8 +204,7 @@ const formatDateFromCalendar = (dateString: string): string => {
 
 // Form validation functions
 const createValidationRules = () => ({
-  validateCoverImage: (file: PickedFile | null) => 
-    !file ? 'กรุณาเลือกรูปภาพหน้าปก' : '',
+
     
   validateTripName: (name: string) => {
     if (!name.trim()) return 'กรุณาใส่ชื่อทริป';
@@ -298,7 +297,7 @@ const ThaiFormScreen = () => {
   const [destinations, setDestinations] = useState<string[]>([]);
   const [selectedDestinations, setSelectedDestinations] = useState<string[]>([]);
   const [maxParticipants, setMaxParticipants] = useState<number | ''>('');
-  const [pricePerPerson, setPricePerPerson] = useState<number | ''>('');
+ const [pricePerPerson, setPricePerPerson] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   
@@ -321,7 +320,6 @@ const ThaiFormScreen = () => {
   
   // Validation errors
   const [errors, setErrors] = useState<ValidationErrors>({
-    coverImage: '',
     tripName: '',
     startDate: '',
     endDate: '',
@@ -479,7 +477,6 @@ const ThaiFormScreen = () => {
     
     // Clear any validation errors
     setErrors({
-      coverImage: '',
       tripName: '',
       startDate: '',
       endDate: '',
@@ -530,6 +527,43 @@ const ThaiFormScreen = () => {
       clearError(errorField);
     }
   }, [errors, clearError]);
+
+const handleDecimalInput = useCallback((
+  setter: React.Dispatch<React.SetStateAction<string>>,
+  value: string,
+  errorField: keyof ValidationErrors,
+  maxValue?: number,
+  decimalPlaces?: number
+) => {
+  // Allow digits, decimal point, and comma
+  let filteredText = value.replace(/[^0-9.,]/g, '');
+  
+  // Replace comma with dot for consistent decimal handling
+  filteredText = filteredText.replace(',', '.');
+  
+  // Ensure only one decimal point
+  const parts = filteredText.split('.');
+  if (parts.length > 2) {
+    filteredText = parts[0] + '.' + parts.slice(1).join('');
+  }
+  
+  // Limit decimal places if specified
+  if (decimalPlaces && parts.length > 1) {
+    const decimalPart = parts[1].substring(0, decimalPlaces);
+    filteredText = parts[0] + '.' + decimalPart;
+  }
+  
+  // Check max value only if we have a valid number
+  if (maxValue && filteredText && !isNaN(parseFloat(filteredText))) {
+    const numberValue = parseFloat(filteredText);
+    if (numberValue > maxValue) return;
+  }
+  
+  setter(filteredText);
+  if (errors[errorField]) {
+    clearError(errorField);
+  }
+}, [errors, clearError]);
 
   const toggleSelection = useCallback((id: string, type: 'services' | 'styles') => {
     if (type === 'services') {
@@ -618,7 +652,6 @@ const ThaiFormScreen = () => {
         }
 
         setPickedFile(file);
-        if (errors.coverImage) clearError('coverImage');
       }
     });
   }, [errors, clearError]);
@@ -626,7 +659,6 @@ const ThaiFormScreen = () => {
   // Form validation
   const validateForm = useCallback((): boolean => {
     const newErrors: ValidationErrors = {
-      coverImage: validationRules.validateCoverImage(pickedFile),
       tripName: validationRules.validateTripName(formData.name),
       ...validationRules.validateDates(formData.startDate, formData.endDate),
       maxParticipants: validationRules.validateMaxParticipants(maxParticipants),
@@ -644,7 +676,6 @@ const ThaiFormScreen = () => {
     return Object.values(newErrors).every(error => error === '');
   }, [
     validationRules,
-    pickedFile,
     formData,
     maxParticipants,
     pricePerPerson,
@@ -782,13 +813,13 @@ const ThaiFormScreen = () => {
   travelStyles: categories
     .filter(category => selectedItems.includes(category.id))
     .map(category => category.title),
-  tripCoverImageUrl: pickedFile?.uri,
+  tripCoverImageUrl: pickedFile?.uri || "N/A",
   tripOwner: {
-    id: userInfo?.userId || 'current-user',
-    displayName: userInfo?.fullname || 'ผู้สร้างทริป',
+    id: userInfo?.userId,
+    displayName: userInfo?.fullname,
     firstName: userInfo?.fullname?.split(' ')[0] || '',
     lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
-    profileImageUrl: userInfo?.profileImageUrl || 'https://via.placeholder.com/150',
+    profileImageUrl: userInfo?.profileImageUrl || "N/A",
     email: userInfo?.email || '',
     phoneNumber: userInfo?.phoneNumber || ''
   },
@@ -916,7 +947,7 @@ return (
     <Stack.Screen options={{ headerShown: false }} />
     <View style={styles.header}>
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-        <Image source={require('../assets/images/images/images/image15.png')} style={{marginLeft:15,width:20,height:18}}/>
+         <Text style={styles.backButtonText}>←</Text>
       </TouchableOpacity>
       <Text style={styles.headerTitle}>แก้ไขทริป</Text>
     </View>
@@ -927,10 +958,9 @@ return (
         <TouchableOpacity
           style={[
             styles.uploadBox,
-            errors.coverImage && styles.uploadBoxError
           ]}
           onPress={() => {
-            clearError('coverImage');
+
             pickImage();
           }}
         >
@@ -1150,13 +1180,12 @@ return (
           resizeMode="contain"
         />
         <Text style={styles.pPerPersonTextFront}>ราคาต่อคน</Text>
-        <TextInput
-          style={styles.pPerPersonText}
-          placeholder=''
-          value={pricePerPerson !== '' ? pricePerPerson.toString() : ''}
-          onChangeText={(text) => handleNumberInput(setPricePerPerson, text, 'pricePerPerson')}
-          keyboardType='numeric'
-        />
+      <TextInput
+  style={styles.pPerPersonText}
+  placeholder='0.00'
+  value={pricePerPerson}
+  onChangeText={(text) => handleDecimalInput(setPricePerPerson, text, 'pricePerPerson')}
+/>
         <Text style={styles.pPerPersonUnitText}>บาท</Text>
       </View>
      

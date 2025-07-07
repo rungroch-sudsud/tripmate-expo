@@ -18,7 +18,8 @@ import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/nativ
 import { axiosInstance } from '../lib/axios';
 import { useFonts } from 'expo-font';
 import { getAuth, signOut } from 'firebase/auth';
-import  styles from './css/travelstyle_styles'
+import styles from './css/travelstyle_styles'
+
 interface Category {
   id: string;
   title: string;
@@ -52,6 +53,7 @@ const TravelStyleScreen: React.FC = () => {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
   const progressAnimation = useRef(new Animated.Value(33.33)).current;
 
   // Memoized callback for fetchEmail
@@ -64,50 +66,6 @@ const TravelStyleScreen: React.FC = () => {
       console.error('Error fetching email:', error);
     }
   }, []);
-
-
-  const fetchUserProfile = useCallback(async (userId: string): Promise<void> => {
-    try {
-      setLoading(true);
-      const response = await axiosInstance.get(`/users/profile/${userId}`);
-      const userProfile = response.data.data;
-      const userTravelStyles = userProfile.travelStyles || [];
-      
-      // Log the data from API first to see what we're getting
-      console.log('API returned travel styles:', userTravelStyles);
-      
-      // If userTravelStyles contains titles, we need to map them to IDs
-      // Wait for categories to be loaded first, then map titles to IDs
-      if (categories.length > 0) {
-      if(userProfile.age!==-999){
-        const travelStyleIds = userTravelStyles.map((styleTitle: string) => {
-          const matchingCategory = categories.find(cat => cat.title === styleTitle);
-          return matchingCategory ? matchingCategory.id : null;
-        }).filter((id: string | null) => id !== null); // Remove null values
-        
-        console.log('Mapped travel style IDs:', travelStyleIds);
-        setSelectedItems(travelStyleIds);
-      }
-      else{
-        setSelectedItems(userTravelStyles);
-      }
-      } else {
-        // If categories aren't loaded yet, assume userTravelStyles are already IDs
-        console.log('Setting travel styles as IDs:', userTravelStyles);
-        setSelectedItems(userTravelStyles);
-      }
-      
-    } catch (error) {
-      console.error("User Profile Fetching Error:", error);
-      setSelectedItems([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [categories]); // Add categories as dependency
-
-
-
-
 
   // Memoized callback for fetchTravelStyles
   const fetchTravelStyles = useCallback(async (): Promise<void> => {
@@ -124,6 +82,7 @@ const TravelStyleScreen: React.FC = () => {
       }));
       
       setCategories(mappedCategories);
+      return mappedCategories;
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
       Alert.alert(
@@ -132,8 +91,42 @@ const TravelStyleScreen: React.FC = () => {
         [{ text: 'OK' }]
       );
       setCategories([]);
+      return [];
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const fetchUserProfile = useCallback(async (userId: string, categoriesData: Category[]): Promise<void> => {
+    try {
+      const response = await axiosInstance.get(`/users/profile/${userId}`);
+      const userProfile = response.data.data;
+      const userTravelStyles = userProfile.travelStyles || [];
+      
+      console.log('API returned travel styles:', userTravelStyles);
+      console.log('Available categories:', categoriesData);
+      
+      // If userTravelStyles contains titles, map them to IDs
+      if (userProfile.age !== -999) {
+        const travelStyleIds = userTravelStyles.map((styleTitle: string) => {
+          const matchingCategory = categoriesData.find(cat => cat.title === styleTitle);
+          return matchingCategory ? matchingCategory.id : null;
+        }).filter((id: string | null) => id !== null);
+        
+        console.log('Mapped travel style IDs:', travelStyleIds);
+        setSelectedItems(travelStyleIds);
+      } else {
+        // Assume userTravelStyles are already IDs
+        console.log('Setting travel styles as IDs:', userTravelStyles);
+        setSelectedItems(userTravelStyles);
+      }
+      
+      setProfileLoaded(true);
+      
+    } catch (error) {
+      console.error("User Profile Fetching Error:", error);
+      setSelectedItems([]);
+      setProfileLoaded(true);
     }
   }, []);
 
@@ -142,24 +135,7 @@ const TravelStyleScreen: React.FC = () => {
     fetchEmail();
   }, [fetchEmail]);
 
-  // useFocusEffect to clear selected items when screen is focused
-  useFocusEffect(
-    useCallback(() => {
-      // Clear selected items when the screen loses focus
-      return () => {
-        setSelectedItems([]);
-      };
-    }, [])
-  );
-
-  // Effect for clearing selected items when navigating away
-  useEffect(() => {
-    return () => {
-      setSelectedItems([]);
-    };
-  }, [router]);
-
-  // Effect for animation and fetching travel styles
+  // Effect for animation and initial data loading
   useEffect(() => {
     const animateProgress = () => {
       Animated.timing(progressAnimation, {
@@ -170,29 +146,40 @@ const TravelStyleScreen: React.FC = () => {
     };
 
     const timer = setTimeout(animateProgress, 300);
-    fetchTravelStyles();
+    
+    // Initial load of categories and user profile
+    const loadInitialData = async () => {
+      try {
+        const categoriesData = await fetchTravelStyles();
+        const userId = await AsyncStorage.getItem('userId');
+        
+        if (userId && categoriesData.length > 0) {
+          await fetchUserProfile(userId, categoriesData);
+        }
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+
+    loadInitialData();
 
     return () => clearTimeout(timer);
-  }, [fetchTravelStyles]);
+  }, []);
 
-
+  // Only reload profile data when screen is focused AND profile hasn't been loaded yet
   useFocusEffect(
     useCallback(() => {
-      const fetchProfileData = async () => {
-        const userId = await AsyncStorage.getItem('userId');
-        if (userId) {
-          // Make sure categories are loaded before fetching profile
-          if (categories.length === 0) {
-            await fetchTravelStyles();
+      const reloadProfileIfNeeded = async () => {
+        if (!profileLoaded && categories.length > 0) {
+          const userId = await AsyncStorage.getItem('userId');
+          if (userId) {
+            await fetchUserProfile(userId, categories);
           }
-          await fetchUserProfile(userId);
-        } else {
-          console.error("User ID is not available");
         }
       };
-  
-      fetchProfileData();
-    }, [fetchUserProfile, categories, fetchTravelStyles])
+
+      reloadProfileIfNeeded();
+    }, [profileLoaded, categories, fetchUserProfile])
   );
 
   const toggleSelection = useCallback((id: string): void => {
@@ -379,6 +366,5 @@ const TravelStyleScreen: React.FC = () => {
     </>
   );
 };
-
 
 export default TravelStyleScreen;

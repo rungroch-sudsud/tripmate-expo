@@ -852,7 +852,12 @@ const ProfileForm: React.FC = () => {
                 style={[styles.input, errors.age && styles.inputError]}
                 onChangeText={(text) => {
                   const numericText = text.replace(/[^0-9]/g, '');
-                  setFormData({ ...formData, age: numericText });
+                  let age=parseInt(numericText,10)
+
+                  if(!isNaN(age) && age>120){
+                    age=120
+                  }
+                  setFormData({ ...formData, age: isNaN(age)?numericText:age.toString() });
                   if (errors.age) setErrors({ ...errors, age: undefined });
                 }}
                 keyboardType="numeric"
