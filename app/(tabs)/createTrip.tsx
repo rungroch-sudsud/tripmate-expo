@@ -1,66 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { requirements } from '../requirement';
-import { StreamChat } from 'stream-chat';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
+  ActivityIndicator,
+  Alert,
+  Image,
   Modal,
+  SafeAreaView,
+  ScrollView,
+  Text,
   TextInput,
   TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  SafeAreaView,
-  Image,
-  Alert,
-  ActivityIndicator,
+  View,
 } from 'react-native';
+import { StreamChat } from 'stream-chat';
+import { requirements } from '../requirement';
 
-import { router, Stack } from 'expo-router';
-import { launchImageLibrary } from 'react-native-image-picker';
-import { axiosInstance } from '../lib/axios';
 import '@expo-google-fonts/inter';
-import { Calendar } from 'react-native-calendars';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
+import { router, Stack } from 'expo-router';
+import { Calendar } from 'react-native-calendars';
+import { launchImageLibrary } from 'react-native-image-picker';
+import {
+  CREATE_TRIP_ERROR_STATE,
+  CREATE_TRIP_INITIAL_FORM_DATA,
+} from '../features/trip/constants/trip-form.constant';
+import {
+  Category,
+  FormData2Fields,
+  PickedFile,
+  Service,
+} from '../features/trip/schemas/trip.schema';
+import { axiosInstance } from '../lib/axios';
+import { ApiResponse, ServicesResponse } from '../shared/schemas/api.schema';
+import {
+  formatDateInput,
+  formatDateToCalendar,
+  validateDate,
+} from '../shared/utils/date.util';
+import { convertBase64ToFile } from '../shared/utils/file.util';
 import TripCard from './TripCard';
 import styles from './css/create_EditTrip';
-const MAX_WORDS = 40;
-interface Service {
-  id: string;
-  title: string;
-}
-
-interface Category {
-  id: string;
-  title: string;
-  iconImageUrl: string;
-  activeIconImageUrl?: string;
-}
-type PickedFile = {
-  uri: string;
-  type: string;
-  name: string;
-  size?: number;
-  base64Data?: string;
-  isBase64?: boolean;
-};
-interface ApiResponse {
-  data: {
-    id: string;
-    title: string;
-    iconImageUrl: string;
-    activeIconImageUrl?: string;
-  }[];
-}
-
-interface ServicesResponse {
-  data: {
-    id: string;
-    title: string;
-  }[];
-}
+import { validateTripName } from '../features/trip/utils/trip-form.util';
 
 const ThaiFormScreen = () => {
+  const [formData, setFormData] = useState(CREATE_TRIP_INITIAL_FORM_DATA);
+
+  const [errors, setErrors] = useState(CREATE_TRIP_ERROR_STATE);
+
   const [fontsLoaded] = useFonts({
     'InterTight-Black': require('../assets/fonts/InterTight-Black.ttf'),
     'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
@@ -78,34 +64,9 @@ const ThaiFormScreen = () => {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
 
-  const [errors, setErrors] = useState({
-    coverImage: '',
-    tripName: '',
-    startDate: '',
-    endDate: '',
-    maxParticipants: '',
-    pricePerPerson: '',
-    services: '',
-    travelStyles: '',
-    destinations: '',
-    atmosphere: '',
-    details: '',
-    terms: '',
-  });
-
   const [isValidating, setIsValidating] = useState(false);
 
-  const [formData, setFormData] = useState({
-    name: '',
-    startDate: '',
-    endDate: '',
-    description: '',
-    selectedOptions: [] as string[],
-    attachments: 0,
-    details: '',
-  });
-
-  const [formData2, setFormData2] = useState({ name: '' });
+  const [formData2, setFormData2] = useState<FormData2Fields>({ name: '' });
   const [maxParticipant, setMaxParticipant] = useState<number | ''>('');
   const [pricePerPerson, setPricePerPerson] = useState<number | ''>('');
   const [isChecked, setIsChecked] = useState(false);
@@ -135,21 +96,6 @@ const ThaiFormScreen = () => {
   };
 
   const isServiceChecked = (id: string) => selectedServices.includes(id);
-
-  const convertBase64ToFile = (
-    base64Uri: string,
-    filename: string,
-    mimeType: string
-  ) => {
-    const base64Data = base64Uri.split(',')[1];
-    return {
-      uri: base64Uri,
-      base64Data: base64Data,
-      type: mimeType,
-      name: filename,
-      isBase64: true,
-    };
-  };
 
   const pickImage2 = () => {
     const options: any = {
@@ -275,35 +221,10 @@ const ThaiFormScreen = () => {
     }
   };
 
-  const formatDateInput = (text: string): string => {
-    const cleaned = text.replace(/\D/g, '');
-
-    if (cleaned.length <= 2) {
-      return cleaned;
-    } else if (cleaned.length <= 4) {
-      return `${cleaned.slice(0, 2)}/${cleaned.slice(2)}`;
-    } else {
-      return `${cleaned.slice(0, 2)}/${cleaned.slice(2, 4)}/${cleaned.slice(
-        4,
-        8
-      )}`;
-    }
-  };
-
   // Validation functions
   const validateCoverImage = () => {
     if (!pickedFile2) {
       return 'กรุณาเลือกรูปภาพหน้าปก';
-    }
-    return '';
-  };
-
-  const validateTripName = () => {
-    if (!formData2.name.trim()) {
-      return 'กรุณาใส่ชื่อทริป';
-    }
-    if (wordCount > MAX_WORDS) {
-      return `ชื่อทริปต้องไม่เกิน ${MAX_WORDS} คำ`;
     }
     return '';
   };
@@ -422,7 +343,7 @@ const ThaiFormScreen = () => {
 
     const newErrors = {
       coverImage: validateCoverImage(),
-      tripName: validateTripName(),
+      tripName: validateTripName(formData2),
       startDate: dateErrors.startDate,
       endDate: dateErrors.endDate,
       maxParticipants: validateMaxParticipants(),
@@ -443,30 +364,6 @@ const ThaiFormScreen = () => {
 
   const clearError = (field: keyof typeof errors) => {
     setErrors((prev) => ({ ...prev, [field]: '' }));
-  };
-
-  const validateDate = (dateString: string): boolean => {
-    const regex = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-    const match = dateString.match(regex);
-
-    if (!match) return false;
-
-    const day = parseInt(match[1], 10);
-    const month = parseInt(match[2], 10);
-    const year = parseInt(match[3], 10);
-
-    const date = new Date(year, month - 1, day);
-    return (
-      date.getDate() === day &&
-      date.getMonth() === month - 1 &&
-      date.getFullYear() === year
-    );
-  };
-
-  const formatDateToCalendar = (dateString: string): string => {
-    if (!dateString || !validateDate(dateString)) return '';
-    const [day, month, year] = dateString.split('/');
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   };
 
   const formatDateFromCalendar = (dateString: string): string => {
