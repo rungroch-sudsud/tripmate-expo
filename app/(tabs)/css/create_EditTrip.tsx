@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 16,
-    marginBottom: 10, // Add consistent bottom margin
   },
   fieldContainer: {
     marginBottom: 20,
@@ -97,7 +96,6 @@ const styles = StyleSheet.create({
   dateContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20, // Reduced from 30 to 20
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,

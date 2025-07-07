@@ -1178,8 +1178,6 @@ const ThaiFormScreen = () => {
             </View>
           </Modal>
 
-          {/* End Date Calendar Modal */}
-
           <Modal
             visible={showEndDatePicker}
             transparent={true}
@@ -1289,7 +1287,6 @@ const ThaiFormScreen = () => {
           </View>
         </View>
         <View style={{ paddingLeft: 20 }}>
-          {' '}
           <ErrorMessage error={errors.maxParticipants} />{' '}
         </View>
 
