@@ -19,6 +19,16 @@ export type PickedFile = {
   isBase64?: boolean;
 };
 
+export interface FormDataFields {
+  name: string;
+  startDate: string;
+  endDate: string;
+  description: string;
+  selectedOptions: string[];
+  attachments: number;
+  details: string;
+}
+
 export type FormData2Fields = {
   name: string;
 };

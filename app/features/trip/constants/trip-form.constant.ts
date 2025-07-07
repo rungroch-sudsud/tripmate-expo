@@ -1,3 +1,5 @@
+import { FormDataFields } from '../schemas/trip-form.schema';
+
 export const CREATE_TRIP_ERROR_STATE = {
   coverImage: '',
   tripName: '',
@@ -13,7 +15,7 @@ export const CREATE_TRIP_ERROR_STATE = {
   terms: '',
 };
 
-export const CREATE_TRIP_INITIAL_FORM_DATA = {
+export const CREATE_TRIP_INITIAL_FORM_DATA: FormDataFields = {
   name: '',
   startDate: '',
   endDate: '',

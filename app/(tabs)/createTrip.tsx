@@ -27,9 +27,15 @@ import {
 import {
   Category,
   FormData2Fields,
+  FormDataFields,
   PickedFile,
   Service,
-} from '../features/trip/schemas/trip.schema';
+} from '../features/trip/schemas/trip-form.schema';
+import {
+  createTripFromFormData,
+  isServiceChecked,
+  validateTripName,
+} from '../features/trip/utils/trip-form.util';
 import { axiosInstance } from '../lib/axios';
 import { ApiResponse, ServicesResponse } from '../shared/schemas/api.schema';
 import {
@@ -40,10 +46,11 @@ import {
 import { convertBase64ToFile } from '../shared/utils/file.util';
 import TripCard from './TripCard';
 import styles from './css/create_EditTrip';
-import { validateTripName } from '../features/trip/utils/trip-form.util';
 
 const ThaiFormScreen = () => {
-  const [formData, setFormData] = useState(CREATE_TRIP_INITIAL_FORM_DATA);
+  const [formData, setFormData] = useState<FormDataFields>(
+    CREATE_TRIP_INITIAL_FORM_DATA
+  );
 
   const [errors, setErrors] = useState(CREATE_TRIP_ERROR_STATE);
 
@@ -80,9 +87,6 @@ const ThaiFormScreen = () => {
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
   const [userInfo, setUserInfo] = useState<any>(null);
 
-  // Constants
-  const MAX_WORDS = 20; // Define this constant
-
   // Helper functions
   const handleBack = async () => {
     resetForm();
@@ -94,8 +98,6 @@ const ThaiFormScreen = () => {
       prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
     );
   };
-
-  const isServiceChecked = (id: string) => selectedServices.includes(id);
 
   const pickImage2 = () => {
     const options: any = {
@@ -295,7 +297,7 @@ const ThaiFormScreen = () => {
 
   const validateServices = () => {
     const checkedServices = services.filter((service) =>
-      isServiceChecked(service.id)
+      isServiceChecked(service.id, selectedServices)
     );
     if (checkedServices.length === 0) {
       return 'กรุณาเลือกสิ่งที่รวมในราคาอย่างน้อย 1 รายการ';
@@ -758,50 +760,18 @@ const ThaiFormScreen = () => {
     }
   };
 
-  const convertDate = (dateStr: string) => {
-    if (!dateStr) return new Date().toISOString();
-    const [day, month, year] = dateStr.split('/');
-    const date = new Date(`${month}/${day}/${year}`);
-    return isNaN(date.getTime())
-      ? new Date().toISOString()
-      : date.toISOString();
-  };
-
-  const createTripFromFormData = () => {
-    const trip = {
-      id: 'preview-trip',
-      name: formData2.name,
-      destinations: selected,
-      startDate: convertDate(formData.startDate),
-      endDate: convertDate(formData.endDate),
-      maxParticipants: parseInt(maxParticipant.toString()) || 0,
-      participants: [],
-      pricePerPerson: pricePerPerson,
-      detail: formData.details,
-      groupAtmosphere: formData.description,
-      includedServices: services
-        .filter((service) => isServiceChecked(service.id))
-        .map((service) => service.title),
-      travelStyles: categories
-        .filter((category) => selectedItems.includes(category.id))
-        .map((category) => category.title),
-      tripCoverImageUrl: pickedFile2?.uri,
-      tripOwner: {
-        id: userInfo?.userId,
-        displayName: userInfo?.fullname,
-        firstName: userInfo?.fullname?.split(' ')[0] || '',
-        lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
-        profileImageUrl:
-          userInfo?.profileImageUrl || 'https://via.placeholder.com/40',
-        age: userInfo?.age,
-        travelStyles: userInfo?.travelStyles || [],
-        fullname: userInfo?.fullname || 'ผู้สร้างทริป',
-      },
-      fullname: formData2.name || 'ชื่อทริป',
-    };
-
-    return trip;
-  };
+  const tripData = createTripFromFormData({
+    formData,
+    formData2,
+    selectedDestinations: selected,
+    maxParticipants: parseInt(maxParticipant.toString()) || 0,
+    pricePerPerson: parseInt(pricePerPerson.toString()) || 0,
+    includedServices: services,
+    userInfo,
+    categories,
+    selectedTravelStyles: selectedItems,
+    pickedFile2: pickedFile2 || ({} as PickedFile),
+  });
 
   const handleBookmarkToggle = (trip: any) => {
     console.log('Bookmark toggled for trip:', trip.id);
@@ -1284,7 +1254,8 @@ const ThaiFormScreen = () => {
                   <View
                     style={[
                       styles.checkboxInner,
-                      isServiceChecked(service.id) && styles.checked,
+                      isServiceChecked(service.id, selectedServices) &&
+                        styles.checked,
                     ]}
                   />
                 </TouchableOpacity>
@@ -1606,7 +1577,7 @@ const ThaiFormScreen = () => {
         </Text>
         {userInfo && (
           <TripCard
-            trip={createTripFromFormData()}
+            trip={tripData}
             isBookmarked={false} // Set based on your bookmark state
             onBookmarkToggle={handleBookmarkToggle}
             onTripPress={handleTripPress}

@@ -36,3 +36,10 @@ export function formatDateInput(text: string): string {
     )}`;
   }
 }
+
+export function convertDate(dateStr: string) {
+  if (!dateStr) return new Date().toISOString();
+  const [day, month, year] = dateStr.split('/');
+  const date = new Date(`${month}/${day}/${year}`);
+  return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+}
