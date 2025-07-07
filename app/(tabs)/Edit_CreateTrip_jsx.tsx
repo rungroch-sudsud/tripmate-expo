@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState,useCallback,useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { Calendar } from 'react-native-calendars';
+
+
 
  const ErrorMessage = ({ error }: { error: string }) => {
     if (!error) return null;
@@ -681,14 +683,46 @@ export const DestinationsComponent = ({
 };
 
 // 8. Atmosphere Input Component
-export const AtmosphereInputComponent = ({ 
-  value, 
-  onChangeText, 
-  error, 
+export const AtmosphereInputComponent = ({
+  value,
+  onChangeText,
+  error,
   clearError,
   styles,
   isEditMode = false
 }) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Debounce function
+  const debounce = useCallback((func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+  // Debounced version of onChangeText
+  const debouncedOnChangeText = useCallback(
+    debounce((text) => {
+      onChangeText(text);
+    }, 150), // 150ms delay
+    [onChangeText]
+  );
+
+  // Update local value when prop changes (for external updates)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleTextChange = (text) => {
+    if (text.length <= 100) {
+      setLocalValue(text); // Update local state immediately
+      debouncedOnChangeText(text); // Update parent state with debounce
+      if (error) clearError('atmosphere');
+    }
+  };
+
   return (
     <View style={{ marginBottom: 30, marginTop: -20, marginHorizontal: 20 }}>
       <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
@@ -700,19 +734,19 @@ export const AtmosphereInputComponent = ({
           ]}
           multiline
           numberOfLines={4}
-          value={value}
-          onChangeText={onChangeText}
+          value={localValue} // Use local state for immediate updates
+          onChangeText={handleTextChange}
           placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
           placeholderTextColor="#888"
           maxLength={100}
         />
-
+        
         {(!isEditMode ? !error : true) && (
           <Text style={[
             styles.wordCountText,
-            value.length > 90 && { color: 'red' }
+            localValue.length > 90 && { color: 'red' }
           ]}>
-            {value.length}/100
+            {localValue.length}/100
           </Text>
         )}
         
@@ -723,14 +757,44 @@ export const AtmosphereInputComponent = ({
 };
 
 // 9. Details Input Component
-export const DetailsInputComponent = ({ 
-  value, 
-  onChangeText, 
-  error, 
+export const DetailsInputComponent = ({
+  value,
+  onChangeText,
+  error,
   clearError,
   styles,
   isEditMode = false
 }) => {
+  const [localValue, setLocalValue] = useState(value);
+
+  // Debounce function
+  const debounce = useCallback((func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+  // Debounced version of onChangeText
+  const debouncedOnChangeText = useCallback(
+    debounce((text) => {
+      onChangeText(text);
+    }, 150), // 150ms delay
+    [onChangeText]
+  );
+
+  // Update local value when prop changes (for external updates)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleTextChange = (text) => {
+    setLocalValue(text); // Update local state immediately
+    debouncedOnChangeText(text); // Update parent state with debounce
+    // Error clearing is handled in parent component's onChangeText
+  };
+
   return (
     <View style={styles.container3}>
       <Text style={styles.label}>รายละเอียดทั่วไป</Text>
@@ -741,8 +805,8 @@ export const DetailsInputComponent = ({
         ]}
         multiline
         numberOfLines={4}
-        value={value}
-        onChangeText={onChangeText}
+        value={localValue} // Use local state for immediate updates
+        onChangeText={handleTextChange}
         placeholder='เขียนรายละเอียดทริปของคุณ...'
         placeholderTextColor="#888"
       />

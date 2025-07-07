@@ -20,7 +20,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import TripCard from './TripCard';
 import styles from './css/create_EditTrip';
-
+import {requirements} from '../requirement'
+import { StreamChat } from 'stream-chat';
 // Constants
 const MAX_WORDS = 40;
 const MAX_TRIP_NAME_LENGTH = 50;
@@ -685,106 +686,161 @@ const handleDecimalInput = useCallback((
   ]);
 
   // Submit handler
-  const handleSubmit = useCallback(async () => {
-    if (!validateForm()) {
-      return;
-    }
+const handleSubmit = useCallback(async () => {
+  if (!validateForm()) {
+    return;
+  }
 
-    try {
-      setUploading(true);
+  try {
+    setUploading(true);
 
-      const travelStyleIds = categories
-        .filter(category => selectedItems.includes(category.id))
-        .map(category => category.id);
+    const travelStyleIds = categories
+      .filter(category => selectedItems.includes(category.id))
+      .map(category => category.id);
 
-      const updatePayload = {
-        name: formData.name.trim(),
-        startDate: formatDateToAPI(formData.startDate),
-        endDate: formatDateToAPI(formData.endDate),
-        destinations: selectedDestinations,
-        maxParticipants: parseInt(maxParticipants.toString()),
-        pricePerPerson: parseFloat(pricePerPerson.toString()),
-        includedServices: selectedServices,
-        detail: formData.details || '',
-        travelStyles: travelStyleIds,
-        groupAtmosphere: formData.description || '',
-        status: 'published'
-      };
+    const updatePayload = {
+      name: formData.name.trim(),
+      startDate: formatDateToAPI(formData.startDate),
+      endDate: formatDateToAPI(formData.endDate),
+      destinations: selectedDestinations,
+      maxParticipants: parseInt(maxParticipants.toString()),
+      pricePerPerson: parseFloat(pricePerPerson.toString()),
+      includedServices: selectedServices,
+      detail: formData.details || '',
+      travelStyles: travelStyleIds,
+      groupAtmosphere: formData.description || '',
+      status: 'published'
+    };
 
-      const idToken = await AsyncStorage.getItem('googleIdToken');
+    const idToken = await AsyncStorage.getItem('googleIdToken');
+    const userId = await AsyncStorage.getItem('userId');
 
-      // Update trip details
-      await axiosInstance.put(`/trips/${tripId}`, updatePayload, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${idToken}`
-        },
-        timeout: 60000,
-      });
+    // Update trip details
+    await axiosInstance.put(`/trips/${tripId}`, updatePayload, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`
+      },
+      timeout: 60000,
+    });
 
-      // Update cover image if changed
-      if (pickedFile && pickedFile.uri !== originalTripData?.tripCoverImageUrl) {
-        try {
-          const imageFormData = new FormData();
+    // Update cover image if changed
+    if (pickedFile && pickedFile.uri !== originalTripData?.tripCoverImageUrl) {
+      try {
+        const imageFormData = new FormData();
+        
+        if (pickedFile.isBase64 && pickedFile.base64Data) {
+          const response = await fetch(`data:${pickedFile.type};base64,${pickedFile.base64Data}`);
+          const blob = await response.blob();
+          imageFormData.append('file', blob, pickedFile.name);
+        } else {
+          const fileObj = {
+            uri: pickedFile.uri,
+            type: pickedFile.type || 'image/jpeg',
+            name: pickedFile.name || 'image.jpg',
+          } as any;
           
-          if (pickedFile.isBase64 && pickedFile.base64Data) {
-            const response = await fetch(`data:${pickedFile.type};base64,${pickedFile.base64Data}`);
-            const blob = await response.blob();
-            imageFormData.append('file', blob, pickedFile.name);
-          } else {
-            const fileObj = {
-              uri: pickedFile.uri,
-              type: pickedFile.type || 'image/jpeg',
-              name: pickedFile.name || 'image.jpg',
-            } as any;
-            
-            imageFormData.append('file', fileObj);
-          }
-
-          await axiosInstance.patch(`/trips/${tripId}/cover-image`, imageFormData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${idToken}`
-            },
-            timeout: 60000,
-          });
-        } catch (imageError) {
-          console.error('Image update error:', imageError);
+          imageFormData.append('file', fileObj);
         }
-      }
 
-
-    } catch (error) {
-      console.error('Trip update error:', error);
-      
-      let errorMessage = 'ไม่สามารถอัปเดตทริปได้';
-      
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        const serverMessage = axiosError.response?.data?.message;
-        if (serverMessage) {
-          errorMessage = serverMessage;
-        }
+        await axiosInstance.patch(`/trips/${tripId}/cover-image`, imageFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${idToken}`
+          },
+          timeout: 60000,
+        });
+      } catch (imageError) {
+        console.error('Image update error:', imageError);
       }
-      
-   
-    } finally {
-      setUploading(false);
-      router.push('/(tabs)/findTrips')
     }
-  }, [
-    validateForm,
-    formData,
-    selectedDestinations,
-    maxParticipants,
-    pricePerPerson,
-    selectedServices,
-    categories,
-    selectedItems,
-    tripId,
-    pickedFile,
-    originalTripData
-  ]);
+
+    // Update Stream Chat channel if trip name changed
+    if (tripId && userId && formData.name.trim() !== originalTripData?.name) {
+      try {
+        console.log("Updating Stream Chat channel for trip...");
+        
+        // Get Stream Chat client
+        const streamClient = StreamChat.getInstance(requirements.stream_api_key);
+        
+        // Get current user profile for Stream Chat
+        const userProfileResponse = await axiosInstance.get(`/users/profile/${userId}`);
+        const userProfile = userProfileResponse.data.data;
+        
+        const streamUser = {
+          id: userId,
+          name: userProfile.nickname || userProfile.fullname,
+          image: userProfile.profileImageUrl !== 'N/A' 
+            ? userProfile.profileImageUrl 
+            : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
+          email: userProfile.email,
+          fullname: userProfile.fullname,
+          nickname: userProfile.nickname
+        };
+        
+        // Connect as trip owner
+        await streamClient.connectUser(streamUser, streamClient.devToken(userId));
+        
+        // Get existing channel
+        const channelId = `trip-${tripId}`;
+        const channel = streamClient.channel('messaging', channelId);
+        
+        // Update channel name and custom data
+        await channel.update({
+          name: `${formData.name.trim()} - Group Chat`,
+          trip_name: formData.name.trim(),
+          // You can add other trip data you want to keep in sync
+          trip_max_participants: parseInt(maxParticipants.toString()),
+          trip_price: parseFloat(pricePerPerson.toString()),
+          trip_start_date: formatDateToAPI(formData.startDate),
+          trip_end_date: formatDateToAPI(formData.endDate),
+        });
+        
+        console.log("✅ Stream Chat channel updated successfully:", channelId);
+        
+        // Disconnect after update
+        await streamClient.disconnectUser();
+        
+      } catch (chatError) {
+        console.error('Stream Chat channel update failed:', chatError);
+        // Don't throw error here - trip update was successful
+        console.warn('Trip updated successfully, but chat channel update failed.');
+      }
+    }
+
+  } catch (error) {
+    console.error('Trip update error:', error);
+    
+    let errorMessage = 'ไม่สามารถอัปเดตทริปได้';
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as any;
+      const serverMessage = axiosError.response?.data?.message;
+      if (serverMessage) {
+        errorMessage = serverMessage;
+      }
+    }
+    
+    // Handle error appropriately
+    console.error('Error message:', errorMessage);
+    
+  } finally {
+    setUploading(false);
+    router.push('/(tabs)/findTrips');
+  }
+}, [
+  validateForm,
+  formData,
+  selectedDestinations,
+  maxParticipants,
+  pricePerPerson,
+  selectedServices,
+  categories,
+  selectedItems,
+  tripId,
+  pickedFile,
+  originalTripData
+]);
 
   // Computed values
   const filteredDestinations = useMemo(() => 

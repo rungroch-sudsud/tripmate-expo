@@ -1,34 +1,65 @@
-import React, { useState } from 'react';
+import React, { useState, memo, useCallback, useEffect } from 'react';
 import { View, Text, TextInput } from 'react-native';
 
+const ErrorMessage = ({ error }) => {
+  if (!error) return null;
+  return (
+    <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{error}</Text>
+  );
+};
 
-  const ErrorMessage = ({ error }: { error: string }) => {
-    if (!error) return null;
-    return (
-      <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>{error}</Text>
-    );
-  };
-
-const TripNameInput = ({ 
-  value, 
-  onChangeText, 
-  error, 
-  clearError, 
+const TripNameInput = memo(({
+  value,
+  onChangeText,
+  error,
+  clearError,
   styles,
-  showErrorMessage = true // Flag to control error message display
+  showErrorMessage = true
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [localValue, setLocalValue] = useState(value);
 
-  const handleFocus = () => {
+  // Debounce function
+  const debounce = useCallback((func, delay) => {
+    let timeoutId;
+    return (...args) => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => func(...args), delay);
+    };
+  }, []);
+
+  // Debounced version of onChangeText
+  const debouncedOnChangeText = useCallback(
+    debounce((text) => {
+      onChangeText(text);
+    }, 150), // 150ms delay
+    [onChangeText]
+  );
+
+  // Update local value when prop changes (for external updates)
+  useEffect(() => {
+    setLocalValue(value);
+  }, [value]);
+
+  const handleFocus = useCallback(() => {
     setIsFocused(true);
     if (clearError) {
       clearError('tripName');
     }
-  };
+  }, [clearError]);
 
-  const handleBlur = () => {
+  const handleBlur = useCallback(() => {
     setIsFocused(false);
-  };
+  }, []);
+
+  // Optimized change handler with debouncing
+  const handleTextChange = useCallback((text) => {
+    if (text.length <= 50) {
+      setLocalValue(text); // Update local state immediately
+      debouncedOnChangeText(text); // Update parent state with debounce
+      if (error) clearError('tripName');
+    }
+  }, [debouncedOnChangeText, error, clearError]);
 
   return (
     <View style={styles.fieldContainer}>
@@ -41,8 +72,8 @@ const TripNameInput = ({
         ]}
         onFocus={handleFocus}
         onBlur={handleBlur}
-        value={value}
-        onChangeText={onChangeText}
+        value={localValue} // Use local state for immediate updates
+        onChangeText={handleTextChange}
         placeholder="ตั้งชื่อทริปของคุณ"
         placeholderTextColor='gray'
         multiline
@@ -58,13 +89,15 @@ const TripNameInput = ({
       {(!error || !showErrorMessage) && (
         <Text style={[
           styles.wordCount,
-          value.length > 45 && { color: 'red' }
+          localValue.length > 45 && { color: 'red' }
         ]}>
-          {value.length}/50
+          {localValue.length}/50
         </Text>
       )}
     </View>
   );
-};
+});
+
+TripNameInput.displayName = 'TripNameInput';
 
 export default TripNameInput;
