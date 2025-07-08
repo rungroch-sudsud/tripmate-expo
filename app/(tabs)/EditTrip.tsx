@@ -1624,6 +1624,6 @@ return (
       </Text>
     </SafeAreaView>
   );
-};
+}
 
 export default ThaiFormScreen;
