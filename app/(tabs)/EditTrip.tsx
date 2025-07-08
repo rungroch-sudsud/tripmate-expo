@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import TripNameInput from './tripNameInput'
+import TripNameInput from './tripNameInput';
 import '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
@@ -20,7 +20,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import { axiosInstance } from '../lib/axios';
 import TripCard from './TripCard';
 import styles from './css/create_EditTrip';
-import {requirements} from '../requirement'
+import { requirements } from '../requirement';
 import { StreamChat } from 'stream-chat';
 // Constants
 const MAX_WORDS = 40;
@@ -73,7 +73,6 @@ interface FormData {
 }
 
 interface ValidationErrors {
-
   tripName: string;
   startDate: string;
   endDate: string;
@@ -212,8 +211,6 @@ const createValidationRules = () => ({
   validateCoverImage: (file: PickedFile | null) =>
     !file ? 'กรุณาเลือกรูปภาพหน้าปก' : '',
 
-
-    
   validateTripName: (name: string) => {
     if (!name.trim()) return 'กรุณาใส่ชื่อทริป';
     return '';
@@ -322,7 +319,7 @@ const ThaiFormScreen = () => {
     []
   );
   const [maxParticipants, setMaxParticipants] = useState<number | ''>('');
- const [pricePerPerson, setPricePerPerson] = useState<string>('');
+  const [pricePerPerson, setPricePerPerson] = useState<string>('');
   const [uploading, setUploading] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
 
@@ -564,47 +561,50 @@ const ThaiFormScreen = () => {
       if (maxValue && numberValue && numberValue > maxValue) return;
 
       setter(numberValue);
-    if (errors[errorField]) {
-      clearError(errorField);
-    }
-  }, [errors, clearError]);
+      if (errors[errorField]) {
+        clearError(errorField);
+      }
+    },
+    [errors, clearError]
+  );
 
-const handleDecimalInput = useCallback((
-  setter: React.Dispatch<React.SetStateAction<string>>,
-  value: string,
-  errorField: keyof ValidationErrors,
-  maxValue?: number,
-  decimalPlaces?: number
-) => {
-  // Allow digits, decimal point, and comma
-  let filteredText = value.replace(/[^0-9.,]/g, '');
-  
-  // Replace comma with dot for consistent decimal handling
-  filteredText = filteredText.replace(',', '.');
-  
-  // Ensure only one decimal point
-  const parts = filteredText.split('.');
-  if (parts.length > 2) {
-    filteredText = parts[0] + '.' + parts.slice(1).join('');
-  }
-  
-  // Limit decimal places if specified
-  if (decimalPlaces && parts.length > 1) {
-    const decimalPart = parts[1].substring(0, decimalPlaces);
-    filteredText = parts[0] + '.' + decimalPart;
-  }
-  
-  // Check max value only if we have a valid number
-  if (maxValue && filteredText && !isNaN(parseFloat(filteredText))) {
-    const numberValue = parseFloat(filteredText);
-    if (numberValue > maxValue) return;
-  }
-  
-  setter(filteredText);
-    if (errors[errorField]) {
-      clearError(errorField);
-    }
-  },
+  const handleDecimalInput = useCallback(
+    (
+      setter: React.Dispatch<React.SetStateAction<string>>,
+      value: string,
+      errorField: keyof ValidationErrors,
+      maxValue?: number,
+      decimalPlaces?: number
+    ) => {
+      // Allow digits, decimal point, and comma
+      let filteredText = value.replace(/[^0-9.,]/g, '');
+
+      // Replace comma with dot for consistent decimal handling
+      filteredText = filteredText.replace(',', '.');
+
+      // Ensure only one decimal point
+      const parts = filteredText.split('.');
+      if (parts.length > 2) {
+        filteredText = parts[0] + '.' + parts.slice(1).join('');
+      }
+
+      // Limit decimal places if specified
+      if (decimalPlaces && parts.length > 1) {
+        const decimalPart = parts[1].substring(0, decimalPlaces);
+        filteredText = parts[0] + '.' + decimalPart;
+      }
+
+      // Check max value only if we have a valid number
+      if (maxValue && filteredText && !isNaN(parseFloat(filteredText))) {
+        const numberValue = parseFloat(filteredText);
+        if (numberValue > maxValue) return;
+      }
+
+      setter(filteredText);
+      if (errors[errorField]) {
+        clearError(errorField);
+      }
+    },
     [errors, clearError]
   );
 
@@ -735,161 +735,180 @@ const handleDecimalInput = useCallback((
   ]);
 
   // Submit handler
-const handleSubmit = useCallback(async () => {
-  if (!validateForm()) {
-    return;
-  }
+  const handleSubmit = useCallback(async () => {
+    if (!validateForm()) {
+      return;
+    }
 
-  try {
-    setUploading(true);
+    try {
+      setUploading(true);
 
-    const travelStyleIds = categories
-      .filter((category) => selectedItems.includes(category.id))
-      .map((category) => category.id);
+      const travelStyleIds = categories
+        .filter((category) => selectedItems.includes(category.id))
+        .map((category) => category.id);
 
-    const updatePayload = {
-      name: formData.name.trim(),
-      startDate: formatDateToAPI(formData.startDate),
-      endDate: formatDateToAPI(formData.endDate),
-      destinations: selectedDestinations,
-      maxParticipants: parseInt(maxParticipants.toString()),
-      pricePerPerson: parseFloat(pricePerPerson.toString()),
-      includedServices: selectedServices,
-      detail: formData.details || '',
-      travelStyles: travelStyleIds,
-      groupAtmosphere: formData.description || '',
-      status: 'published'
-    };
+      const updatePayload = {
+        name: formData.name.trim(),
+        startDate: formatDateToAPI(formData.startDate),
+        endDate: formatDateToAPI(formData.endDate),
+        destinations: selectedDestinations,
+        maxParticipants: parseInt(maxParticipants.toString()),
+        pricePerPerson: parseFloat(pricePerPerson.toString()),
+        includedServices: selectedServices,
+        detail: formData.details || '',
+        travelStyles: travelStyleIds,
+        groupAtmosphere: formData.description || '',
+        status: 'published',
+      };
 
-    const idToken = await AsyncStorage.getItem('googleIdToken');
-    const userId = await AsyncStorage.getItem('userId');
+      const idToken = await AsyncStorage.getItem('googleIdToken');
+      const userId = await AsyncStorage.getItem('userId');
 
-    // Update trip details
-    await axiosInstance.put(`/trips/${tripId}`, updatePayload, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`
-      },
-      timeout: 60000,
-    });
+      // Update trip details
+      await axiosInstance.put(`/trips/${tripId}`, updatePayload, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${idToken}`,
+        },
+        timeout: 60000,
+      });
 
-    // Update cover image if changed
-    if (pickedFile && pickedFile.uri !== originalTripData?.tripCoverImageUrl) {
-      try {
-        const imageFormData = new FormData();
-        
-        if (pickedFile.isBase64 && pickedFile.base64Data) {
-          const response = await fetch(`data:${pickedFile.type};base64,${pickedFile.base64Data}`);
-          const blob = await response.blob();
-          imageFormData.append('file', blob, pickedFile.name);
-        } else {
-          const fileObj = {
-            uri: pickedFile.uri,
-            type: pickedFile.type || 'image/jpeg',
-            name: pickedFile.name || 'image.jpg',
-          } as any;
-          
-          imageFormData.append('file', fileObj);
+      // Update cover image if changed
+      if (
+        pickedFile &&
+        pickedFile.uri !== originalTripData?.tripCoverImageUrl
+      ) {
+        try {
+          const imageFormData = new FormData();
+
+          if (pickedFile.isBase64 && pickedFile.base64Data) {
+            const response = await fetch(
+              `data:${pickedFile.type};base64,${pickedFile.base64Data}`
+            );
+            const blob = await response.blob();
+            imageFormData.append('file', blob, pickedFile.name);
+          } else {
+            const fileObj = {
+              uri: pickedFile.uri,
+              type: pickedFile.type || 'image/jpeg',
+              name: pickedFile.name || 'image.jpg',
+            } as any;
+
+            imageFormData.append('file', fileObj);
+          }
+
+          await axiosInstance.patch(
+            `/trips/${tripId}/cover-image`,
+            imageFormData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+                Authorization: `Bearer ${idToken}`,
+              },
+              timeout: 60000,
+            }
+          );
+        } catch (imageError) {
+          console.error('Image update error:', imageError);
         }
-
-        await axiosInstance.patch(`/trips/${tripId}/cover-image`, imageFormData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${idToken}`
-          },
-          timeout: 60000,
-        });
-      } catch (imageError) {
-        console.error('Image update error:', imageError);
       }
-    }
 
-    // Update Stream Chat channel if trip name changed
-    if (tripId && userId && formData.name.trim() !== originalTripData?.name) {
-      try {
-        console.log("Updating Stream Chat channel for trip...");
-        
-        // Get Stream Chat client
-        const streamClient = StreamChat.getInstance(requirements.stream_api_key);
-        
-        // Get current user profile for Stream Chat
-        const userProfileResponse = await axiosInstance.get(`/users/profile/${userId}`);
-        const userProfile = userProfileResponse.data.data;
-        
-        const streamUser = {
-          id: userId,
-          name: userProfile.nickname || userProfile.fullname,
-          image: userProfile.profileImageUrl !== 'N/A' 
-            ? userProfile.profileImageUrl 
-            : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
-          email: userProfile.email,
-          fullname: userProfile.fullname,
-          nickname: userProfile.nickname
-        };
-        
-        // Connect as trip owner
-        await streamClient.connectUser(streamUser, streamClient.devToken(userId));
-        
-        // Get existing channel
-        const channelId = `trip-${tripId}`;
-        const channel = streamClient.channel('messaging', channelId);
-        
-        // Update channel name and custom data
-        await channel.update({
-          name: `${formData.name.trim()} - Group Chat`,
-          trip_name: formData.name.trim(),
-          // You can add other trip data you want to keep in sync
-          trip_max_participants: parseInt(maxParticipants.toString()),
-          trip_price: parseFloat(pricePerPerson.toString()),
-          trip_start_date: formatDateToAPI(formData.startDate),
-          trip_end_date: formatDateToAPI(formData.endDate),
-        });
-        
-        console.log("✅ Stream Chat channel updated successfully:", channelId);
-        
-        // Disconnect after update
-        await streamClient.disconnectUser();
-        
-      } catch (chatError) {
-        console.error('Stream Chat channel update failed:', chatError);
-        // Don't throw error here - trip update was successful
-        console.warn('Trip updated successfully, but chat channel update failed.');
-      }
-    }
+      // Update Stream Chat channel if trip name changed
+      if (tripId && userId && formData.name.trim() !== originalTripData?.name) {
+        try {
+          console.log('Updating Stream Chat channel for trip...');
 
-  } catch (error) {
-    console.error('Trip update error:', error);
-    
-    let errorMessage = 'ไม่สามารถอัปเดตทริปได้';
-    
-    if (error && typeof error === 'object' && 'response' in error) {
-      const axiosError = error as any;
-      const serverMessage = axiosError.response?.data?.message;
-      if (serverMessage) {
-        errorMessage = serverMessage;
+          // Get Stream Chat client
+          const streamClient = StreamChat.getInstance(
+            requirements.stream_api_key
+          );
+
+          // Get current user profile for Stream Chat
+          const userProfileResponse = await axiosInstance.get(
+            `/users/profile/${userId}`
+          );
+          const userProfile = userProfileResponse.data.data;
+
+          const streamUser = {
+            id: userId,
+            name: userProfile.nickname || userProfile.fullname,
+            image:
+              userProfile.profileImageUrl !== 'N/A'
+                ? userProfile.profileImageUrl
+                : 'https://via.placeholder.com/40x40/cccccc/666666?text=👤',
+            email: userProfile.email,
+            fullname: userProfile.fullname,
+            nickname: userProfile.nickname,
+          };
+
+          // Connect as trip owner
+          await streamClient.connectUser(
+            streamUser,
+            streamClient.devToken(userId)
+          );
+
+          // Get existing channel
+          const channelId = `trip-${tripId}`;
+          const channel = streamClient.channel('messaging', channelId);
+
+          // Update channel name and custom data
+          await channel.update({
+            name: `${formData.name.trim()} - Group Chat`,
+            trip_name: formData.name.trim(),
+            // You can add other trip data you want to keep in sync
+            trip_max_participants: parseInt(maxParticipants.toString()),
+            trip_price: parseFloat(pricePerPerson.toString()),
+            trip_start_date: formatDateToAPI(formData.startDate),
+            trip_end_date: formatDateToAPI(formData.endDate),
+          });
+
+          console.log(
+            '✅ Stream Chat channel updated successfully:',
+            channelId
+          );
+
+          // Disconnect after update
+          await streamClient.disconnectUser();
+        } catch (chatError) {
+          console.error('Stream Chat channel update failed:', chatError);
+          // Don't throw error here - trip update was successful
+          console.warn(
+            'Trip updated successfully, but chat channel update failed.'
+          );
+        }
       }
+    } catch (error) {
+      console.error('Trip update error:', error);
+
+      let errorMessage = 'ไม่สามารถอัปเดตทริปได้';
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any;
+        const serverMessage = axiosError.response?.data?.message;
+        if (serverMessage) {
+          errorMessage = serverMessage;
+        }
+      }
+
+      // Handle error appropriately
+      console.error('Error message:', errorMessage);
+    } finally {
+      setUploading(false);
+      router.push('/(tabs)/findTrips');
     }
-    
-    // Handle error appropriately
-    console.error('Error message:', errorMessage);
-    
-  } finally {
-    setUploading(false);
-    router.push('/(tabs)/findTrips');
-  }
-}, [
-  validateForm,
-  formData,
-  selectedDestinations,
-  maxParticipants,
-  pricePerPerson,
-  selectedServices,
-  categories,
-  selectedItems,
-  tripId,
-  pickedFile,
-  originalTripData
-]);
+  }, [
+    validateForm,
+    formData,
+    selectedDestinations,
+    maxParticipants,
+    pricePerPerson,
+    selectedServices,
+    categories,
+    selectedItems,
+    tripId,
+    pickedFile,
+    originalTripData,
+  ]);
 
   // Computed values
   const filteredDestinations = useMemo(
@@ -907,73 +926,82 @@ const handleSubmit = useCallback(async () => {
     destinationsLoading ||
     userLoading;
 
- // Continuation from the createTripFromFormData function
- const createTripFromFormData = useCallback(() => ({
-  id: 'preview-trip',
-  name: formData.name,
-  destinations: selectedDestinations,
-  startDate: formData.startDate ? new Date(formData.startDate.split('/').reverse().join('-')).toISOString() : new Date().toISOString(),
-  endDate: formData.endDate ? new Date(formData.endDate.split('/').reverse().join('-')).toISOString() : new Date().toISOString(),
-  maxParticipants: parseInt(maxParticipants.toString()) || 0,
-  participants: [],
-  pricePerPerson: pricePerPerson,
-  detail: formData.details,
-  groupAtmosphere: formData.description,
-  includedServices: services
-    .filter(service => selectedServices.includes(service.id))
-    .map(service => service.title),
-  travelStyles: categories
-    .filter(category => selectedItems.includes(category.id))
-    .map(category => category.title),
-  tripCoverImageUrl: pickedFile?.uri || "N/A",
-  tripOwner: {
-    id: userInfo?.userId,
-    displayName: userInfo?.fullname,
-    firstName: userInfo?.fullname?.split(' ')[0] || '',
-    lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
-    profileImageUrl: userInfo?.profileImageUrl || "N/A",
-    email: userInfo?.email || '',
-    phoneNumber: userInfo?.phoneNumber || ''
-  },
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-  status: 'draft',
-  isPublished: false,
-  category: 'adventure',
-  rating: 0,
-  reviewCount: 0,
-  bookingCount: 0,
-  currency: 'THB',
-  cancellationPolicy: 'flexible',
-  difficulty: 'moderate',
-  transportation: 'mixed',
-  accommodation: 'hotel',
-  meals: 'some_included',
-  languages: ['th', 'en'],
-  minAge: 18,
-  maxAge: 65,
-  tags: [],
-  highlights: [],
-  itinerary: [],
-  whatToExpect: [],
-  importantInfo: [],
-  faq: [],
-  cancellationRules: [],
-  refundPolicy: {}
-}), [
-  formData,
-  selectedDestinations,
-  maxParticipants,
-  pricePerPerson,
-  services,
-  selectedServices,
-  categories,
-  selectedItems,
-  pickedFile,
-  userInfo
-]);
-
-
+  // Continuation from the createTripFromFormData function
+  const createTripFromFormData = useCallback(
+    () => ({
+      id: 'preview-trip',
+      name: formData.name,
+      destinations: selectedDestinations,
+      startDate: formData.startDate
+        ? new Date(
+            formData.startDate.split('/').reverse().join('-')
+          ).toISOString()
+        : new Date().toISOString(),
+      endDate: formData.endDate
+        ? new Date(
+            formData.endDate.split('/').reverse().join('-')
+          ).toISOString()
+        : new Date().toISOString(),
+      maxParticipants: parseInt(maxParticipants.toString()) || 0,
+      participants: [],
+      pricePerPerson: pricePerPerson,
+      detail: formData.details,
+      groupAtmosphere: formData.description,
+      includedServices: services
+        .filter((service) => selectedServices.includes(service.id))
+        .map((service) => service.title),
+      travelStyles: categories
+        .filter((category) => selectedItems.includes(category.id))
+        .map((category) => category.title),
+      tripCoverImageUrl: pickedFile?.uri || 'N/A',
+      tripOwner: {
+        id: userInfo?.userId,
+        displayName: userInfo?.fullname,
+        firstName: userInfo?.fullname?.split(' ')[0] || '',
+        lastName: userInfo?.fullname?.split(' ').slice(1).join(' ') || '',
+        profileImageUrl: userInfo?.profileImageUrl || 'N/A',
+        email: userInfo?.email || '',
+        phoneNumber: userInfo?.phoneNumber || '',
+      },
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      status: 'draft',
+      isPublished: false,
+      category: 'adventure',
+      rating: 0,
+      reviewCount: 0,
+      bookingCount: 0,
+      currency: 'THB',
+      cancellationPolicy: 'flexible',
+      difficulty: 'moderate',
+      transportation: 'mixed',
+      accommodation: 'hotel',
+      meals: 'some_included',
+      languages: ['th', 'en'],
+      minAge: 18,
+      maxAge: 65,
+      tags: [],
+      highlights: [],
+      itinerary: [],
+      whatToExpect: [],
+      importantInfo: [],
+      faq: [],
+      cancellationRules: [],
+      refundPolicy: {},
+    }),
+    [
+      formData,
+      selectedDestinations,
+      maxParticipants,
+      pricePerPerson,
+      services,
+      selectedServices,
+      categories,
+      selectedItems,
+      pickedFile,
+      userInfo,
+    ]
+  );
 
   // Auto-save functionality
   useEffect(() => {
@@ -1051,40 +1079,34 @@ const handleSubmit = useCallback(async () => {
     loadDraft();
   }, [tripId, tripData, originalTripData]);
 
-// Loading state
-if (!fontsLoaded || isLoading) {
+  // Loading state
+  if (!fontsLoaded || isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator size="large" color="#2196F3" />
+        <Text style={styles.loadingText}>กำลังโหลด...</Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.loadingContainer}>
-       <Stack.Screen options={{ headerShown: false }} />
-      <ActivityIndicator size="large" color="#2196F3" />
-      <Text style={styles.loadingText}>กำลังโหลด...</Text>
-    </View>
-  );
-}
-
-
-
-// Return the JSX
-return (
-  <SafeAreaView style={styles.container}>
-    {/* Header */}
-    <Stack.Screen options={{ headerShown: false }} />
-    <View style={styles.header}>
-      <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-         <Text style={styles.backButtonText}>←</Text>
-      </TouchableOpacity>
-      <Text style={styles.headerTitle}>แก้ไขทริป</Text>
-    </View>
+    <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <Stack.Screen options={{ headerShown: false }} />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <Text style={styles.backButtonText}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>แก้ไขทริป</Text>
+        </View>
+
         <View style={styles.formSection}>
           <TouchableOpacity
-            style={[
-              styles.uploadBox,
-              errors.coverImage && styles.uploadBoxError,
-            ]}
+            style={[styles.uploadBox]}
             onPress={() => {
-              clearError('coverImage');
               pickImage();
             }}
           >
@@ -1106,44 +1128,15 @@ return (
               </View>
             )}
           </TouchableOpacity>
-    <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-      <View style={styles.formSection}>
-      
-        <TouchableOpacity
-          style={[
-            styles.uploadBox,
-          ]}
-          onPress={() => {
 
-            pickImage();
-          }}
-        >
-          {pickedFile ? (
-            <Image source={{ uri: pickedFile.uri }} style={styles.uploadedImage} />
-          ) : (
-            <View style={styles.uploadPlaceholder}>
-              <View style={styles.personIcon}>
-                <Image
-                  source={require('../assets/images/images/images/image3.png')}
-                  style={{ height: 27, width: 27, tintColor: "#9CA3AF" }}
-                  resizeMode="contain"
-                />
-              </View>
-              <Text style={styles.uploadSubtext}>เพิ่มรูปภาพหน้าปก</Text>
-            </View>
-          )}
-        </TouchableOpacity>
- 
-
-      <TripNameInput
-  value={formData.name}
-  onChangeText={(text) => handleTextChange('name', text, 50)}
-  error={errors.tripName}
-  clearError={clearError}
-  styles={styles}
-  showErrorMessage={false} // Don't show error message in edit trip
-/>
-       
+          <TripNameInput
+            value={formData.name}
+            onChangeText={(text) => handleTextChange('name', text, 50)}
+            error={errors.tripName}
+            clearError={clearError}
+            styles={styles}
+            showErrorMessage={false} // Don't show error message in edit trip
+          />
 
           <Text style={styles.dateFieldHeader}>วันที่เริ่มต้น</Text>
 
@@ -1340,129 +1333,139 @@ return (
 
         <Text style={styles.pPersonHeader}>ราคาต่อคน</Text>
 
-      <View style={[
-       styles.pPerPersonErrorParentWrapper,
-        errors.pricePerPerson && styles.inputError
-      ]}>
-        <Image
-          source={require('../assets/images/images/images/image12.png')}
-          style={{ height: 16, width: 16, marginHorizontal: 3 }}
-          resizeMode="contain"
-        />
-        <Text style={styles.pPerPersonTextFront}>ราคาต่อคน</Text>
-      <TextInput
-  style={styles.pPerPersonText}
-  placeholder='0.00'
-  value={pricePerPerson}
-  onChangeText={(text) => handleDecimalInput(setPricePerPerson, text, 'pricePerPerson')}
-/>
-        <Text style={styles.pPerPersonUnitText}>บาท</Text>
-      </View>
-     
-      <View style={styles.checkboxSection}>
-        <Text style={styles.label}>สิ่งที่รวมในราคา</Text>
-        <View style={styles.checkboxContainer}>
-          {services.map(service => (
-            <TouchableOpacity
-              key={service.id}
-              style={styles.checkboxRow}
-              onPress={() => toggleSelection(service.id, 'services')}
-            >
+        <View
+          style={[
+            styles.pPerPersonErrorParentWrapper,
+            errors.pricePerPerson && styles.inputError,
+          ]}
+        >
+          <Image
+            source={require('../assets/images/images/images/image12.png')}
+            style={{ height: 16, width: 16, marginHorizontal: 3 }}
+            resizeMode="contain"
+          />
+          <Text style={styles.pPerPersonTextFront}>ราคาต่อคน</Text>
+          <TextInput
+            style={styles.pPerPersonText}
+            placeholder="0.00"
+            value={pricePerPerson}
+            onChangeText={(text) =>
+              handleDecimalInput(setPricePerPerson, text, 'pricePerPerson')
+            }
+          />
+          <Text style={styles.pPerPersonUnitText}>บาท</Text>
+        </View>
+
+        <View style={styles.checkboxSection}>
+          <Text style={styles.label}>สิ่งที่รวมในราคา</Text>
+          <View style={styles.checkboxContainer}>
+            {services.map((service) => (
               <TouchableOpacity
-                style={styles.checkbox}
+                key={service.id}
+                style={styles.checkboxRow}
                 onPress={() => toggleSelection(service.id, 'services')}
               >
-                <View
-                  style={[
-                    styles.checkboxInner,
-                    selectedServices.includes(service.id) && styles.checked,
-                  ]}
-                />
-              </TouchableOpacity>
-              <Text style={styles.checkboxText}>{service.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-     
-      
-      <View style={styles.content}>
-        <Text style={styles.label}>สไตล์การเที่ยว</Text>
-        {stylesLoading ? (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
-            <Text style={styles.loadingText}>กำลังโหลด...</Text>
-          </View>
-        ) : (
-          <View style={styles.categoriesContainer}>
-            {categories.map((category) => {
-              const isSelected = selectedItems.includes(category.id);
-              const iconUrl = isSelected && category.activeIconImageUrl 
-                ? category.activeIconImageUrl 
-                : category.iconImageUrl;
-              
-              return (
                 <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryItem,
-                    isSelected && styles.selectedItem
-                  ]}
-                  onPress={() => toggleSelection(category.id, 'styles')}
+                  style={styles.checkbox}
+                  onPress={() => toggleSelection(service.id, 'services')}
                 >
-                  <Image
-                    source={{ 
-                      uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' 
-                    }}
-                    style={{
-                      width: 14,
-                      height: 12,
-                      tintColor: isSelected ? '#29C4AF' : '#000',
-                    }}
-                    resizeMode="contain"
+                  <View
+                    style={[
+                      styles.checkboxInner,
+                      selectedServices.includes(service.id) && styles.checked,
+                    ]}
                   />
-                  <Text style={[
-                    styles.categoryText,
-                    isSelected && styles.selectedText
-                  ]}>
-                    {category.title}
-                  </Text>
                 </TouchableOpacity>
-              );
-            })}
+                <Text style={styles.checkboxText}>{service.title}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
-        )}
-      </View>
-      
-      <View style={{
-        backgroundColor: '#fff',
-        position: 'relative',
-        zIndex: 1000,
-        marginBottom: dropdownOpen ? 220 : 30, 
-        marginTop:10,
-        marginHorizontal:20
-      }}>
-        <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
-          <View>
-            {dropdownOpen ? (
-              <TextInput
-                style={styles.BeforedropDownOpenTextInput}
-                placeholder="ค้นหาสถานที่"
-                value={searchText}
-                onChangeText={setSearchText}
-                autoFocus={true}
-              />
-            ) : (
-              <Text style={styles.dropDownOpenTextInput}>
-                <Image
-                  source={require('../assets/images/images/images/image9.png')}
-                  style={{ width: 16, height: 16 }}
+        </View>
+
+        <View style={styles.content}>
+          <Text style={styles.label}>สไตล์การเที่ยว</Text>
+          {stylesLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#6366f1" />
+              <Text style={styles.loadingText}>กำลังโหลด...</Text>
+            </View>
+          ) : (
+            <View style={styles.categoriesContainer}>
+              {categories.map((category) => {
+                const isSelected = selectedItems.includes(category.id);
+                const iconUrl =
+                  isSelected && category.activeIconImageUrl
+                    ? category.activeIconImageUrl
+                    : category.iconImageUrl;
+
+                return (
+                  <TouchableOpacity
+                    key={category.id}
+                    style={[
+                      styles.categoryItem,
+                      isSelected && styles.selectedItem,
+                    ]}
+                    onPress={() => toggleSelection(category.id, 'styles')}
+                  >
+                    <Image
+                      source={{
+                        uri:
+                          iconUrl ||
+                          'https://via.placeholder.com/30x30/000000/FFFFFF?text=?',
+                      }}
+                      style={{
+                        width: 14,
+                        height: 12,
+                        tintColor: isSelected ? '#29C4AF' : '#000',
+                      }}
+                      resizeMode="contain"
+                    />
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        isSelected && styles.selectedText,
+                      ]}
+                    >
+                      {category.title}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        <View
+          style={{
+            backgroundColor: '#fff',
+            position: 'relative',
+            zIndex: 1000,
+            marginBottom: dropdownOpen ? 220 : 30,
+            marginTop: 10,
+            marginHorizontal: 20,
+          }}
+        >
+          <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
+            <View>
+              {dropdownOpen ? (
+                <TextInput
+                  style={styles.BeforedropDownOpenTextInput}
+                  placeholder="ค้นหาสถานที่"
+                  value={searchText}
+                  onChangeText={setSearchText}
+                  autoFocus={true}
                 />
-                {' '} ค้นหาสถานที่
-              </Text>
-            )}
-          </View>
-        </TouchableOpacity>
+              ) : (
+                <Text style={styles.dropDownOpenTextInput}>
+                  <Image
+                    source={require('../assets/images/images/images/image9.png')}
+                    style={{ width: 16, height: 16 }}
+                  />{' '}
+                  ค้นหาสถานที่
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
 
           {dropdownOpen && (
             <View style={styles.dropDownOpen}>
@@ -1601,29 +1604,28 @@ return (
             onJoinTrip={() => {}}
           />
         )}
-      </ScrollView>
-
-      <View
-        style={{
-          flexDirection: 'row',
-          borderTopWidth: 1,
-          borderTopColor: '#e0e0e0',
-        }}
-      >
-        <View style={styles.submitContainer}>
-          <TouchableOpacity
-            style={[styles.submitButton]}
-            onPress={handleSubmit}
-          >
-            <Text style={styles.submitText}>Edit</Text>
-          </TouchableOpacity>
+        <View
+          style={{
+            flexDirection: 'row',
+            borderTopWidth: 1,
+            borderTopColor: '#e0e0e0',
+          }}
+        >
+          <View style={styles.submitContainer}>
+            <TouchableOpacity
+              style={[styles.submitButton]}
+              onPress={handleSubmit}
+            >
+              <Text style={styles.submitText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      <Text style={styles.submitNote}>
-        กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนบันทึก
-      </Text>
+        <Text style={styles.submitNote}>
+          กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนบันทึก
+        </Text>
+      </ScrollView>
     </SafeAreaView>
   );
-}
+};
 
 export default ThaiFormScreen;
