@@ -1,4 +1,4 @@
-appId: dev.expo.eastestsexample # This is an example app id. Replace it with your app id.
+appId: com.tripmate.app # This is an example app id. Replace it with your app id.
 ---
-- launchAppa
+- launchApp
 - assertVisible: 'Welcome!'

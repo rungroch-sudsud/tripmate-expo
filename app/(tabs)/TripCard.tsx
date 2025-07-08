@@ -81,7 +81,22 @@ const TripCard: React.FC<TripCardProps> = ({
   onTripPress, 
   onJoinTrip 
 }) => {
-  const ownerInfo = getOwnerInfo(trip.tripOwner);
+  // Add null/undefined check for trip
+  if (!trip) {
+    return (
+      <View style={styles.card}>
+        <Text style={styles.errorText}>ข้อมูลทริปไม่พร้อมใช้งาน</Text>
+      </View>
+    );
+  }
+
+  // Add null/undefined check for tripOwner
+  const ownerInfo = trip.tripOwner ? getOwnerInfo(trip.tripOwner) : {
+    displayName: 'ไม่ระบุชื่อ',
+    profileImageUrl: 'https://via.placeholder.com/40',
+    age: 'ไม่ระบุอายุ'
+  };
+  
   const [isExpanded, setIsExpanded] = useState(false);
   const [isTruncated, setIsTruncated] = useState(false);
 
@@ -541,6 +556,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
       fontFamily:'InterTight-Regular'
   },
+  errorText: {
+    fontSize: 16,
+    color: '#FF0000',
+    textAlign: 'center',
+    paddingVertical: 20,
+    fontFamily:'InterTight-Regular'
+  }
 });
 
 export default TripCard;

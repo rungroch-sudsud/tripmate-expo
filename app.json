@@ -14,14 +14,19 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tripmate.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "com.google.android.gms.permission.AD_ID"
+      ],
+      "package": "com.tripmate.app"
     },
     "web": {
       "bundler": "metro",
@@ -31,7 +36,6 @@
     "plugins": [
       "expo-router",
       "expo-tracking-transparency"
-
     ],
     "experiments": {
       "typedRoutes": true
@@ -41,6 +45,7 @@
       "eas": {
         "projectId": "8afd5c98-c61d-4c63-8a9a-094bd43bc60d"
       }
-    }
+    },
+    "owner": "sanphetsongjindasak"
   }
 }
