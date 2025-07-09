@@ -10,15 +10,14 @@ import {
   FlatList
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { axiosInstance } from '../lib/axios';
+import { axiosInstance } from '../../src/lib/axios';
 import {Stack,useRouter} from 'expo-router'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {requirements}  from '../requirement'
+import {requirements}  from '../../requirement'
 import axios from 'axios'
-import {useFonts} from 'expo-font'
-import TripCard from './TripCard'
-import BottomNavigation from './customNavigation'
-import styles from '../(tabs)/css/findTrip_css'
+import TripCard from '../../src/shared/components/TripCard'
+import BottomNavigation from '../../src/shared/components/customNavigation'
+import styles from '../../src/css/findTrip_css'
 interface TravelStyle {
   id: string;
   title: string;
@@ -101,11 +100,7 @@ const FindTripScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [bookmarkedTripIds, setBookmarkedTripIds] = useState<string[]>([]);
-  const [fontsLoaded] = useFonts({
-    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
-    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular':require('../assets/fonts/InterTight-Regular.ttf')
-  });
+
 
 
    const [searchHistory, setSearchHistory] = useState<string[]>([]);
@@ -549,7 +544,7 @@ const FindTripScreen: React.FC = () => {
       if (accessToken) {
         try {
           await makeJoinRequest(accessToken, 'Access Token');
-          router.push(`/stramChat?tripId=${trip.id}`);
+          router.push(`/streamChat?tripId=${trip.id}`);
           return;
         } catch (err) {
           console.error('Failed with Access Token:', err);
@@ -566,7 +561,7 @@ const FindTripScreen: React.FC = () => {
       } else if (error.response?.status === 400) {
         const message = error.response?.data?.message;
         if (message === 'คุณเป็นสมาชิกของทริปนี้แล้ว') {
-          router.push(`/stramChat?tripId=${trip.id}`);
+          router.push(`/streamChat?tripId=${trip.id}`);
         } else if (message === 'ทริปนี้เต็มแล้ว') {
           return;
         }

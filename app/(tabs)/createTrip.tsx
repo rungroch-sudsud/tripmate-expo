@@ -1,17 +1,13 @@
 import React, { useState,useEffect, useCallback} from 'react';
-import {requirements} from '../requirement'
+import {requirements} from '../../requirement'
 import {StreamChat} from 'stream-chat'
 import {
   View,
   Text,
-  Modal,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  Image,
   Alert,
-  ActivityIndicator
 } from 'react-native';
 import {ImageUploadComponent,
   DatePickerComponent,
@@ -21,17 +17,15 @@ import {ImageUploadComponent,
   TravelStylesComponent,
   DestinationsComponent,
   AtmosphereInputComponent,
-  DetailsInputComponent} from './Edit_CreateTrip_jsx'
-import TripNameInput from './tripNameInput'
+  DetailsInputComponent} from '../../src/shared/components/Edit_CreateTrip_jsx'
+import TripNameInput from '../../src/components/tripNameInput'
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
-import {axiosInstance} from '../lib/axios'
+import {axiosInstance} from '../../src/lib/axios'
 import '@expo-google-fonts/inter'
-import {Calendar} from 'react-native-calendars'
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useFonts} from 'expo-font'
-import TripCard from './TripCard'
-import styles from './css/create_EditTrip'
+import TripCard from '../../src/shared/components/TripCard'
+import styles from '../../src/css/create_EditTrip'
 const MAX_WORDS = 40;
 interface Service {
   id: string;
@@ -76,11 +70,7 @@ const ThaiFormScreen = () => {
  
       
 
-  const [fontsLoaded] = useFonts({
-    'InterTight-Black': require('../assets/fonts/InterTight-Black.ttf'),
-    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
-  });
+
 
   // State declarations
   const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);

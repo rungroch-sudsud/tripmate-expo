@@ -11,8 +11,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams,Stack } from 'expo-router';
-import { axiosInstance } from '../lib/axios';
-import { useFonts } from 'expo-font';
+import { axiosInstance } from '../../src/lib/axios';
+
 
 
 interface UserProfile {
@@ -41,11 +41,7 @@ interface ReviewRequest {
 
 const ReviewScreen: React.FC = () => {
 
-  const [fontsLoaded] = useFonts({
-    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
-    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
-  });
+
   const router = useRouter();
   const { id, tripId } = useLocalSearchParams();
   

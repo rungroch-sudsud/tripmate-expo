@@ -1,0 +1,1 @@
+export {fetchDestinations,fetchTravelStyles} from './userServices'
