@@ -13,7 +13,7 @@ export const STORAGE_KEYS = {
 
 export const API_STATUS = {
   SUCCESS: 201,
-  CONFLICT: 409,
+  CONFLICT: 400,
   BAD_REQUEST: 400,
 };
 
@@ -91,35 +91,25 @@ export const clearStoredTokens = async () => {
 export const handleProfileError = async (error, user) => {
   if (error.response?.status === API_STATUS.CONFLICT) {
     await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-    return {
+    const response=await getUserProfile(user.uid)
+    if(response){
+      if(response?.age!==-999){
+   return {
       success: true,
       route: NAVIGATION_ROUTES.FIND_TRIPS,
       type: 'existing_user'
     };
-  }
+      }
 
-  if (error.response?.status === API_STATUS.BAD_REQUEST) {
-    try {
-      const response = await axiosInstance.get(`/users/profile/${user.uid}`);
-      const isProfileComplete = response.data.data.age !== -999;
-      
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-      
-      return {
-        success: true,
-        route: isProfileComplete ? NAVIGATION_ROUTES.FIND_TRIPS : NAVIGATION_ROUTES.TRAVEL_STYLE,
-        type: isProfileComplete ? 'complete_profile' : 'incomplete_profile'
-      };
-    } catch {
-      await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-      return {
-        success: true,
-        route: NAVIGATION_ROUTES.TRAVEL_STYLE,
-        type: 'incomplete_profile'
-      };
+      else if(response?.age===-999){
+        return{
+         success: true,
+      route: NAVIGATION_ROUTES.TRAVEL_STYLE,
+      type: 'incomplete_profile'
+        }
+      }
     }
   }
-
   throw error;
 };
 
@@ -334,9 +324,7 @@ export const uploadImageToEndpoint = async (imageFile, endpoint) => {
     }
 
     const response = await axiosInstance.patch(`${endpoint}/${userId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
+
     });
     
     return { success: true, data: response.data };
@@ -351,11 +339,103 @@ export const uploadProfileImage = async (imageFile) => {
 };
 
 export const uploadIdCardImage = async (imageFile) => {
-  return uploadImageToEndpoint(imageFile, '/users/profile/id-card/image');
+  try {
+    const userId = await AsyncStorage.getItem(STORAGE_KEYS.USER_ID);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    const formData = new FormData();
+    
+    // Create file object for React Native
+    const fileObj = {
+      uri: imageFile.uri,
+      type: imageFile.type || 'image/jpeg',
+      name: imageFile.name || `id-card-${Date.now()}.jpg`,
+    };
+
+    formData.append('file', fileObj);
+
+    console.log('Uploading ID card for user:', userId);
+    console.log('File object:', fileObj);
+
+    const response = await axiosInstance.patch(
+      `/users/profile/id-card/image/${userId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 seconds timeout
+      }
+    );
+
+    console.log('ID card upload response:', response.data);
+    return { success: true, data: response.data };
+    
+  } catch (error) {
+    console.error('ID card upload error:', error);
+    
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+    
+    return { 
+      success: false, 
+      error: error.response?.data?.message || error.message 
+    };
+  }
 };
 
 export const uploadPortraitImage = async (imageFile) => {
-  return uploadImageToEndpoint(imageFile, '/users/profile/portrait/image');
+  try {
+    const userId = await AsyncStorage.getItem(STORAGE_KEYS.USER_ID);
+    if (!userId) {
+      throw new Error('No user ID found');
+    }
+
+    const formData = new FormData();
+    
+    // Create file object for React Native
+    const fileObj = {
+      uri: imageFile.uri,
+      type: imageFile.type || 'image/jpeg',
+      name: imageFile.name || `portrait-${Date.now()}.jpg`,
+    };
+
+    formData.append('file', fileObj);
+
+    console.log('Uploading portrait for user:', userId);
+    console.log('File object:', fileObj);
+
+    const response = await axiosInstance.patch(
+      `/users/profile/portrait/image/${userId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 30000, // 30 seconds timeout
+      }
+    );
+
+    console.log('Portrait upload response:', response.data);
+    return { success: true, data: response.data };
+    
+  } catch (error) {
+    console.error('Portrait upload error:', error);
+    
+    if (error.response) {
+      console.error('Response status:', error.response.status);
+      console.error('Response data:', error.response.data);
+    }
+    
+    return { 
+      success: false, 
+      error: error.response?.data?.message || error.message 
+    };
+  }
 };
 
 // Authentication functions
@@ -549,30 +629,22 @@ export const convertBase64ToFile = (base64Uri, filename, mimeType) => {
 
 export const processImagePickerResponse = (response, defaultName = 'image') => {
   if (response.didCancel || response.errorMessage) {
+    console.log('Image picker cancelled or error:', response.errorMessage);
     return null;
   }
 
   if (response.assets && response.assets.length > 0) {
     const pickedImage = response.assets[0];
     
-    // Handle base64 data URIs
-    if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
-      return convertBase64ToFile(
-        pickedImage.uri,
-        pickedImage.fileName ?? `${defaultName}-${Date.now()}.jpg`,
-        pickedImage.type ?? 'image/jpeg'
-      );
-    }
-
-    // Handle regular file URIs
-    if (pickedImage.uri) {
-      return {
-        uri: pickedImage.uri,
-        type: pickedImage.type ?? 'image/jpeg',
-        name: pickedImage.fileName ?? `${defaultName}-${Date.now()}.jpg`,
-        size: pickedImage.fileSize,
-      };
-    }
+    const processedImage = {
+      uri: pickedImage.uri,
+      type: pickedImage.type || 'image/jpeg',
+      name: pickedImage.fileName || `${defaultName}-${Date.now()}.jpg`,
+      size: pickedImage.fileSize,
+    };
+    
+    console.log('Processed image:', processedImage);
+    return processedImage;
   }
 
   return null;

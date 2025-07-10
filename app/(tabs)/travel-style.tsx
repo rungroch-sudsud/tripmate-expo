@@ -16,13 +16,34 @@ import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
 import { axiosInstance } from '../../src/lib/axios';
+import { useFonts } from 'expo-font';
 import { getAuth, signOut } from 'firebase/auth';
 import styles from '../../src/css/travelstyle_styles'
-import {ApiResponse,Category} from  '../../src/shared/schemas/api.schema'
 
+interface Category {
+  id: string;
+  title: string;
+  iconImageUrl: string;
+  activeIconImageUrl: string;
+}
+
+interface ApiResponse {
+  data: {
+    id: string;
+    title: string;
+    iconImageUrl: string;
+    activeIconImageUrl: string;
+  }[];
+  message: string;
+}
 
 const TravelStyleScreen: React.FC = () => {
-
+  // All hooks at the top level
+  const [fontsLoaded] = useFonts({
+    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
+    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
+    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
+  });
   
   const router = useRouter();
   const route = useRoute();
@@ -64,11 +85,7 @@ const TravelStyleScreen: React.FC = () => {
       return mappedCategories;
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
-      Alert.alert(
-        'Error',
-        'Failed to load travel styles. Please try again.',
-        [{ text: 'OK' }]
-      );
+  
       setCategories([]);
       return [];
     } finally {
@@ -216,7 +233,17 @@ const TravelStyleScreen: React.FC = () => {
     }
   }, [router]);
 
-
+  // Don't render anything if fonts aren't loaded yet
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#29C4AF" />
+          <Text style={styles.loadingText}>Loading fonts...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <>

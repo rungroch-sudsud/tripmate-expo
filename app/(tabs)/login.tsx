@@ -70,9 +70,13 @@ const Login = () => {
           if (!stored) return;
 
           const profile = await getUserProfile(user.uid);
-          if (profile?.age !== -999) {
+          console.log(profile);
+          if(profile){
+               if (profile?.age !== -999) {
             router.push(NAVIGATION_ROUTES.FIND_TRIPS);
           }
+          }
+       
         } catch {
           await clearStoredTokens();
         }
