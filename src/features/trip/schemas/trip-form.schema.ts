@@ -32,3 +32,23 @@ export interface FormDataFields {
 export type FormData2Fields = {
   name: string;
 };
+
+
+export interface Trip {
+  id: string;
+  status: string;
+  name: string;
+  includedServices: string[];
+  destinations: string[];
+  endDate: string;
+  maxParticipants: number;
+  tripOwnerId: string;
+  groupAtmosphere: string;
+  startDate: string;
+  participants: any[];
+  travelStyles: string[];
+  tripCoverImageUrl: string;
+  pricePerPerson: number;
+  detail: string;
+  tripOwner: any;
+}

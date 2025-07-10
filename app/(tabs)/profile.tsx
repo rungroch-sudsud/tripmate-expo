@@ -20,80 +20,19 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { axiosInstance } from '../../src/lib/axios';
 import axios from 'axios';
 import { getAuth, signOut } from 'firebase/auth';
-import { useFonts } from 'expo-font';
 import styles from '../../src/css/profile_styles';
-
-// Type definitions
-interface Category {
-  id: string;
-  title: string;
-  iconImageUrl: string;
-  activeIconImageUrl: string;
-}
-
-interface ApiResponse {
-  data: {
-    id: string;
-    title: string;
-    iconImageUrl: string;
-    activeIconImageUrl: string;
-  }[];
-  message: string;
-}
-
-interface ProfileFormData {
-  fullName: string;
-  nickname: string;
-  age: string;
-  gender: string;
-  customGender: string;
-  email: string;
-  facebookUrl: string;
-  lineId: string;
-  travelInterests: string[];
-  favouriteDestinations: string[];
-  travelStyles?: string[];
-}
-
-type PickedFile = {
-  uri: string;
-  type: string;
-  name: string;
-  size?: number;
-  base64Data?: string;
-  isBase64?: boolean;
-};
-
-interface ValidationErrors {
-  fullName?: string;
-  nickname?: string;
-  age?: string;
-  gender?: string;
-  email?: string;
-  facebookUrl?: string;
-  lineId?: string;
-}
-
-interface User {
-  fullname: string;
-  nickname: string;
-  email: string;
-  age: number;
-  gender: string;
-  facebookUrl: string;
-  lineId: string;
-  destinations: string[];
-  travelStyles: string[];
-  profileImageUrl?: string;
-}
+import ProgressBar from  '../../src/shared/components/ProgressBar'
+import {Category,ApiResponse} from '../../src/shared/schemas/api.schema'
+import {User} from '../../src/shared/schemas/user_schema'
+import {ValidationErrors}  from  '../../src/shared/schemas/errors_schema'
+import {ProfileFormData} from  '../../src/shared/schemas/form_schema'
+import { PickedFile } from '@/src/shared/schemas/file_type'; '../../src/shared/schemas/file_type'
+import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../src/services/userServices'
+import {sanitizeValue} from '../../src/shared/utils/sanitizeValue'
+import  {convertBase64ToFile} from '../../src/shared/utils/file.util'
 
 const ProfileForm: React.FC = () => {
-  // Font loading
-  const [fontsLoaded] = useFonts({
-    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
-    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
-  });
+
 
   // State management
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
@@ -161,117 +100,6 @@ const ProfileForm: React.FC = () => {
   const genderOptions = ['ผู้ชาย', 'ผู้หญิง', 'อื่นๆ'] as const;
   const isResetting = useRef(false);
 
-  // Validation functions
-  const validateFullName = (name: string): string | null => {
-    const trimmedName = name.trim();
-    
-    if (name !== trimmedName) {
-      return 'ชื่อ-นามสกุลห้ามมีช่องว่างก่อนและหลัง';
-    }
-    
-    if (!trimmedName) {
-      return 'กรุณากรอกชื่อ-นามสกุล';
-    }
-    
-    const specialCharRegex = /[^a-zA-Zก-๙\s]/;
-    if (specialCharRegex.test(trimmedName)) {
-      return 'ชื่อ-นามสกุลไม่สามารถมีอักขระพิเศษได้';
-    }
-    
-    if (trimmedName.includes('  ')) {
-      return 'ชื่อ-นามสกุลไม่สามารถมีช่องว่างมากกว่า 1 ช่องได้';
-    }
-    
-    const parts = trimmedName.split(' ');
-    if (parts.length !== 2) {
-      return 'กรุณากรอกชื่อและนามสกุล คั่นด้วยช่องว่าง 1 ช่อง';
-    }
-    
-    if (parts[0].length === 0 || parts[1].length === 0) {
-      return 'กรุณากรอกชื่อและนามสกุลให้ครบถ้วน';
-    }
-    
-    return null;
-  };
-
-  const validateNickname = (name: string): string | null => {
-    const trimmed = name.trim();
-    
-    if (!trimmed) {
-      return 'กรุณากรอกชื่อเล่น';
-    }
-    
-    if (name !== trimmed) {
-      return 'ชื่อเล่นห้ามมีช่องว่างก่อนและหลัง';
-    }
-    
-    if (trimmed.includes(' ')) {
-      return 'ชื่อเล่นต้องเป็นคำเดียวโดยไม่มีช่องว่าง';
-    }
-    
-    const specialCharRegex = /[^a-zA-Zก-๙]/;
-    if (specialCharRegex.test(trimmed)) {
-      return 'ชื่อเล่นสามารถประกอบด้วยตัวอักษรภาษาไทยหรืออังกฤษเท่านั้น';
-    }
-    
-    return null;
-  };
-
-  const validateAge = (age: string): string | null => {
-    if (!age.trim()) {
-      return 'กรุณากรอกอายุ';
-    }
-
-    const ageNum = parseInt(age);
-    if (isNaN(ageNum) || ageNum < 0) {
-      return 'อายุต้องเป็นตัวเลขที่มากกว่าหรือเท่ากับ 0';
-    }
-
-    if (ageNum > 150) {
-      return 'กรุณากรอกอายุที่ถูกต้อง';
-    }
-
-    return null;
-  };
-
-  const validateEmail = (email: string): string | null => {
-    if (!email.trim()) {
-      return 'กรุณากรอกอีเมล';
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return 'รูปแบบอีเมลไม่ถูกต้อง';
-    }
-
-    return null;
-  };
-
-  const validateFacebookUrl = (url: string): string | undefined => {
-    if (!url.trim()) return undefined;
-    
-    const facebookUrlRegex = /^(https?:\/\/)?(www\.)?(facebook\.com|fb\.com)\/.+/i;
-    const usernameRegex = /^[a-zA-Z0-9.]{5,}$/;
-    
-    if (facebookUrlRegex.test(url) || usernameRegex.test(url)) {
-      return undefined;
-    }
-    
-    return "กรุณาใส่ Facebook URL ที่ถูกต้อง หรือ Username";
-  };
-
-  const validateLineId = (lineId: string): string | undefined => {
-    if (!lineId.trim()) return undefined;
-    
-    const lineIdRegex = /^[a-zA-Z0-9._-]{4,20}$/;
-    
-    if (lineIdRegex.test(lineId)) {
-      return undefined;
-    }
-    
-    return "LINE ID ต้องมี 4-20 ตัวอักษร และใช้ได้เฉพาะ a-z, 0-9, ., _, -";
-  };
-
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
 
@@ -300,26 +128,6 @@ const ProfileForm: React.FC = () => {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // Utility functions
-  const sanitizeValue = (value: any): string => {
-    if (value === "N/A" || value === null || value === undefined) {
-      return '';
-    }
-    return String(value);
-  };
-
-  const convertBase64ToFile = (base64Uri: string, filename: string, mimeType: string) => {
-    const base64Data = base64Uri.split(',')[1];
-    return {
-      uri: base64Uri,
-      base64Data: base64Data,
-      type: mimeType,
-      name: filename,
-      isBase64: true,
-    };
-  };
-
   // API functions
   const fetchUserProfile = useCallback(async () => {  
     try {
@@ -715,13 +523,7 @@ const ProfileForm: React.FC = () => {
     dest.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  if (!fontsLoaded) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#6366f1" />
-      </SafeAreaView>
-    );
-  }
+ 
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
@@ -738,21 +540,9 @@ const ProfileForm: React.FC = () => {
       </View>
   
       {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <Animated.View 
-            style={[
-              styles.progressFill,
-              {
-                width: progressAnimation.interpolate({
-                  inputRange: [0, 100],
-                  outputRange: ['0%', '100%'],
-                }),
-              },
-            ]} 
-          />
-        </View>
-      </View>
+       {!userId && (
+      <ProgressBar animation={progressAnimation} styles={styles} />
+    )}
   
       <ScrollView 
         style={styles.scrollView} 

@@ -83,6 +83,19 @@ export  const validateEmail = (email: string): string | null => {
 
     return null;
   };
+
+
+  export const validatePhoneNumber = (phone: string): string | null => {
+  if (!phone.trim()) {
+    return 'กรุณากรอกหมายเลขโทรศัพท์';
+  }
+  
+  if (!/^[0-9]{10}$/.test(phone)) {
+    return 'กรุณากรอกหมายเลขโทรศัพท์ที่ถูกต้อง (10 หลัก)';
+  }
+  
+  return null;
+};
 export  const validateFacebookUrl = (url: string): string | undefined => {
     if (!url.trim()) return undefined;
     

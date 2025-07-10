@@ -1,8 +1,6 @@
 import { axiosInstance } from '../lib/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { Alert } from 'react-native';
-import axios from 'axios';
 import { getAuth, signOut } from 'firebase/auth';
 
 export const STORAGE_KEYS = {

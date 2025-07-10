@@ -19,6 +19,7 @@ import {
   createUserProfile,
   getUserProfile
 } from '../../src/services/authService';
+import ProgressBar from  '../../src/shared/components/ProgressBar'
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -105,21 +106,7 @@ const Login = () => {
         <Text style={styles.headerText}>เข้าสู่ระบบ</Text>
       </View>
 
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <Animated.View
-            style={[
-              styles.progressFill,
-              {
-                width: progressAnimation.interpolate({
-                  inputRange: [0, 33.33],
-                  outputRange: ['0%', '33.33%'],
-                }),
-              },
-            ]}
-          />
-        </View>
-      </View>
+      <ProgressBar animation={progressAnimation} styles={styles}/>
 
       <View style={styles.content}>
         <View style={styles.logoContainer}>

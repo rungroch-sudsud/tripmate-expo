@@ -7,48 +7,25 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  Alert,
   Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { useRoute, useNavigation, useFocusEffect } from '@react-navigation/native';
-import { axiosInstance } from '../../src/lib/axios';
-import { useFonts } from 'expo-font';
+import { useFocusEffect } from '@react-navigation/native';
 import { getAuth, signOut } from 'firebase/auth';
-import styles from '../../src/css/travelstyle_styles'
-
-interface Category {
-  id: string;
-  title: string;
-  iconImageUrl: string;
-  activeIconImageUrl: string;
-}
-
-interface ApiResponse {
-  data: {
-    id: string;
-    title: string;
-    iconImageUrl: string;
-    activeIconImageUrl: string;
-  }[];
-  message: string;
-}
-
+import styles from '../../src/css/travelstyle_styles';
+import { Category, ApiResponse } from '../../src/shared/schemas/api.schema';
+import { 
+  getUserProfile, 
+  fetchUserProfile, 
+  updateUserProfile, 
+  fetchTravelStyles 
+} from '../../src/services/userServices';
+import ProgressBar from  '../../src/shared/components/ProgressBar' 
 const TravelStyleScreen: React.FC = () => {
-  // All hooks at the top level
-  const [fontsLoaded] = useFonts({
-    'CustomFont': require('../assets/fonts/InterTight-Black.ttf'),
-    'InterTight-SemiBold': require('../assets/fonts/InterTight-SemiBold.ttf'),
-    'InterTight-Regular': require('../assets/fonts/InterTight-Regular.ttf')
-  });
-  
-  const router = useRouter();
-  const route = useRoute();
-  const navigation = useNavigation();
-  
+  const router = useRouter();  
   const [email, setEmail] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -67,25 +44,15 @@ const TravelStyleScreen: React.FC = () => {
     }
   }, []);
 
-  // Memoized callback for fetchTravelStyles
-  const fetchTravelStyles = useCallback(async (): Promise<void> => {
+  // Memoized callback for fetchTravelStyles using service
+  const loadTravelStyles = useCallback(async (): Promise<Category[]> => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get('/travel-styles');
-      const result: ApiResponse = response.data;
-      
-      const mappedCategories: Category[] = result.data.map(item => ({
-        id: item.id,
-        title: item.title,
-        iconImageUrl: item.iconImageUrl,
-        activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
-      }));
-      
-      setCategories(mappedCategories);
-      return mappedCategories;
+      const categoriesData = await fetchTravelStyles();
+      setCategories(categoriesData);
+      return categoriesData;
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
-  
       setCategories([]);
       return [];
     } finally {
@@ -93,10 +60,18 @@ const TravelStyleScreen: React.FC = () => {
     }
   }, []);
 
-  const fetchUserProfile = useCallback(async (userId: string, categoriesData: Category[]): Promise<void> => {
+  // Memoized callback for fetching user profile using service
+  const loadUserProfile = useCallback(async (userId: string, categoriesData: Category[]): Promise<void> => {
     try {
-      const response = await axiosInstance.get(`/users/profile/${userId}`);
-      const userProfile = response.data.data;
+      const userProfile = await getUserProfile(userId);
+      
+      if (!userProfile) {
+        console.log('No user profile found');
+        setSelectedItems([]);
+        setProfileLoaded(true);
+        return;
+      }
+
       const userTravelStyles = userProfile.travelStyles || [];
       
       console.log('API returned travel styles:', userTravelStyles);
@@ -146,11 +121,11 @@ const TravelStyleScreen: React.FC = () => {
     // Initial load of categories and user profile
     const loadInitialData = async () => {
       try {
-        const categoriesData = await fetchTravelStyles();
+        const categoriesData = await loadTravelStyles();
         const userId = await AsyncStorage.getItem('userId');
         
         if (userId && categoriesData.length > 0) {
-          await fetchUserProfile(userId, categoriesData);
+          await loadUserProfile(userId, categoriesData);
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -169,13 +144,13 @@ const TravelStyleScreen: React.FC = () => {
         if (!profileLoaded && categories.length > 0) {
           const userId = await AsyncStorage.getItem('userId');
           if (userId) {
-            await fetchUserProfile(userId, categories);
+            await loadUserProfile(userId, categories);
           }
         }
       };
 
       reloadProfileIfNeeded();
-    }, [profileLoaded, categories, fetchUserProfile])
+    }, [profileLoaded, categories, loadUserProfile])
   );
 
   const toggleSelection = useCallback((id: string): void => {
@@ -190,32 +165,24 @@ const TravelStyleScreen: React.FC = () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
       
-      if (!userId) {
-        Alert.alert("Error", "User ID not found. Please log in.");
-        router.push("/login");
-        return;
-      }
-
-      const payload = {
+      const profileData = {
         userId,
         travelStyles: selectedItems,
       };
 
-      const response = await axiosInstance.patch(`/users/profile/${userId}`, payload);
+      const result = await updateUserProfile(profileData);
 
-      if (response.status === 200) {
-        await AsyncStorage.setItem('travelStyles', JSON.stringify(response.data.data.travelStyles));
-        console.log("Travel style updated:", response.data.data.travelStyles);
+      if (result.success) {
+        await AsyncStorage.setItem('travelStyles', JSON.stringify(result.data.data.travelStyles));
+        console.log("Travel style updated:", result.data.data.travelStyles);
         router.push("/account-verification");
-      } else if (response.status === 404) {
-        Alert.alert("Error", "User profile not found. Please log in again.");
-        router.push("/login");
       } else {
-        router.push("/login");
+        if (result.error?.response?.status === 404) {
+          router.push("/login");
+        } 
       }
     } catch (error) {
       console.error("Failed to update travel styles:", error);
-      Alert.alert("Error", "Failed to update travel styles. Please try again.");
     }
   }, [selectedItems, router]);
 
@@ -232,18 +199,6 @@ const TravelStyleScreen: React.FC = () => {
       router.push('/login');
     }
   }, [router]);
-
-  // Don't render anything if fonts aren't loaded yet
-  if (!fontsLoaded) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#29C4AF" />
-          <Text style={styles.loadingText}>Loading fonts...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <>
@@ -267,21 +222,7 @@ const TravelStyleScreen: React.FC = () => {
         </View>
 
         {/* Progress Bar */}
-        <View style={styles.progressContainer}>
-          <View style={styles.progressBar}>
-            <Animated.View 
-              style={[
-                styles.progressFill,
-                {
-                  width: progressAnimation.interpolate({
-                    inputRange: [0, 100],
-                    outputRange: ['0%', '66.66%'],
-                  }),
-                },
-              ]} 
-            />
-          </View>
-        </View>
+       <ProgressBar animation={progressAnimation} styles={styles}/>
 
         {/* Content */}
         <View style={styles.content}>
