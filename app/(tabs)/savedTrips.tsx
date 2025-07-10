@@ -336,6 +336,7 @@ const SavedTripScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+       <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator size="large" color="#6366f1" />
         <Text style={styles.loadingText}>กำลังโหลดทริป...</Text>
       </View>

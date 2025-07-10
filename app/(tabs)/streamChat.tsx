@@ -25,7 +25,7 @@ import { axiosInstance } from '../../src/lib/axios';
 import { requirements } from '../../requirement';
 import CustomChannelHeader from '../../src/components/customChannelHeader';
 import ProductionCustomMessage from '../../src/components/customMessage';
-//import 'stream-chat-react/css/v2/index.css'
+import 'stream-chat-react/css/v2/index.css'
 import styles from '../../src/css/stream_chat_styles'
 interface TripParticipant {
   userId: string;

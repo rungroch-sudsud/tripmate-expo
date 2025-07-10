@@ -150,6 +150,7 @@ const ReviewScreen: React.FC = () => {
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
+         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton}
