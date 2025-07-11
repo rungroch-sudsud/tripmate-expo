@@ -15,15 +15,15 @@ import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAuth, signOut } from 'firebase/auth';
-import styles from '../../src/css/travelstyle_styles';
-import { Category, ApiResponse } from '../../src/shared/schemas/api.schema';
+import styles from '../../css/travelstyle_styles';
+import { Category, ApiResponse } from '../../shared/schemas/api.schema';
 import { 
   getUserProfile, 
   fetchUserProfile, 
   updateUserProfile, 
   fetchTravelStyles 
-} from '../../src/services/userServices';
-import ProgressBar from  '../../src/shared/components/ProgressBar' 
+} from '../../features/user/services/userServices';
+import ProgressBar from  '../../components/ProgressBar' 
 const TravelStyleScreen: React.FC = () => {
   const router = useRouter();  
   const [email, setEmail] = useState<string | null>(null);

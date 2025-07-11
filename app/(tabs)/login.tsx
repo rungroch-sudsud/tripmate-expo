@@ -10,16 +10,16 @@ import {
   Animated,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import styles from '../../src/css/login_styles';
+import styles from '../../css/login_styles';
 
-import { NAVIGATION_ROUTES } from '../../src/services/userServices';
+import { NAVIGATION_ROUTES } from '../../features/user/services/userServices';
 import {
   storeUserTokens,
   clearStoredTokens,
   createUserProfile,
   getUserProfile
-} from '../../src/services/authService';
-import ProgressBar from  '../../src/shared/components/ProgressBar'
+} from '../../features/auth/authService';
+import ProgressBar from  '../../components/ProgressBar'
 
 WebBrowser.maybeCompleteAuthSession();
 

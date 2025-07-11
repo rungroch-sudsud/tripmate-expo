@@ -50,7 +50,7 @@ const BottomNavigation = ({ currentScreen, userId }) => {
         onPress={() => handleNavigation('home')}
       >
         <Image
-          source={require('../../../app/assets/images/images/images/image18.png')}
+          source={require('../app/assets/images/images/images/image18.png')}
           style={getIconStyle('home')}
         />
         <Text style={getTextStyle('home')}>หน้าหลัก</Text>
@@ -62,7 +62,7 @@ const BottomNavigation = ({ currentScreen, userId }) => {
         onPress={() => handleNavigation('findTrips')}
       >
         <Image
-          source={require('../../../app/assets/images/images/images/image23.png')}
+          source={require('../app/assets/images/images/images/image23.png')}
           style={getIconStyle('findTrips')}
         />
         <Text style={getTextStyle('findTrips')}>ค้นหา</Text>
@@ -74,7 +74,7 @@ const BottomNavigation = ({ currentScreen, userId }) => {
         onPress={() => handleNavigation('savedTrips')}
       >
         <Image
-          source={require('../../../app/assets/images/images/images/image21.png')}
+          source={require('../app/assets/images/images/images/image21.png')}
           style={getSavedIconStyle()}
         />
         <Text style={getTextStyle('savedTrips')}>บันทึก</Text>
@@ -86,7 +86,7 @@ const BottomNavigation = ({ currentScreen, userId }) => {
         onPress={() => handleNavigation('profile')}
       >
         <Image
-          source={require('../../../app/assets/images/images/images/image20.png')}
+          source={require('../app/assets/images/images/images/image20.png')}
           style={getIconStyle('profile')}
         />
         <Text style={getTextStyle('profile')}>โปรไฟล์</Text>

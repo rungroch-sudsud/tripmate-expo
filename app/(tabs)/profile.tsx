@@ -17,19 +17,19 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { axiosInstance } from '../../src/lib/axios';
+import { axiosInstance } from '../../lib/axios';
 import axios from 'axios';
 import { getAuth, signOut } from 'firebase/auth';
-import styles from '../../src/css/profile_styles';
-import ProgressBar from  '../../src/shared/components/ProgressBar'
-import {Category,ApiResponse} from '../../src/shared/schemas/api.schema'
-import {User} from '../../src/shared/schemas/user_schema'
-import {ValidationErrors}  from  '../../src/shared/schemas/errors_schema'
-import {ProfileFormData} from  '../../src/shared/schemas/form_schema'
-import { PickedFile } from '@/src/shared/schemas/file_type'; '../../src/shared/schemas/file_type'
-import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../src/services/userServices'
-import {sanitizeValue} from '../../src/shared/utils/sanitizeValue'
-import  {convertBase64ToFile} from '../../src/shared/utils/file.util'
+import styles from '../../css/profile_styles';
+import ProgressBar from  '../../components/ProgressBar'
+import {Category,ApiResponse} from '../../shared/schemas/api.schema'
+import {User} from '../../shared/schemas/user_schema'
+import {ValidationErrors}  from  '../../shared/schemas/errors_schema'
+import {ProfileFormData} from  '../../shared/schemas/form_schema'
+import { PickedFile } from '@/shared/schemas/file_type'; '../../src/shared/schemas/file_type'
+import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../features/user/services/userServices'
+import {sanitizeValue} from '../../shared/utils/sanitizeValue'
+import  {convertBase64ToFile} from '../../shared/utils/file.util'
 
 const ProfileForm: React.FC = () => {
 

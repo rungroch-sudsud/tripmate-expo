@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, TextInput, TouchableOpacity, Text, Image, FlatList } from 'react-native';
-import styles from '../../../css/findTrip_css';
+import styles from '../css/findTrip_css';
 
 interface SearchBarProps {
   searchQuery: string;
@@ -32,7 +32,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   <View style={styles.searchContainer}>
     <View style={styles.searchInputContainer}>
       <Image 
-        source={require('../../../../app/assets/images/images/images/image9.png')} 
+        source={require('../app/assets/images/images/images/image9.png')} 
         style={styles.searchIcon}
       />
       <TextInput
@@ -81,7 +81,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
                 onPress={() => onHistorySelect(item)}
               >
                 <Image 
-                  source={require('../../../../app/assets/images/images/images/clock.png')}
+                  source={require('../app/assets/images/images/images/clock.png')}
                   style={styles.historyIcon}
                 />
                 <Text style={styles.historyText}>{item}</Text>

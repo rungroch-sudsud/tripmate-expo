@@ -1,7 +1,7 @@
 // axios.ts
-import {auth} from '../../firebaseConfig'; // Import from your config file
+import {auth} from '../firebaseConfig'; // Import from your config file
 import axios from 'axios';
-import {requirements} from '../../requirement'
+import {requirements} from '../requirement'
 
 const axiosInstance = axios.create({
   baseURL: `${requirements.baseURL}`,

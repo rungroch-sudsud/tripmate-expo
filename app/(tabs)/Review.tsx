@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams,Stack } from 'expo-router';
-import { axiosInstance } from '../../src/lib/axios';
+import { axiosInstance } from '../../lib/axios';
 
 
 

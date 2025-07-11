@@ -1,4 +1,4 @@
-import { convertDate } from '@/src/shared/utils/date.util';
+import { convertDate } from '@/shared/utils/date.util';
 import { MAX_TRIP_NAME_WORDS } from '../constants/trip-form.constant';
 import {
   Category,

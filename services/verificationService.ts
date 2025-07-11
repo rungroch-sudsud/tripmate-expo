@@ -5,4 +5,4 @@ export {
   uploadPortraitImage,
   validateVerificationForm,
   processImagePickerResponse
-} from './userServices';
+} from '../features/user/services/userServices';

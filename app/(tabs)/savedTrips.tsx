@@ -12,9 +12,9 @@ import {
 import { Stack, useRouter, useFocusEffect } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { axiosInstance } from '../../src/lib/axios';
-import TripCard from '../../src/shared/components/TripCard'
-import BottomNavigation from '../../src/shared/components/customNavigation'
+import { axiosInstance } from '../../lib/axios';
+import TripCard from '../../components/TripCard'
+import BottomNavigation from '../../components/customNavigation'
 
 // Types
 interface Trip {

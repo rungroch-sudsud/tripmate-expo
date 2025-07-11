@@ -8,7 +8,7 @@ import {
   MessageList,
   MessageInput
 } from 'stream-chat-react';
-import TripCard from '../../src/shared/components/TripCard';
+import TripCard from '../../components/TripCard';
 import type { Channel as StreamChannel } from 'stream-chat';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,12 +21,12 @@ import {
   SafeAreaView,
   BackHandler 
 } from 'react-native';
-import { axiosInstance } from '../../src/lib/axios';
+import { axiosInstance } from '../../lib/axios';
 import { requirements } from '../../requirement';
-import CustomChannelHeader from '../../src/components/customChannelHeader';
-import ProductionCustomMessage from '../../src/components/customMessage';
+import CustomChannelHeader from '../../components/customChannelHeader'
+import ProductionCustomMessage from '../../components/customMessage';
 import 'stream-chat-react/css/v2/index.css'
-import styles from '../../src/css/stream_chat_styles'
+import styles from '../../css/stream_chat_styles'
 interface TripParticipant {
   userId: string;
   fullname: string;

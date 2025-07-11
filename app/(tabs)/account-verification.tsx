@@ -11,18 +11,18 @@ import { useFocusEffect } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter, Stack } from 'expo-router';
-import { axiosInstance } from '../../src/lib/axios';
+import { axiosInstance } from '../../lib/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AxiosError } from 'axios';
-import styles from '../../src/css/account-verification_styles';
-import { PickedFile } from '../../src/shared/schemas/file_type';
-import {} from '../../src/shared/schemas/form_schema'
-import { convertBase64ToFile } from '../../src/shared/utils/file.util';
-import { validateEmail, validateFullName, validatePhoneNumber } from '../../src/shared/utils/profileForm_util';
-import { updateUserProfile } from '../../src/services/userServices';
-import UploadBox from '../../src/shared/components/UploadBox';
-import TextInputField from '../../src/shared/components/TextInputField';
-import ProgressBar from '../../src/shared/components/ProgressBar';
+import styles from '../../css/account-verification_styles';
+import { PickedFile } from '../../shared/schemas/file_type';
+import {} from '../../shared/schemas/form_schema'
+import { convertBase64ToFile } from '../../shared/utils/file.util';
+import { validateEmail, validateFullName, validatePhoneNumber } from '../../shared/utils/profileForm_util';
+import { updateUserProfile } from '../../features/user/services/userServices';
+import UploadBox from '../../components/UploadBox';
+import TextInputField from '../../components/TextInputField';
+import ProgressBar from '../../components/ProgressBar';
 
 type FormField = {
   value: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { axiosInstance } from '../../../lib/axios';
-import { requirements } from '../../../../requirement';
+import { requirements } from '../../../requirement';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export interface Trip {

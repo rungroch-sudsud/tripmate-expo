@@ -4,4 +4,4 @@ export {
   createUserProfile,
   handleProfileError,
   getUserProfile,
-} from './userServices';
+} from '../user/services/userServices';

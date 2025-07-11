@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   SafeAreaView,
-  ActivityIndicator
 } from 'react-native';
 import {ImageUploadComponent,
   DatePickerComponent,
@@ -15,15 +14,15 @@ import {ImageUploadComponent,
   TravelStylesComponent,
   DestinationsComponent,
   AtmosphereInputComponent,
-  DetailsInputComponent} from '../../src/shared/components/Edit_CreateTrip_jsx'
-import TripNameInput from '../../src/components/tripNameInput'
+  DetailsInputComponent} from '../../components/Edit_CreateTrip_jsx'
+import TripNameInput from '../../components/tripNameInput'
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
-import { axiosInstance } from '../../src/lib/axios';
+import { axiosInstance } from '../../lib/axios';
 import '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import TripCard from '../../src/shared/components/TripCard';
-import styles from '../../src/css/create_EditTrip';
+import TripCard from '../../components/TripCard';
+import styles from '../../css/create_EditTrip';
 import {requirements} from '../../requirement'
 import { StreamChat } from 'stream-chat';
 // Constants

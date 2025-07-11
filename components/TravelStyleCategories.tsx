@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, ScrollView, TouchableOpacity, Text, Image } from 'react-native';
-import { Category } from '../../../shared/schemas/api.schema';
-import styles from '../../../css/findTrip_css';
+import { Category } from '../shared/schemas/api.schema';
+import styles from '../css/findTrip_css';
 
 interface TravelStyleCategoriesProps {
   travelStyles: Category[];

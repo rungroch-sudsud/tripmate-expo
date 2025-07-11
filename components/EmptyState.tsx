@@ -1,7 +1,7 @@
 // EmptyState.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
-import styles from '../../../css/findTrip_css';
+import styles from '../css/findTrip_css';
 
 interface EmptyStateProps {
   searchQuery: string;

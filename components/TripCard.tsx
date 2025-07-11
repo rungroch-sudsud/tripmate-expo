@@ -154,7 +154,7 @@ const TripCard: React.FC<TripCardProps> = ({
         
         {/* Date Badge */}
         <View style={styles.dateBadge}>
-           <Image source={require('../../../app/assets/images/images/images/image25.png')} style={{width:10.5,height:12,marginRight:5}}/>
+           <Image source={require('../app/assets/images/images/images/image25.png')} style={{width:10.5,height:12,marginRight:5}}/>
           <Text style={styles.dateText}>
             {formatDateRange(trip.startDate, trip.endDate)}
           </Text>
@@ -162,7 +162,7 @@ const TripCard: React.FC<TripCardProps> = ({
         
         {/* Max Participant Badge */}
         <View style={styles.participantBadge}>
-         <Image source={require('../../../app/assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:5}}/>
+         <Image source={require('../app/assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:5}}/>
           <Text style={styles.participantText}>
             ต้องการ {trip.maxParticipants} คน
           </Text>
@@ -193,7 +193,7 @@ const TripCard: React.FC<TripCardProps> = ({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View style={styles.bookmarkIcon}>
-              {isBookmarked ? <Image source={require('../../../app/assets/images/images/images/image22.png')} style={{width:12,height:16,tintColor:'#29C4AF'}}/> : <Image source={require('../../../app/assets/images/images/images/image21.png')} style={{width:12,height:16}}  />}
+              {isBookmarked ? <Image source={require('../app/assets/images/images/images/image22.png')} style={{width:12,height:16,tintColor:'#29C4AF'}}/> : <Image source={require('../app/assets/images/images/images/image21.png')} style={{width:12,height:16}}  />}
             </View>
           </TouchableOpacity>
         </View>

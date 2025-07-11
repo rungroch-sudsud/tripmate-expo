@@ -8,26 +8,26 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 
 // Components
-import TripCard from '../../src/shared/components/TripCard';
-import BottomNavigation from '../../src/shared/components/customNavigation';
-import { SearchBar } from '../../src/features/trip/components/SearchBar';
-import { TravelStyleCategories } from '../../src/features/trip/components/TravelStyleCategories';
-import { TripCountHeader } from '../../src/features/trip/components/TripCountHeader';
-import { FloatingActionButton } from '../../src/features/trip/components/FloatingActionButton';
-import { HeaderSection } from '../../src/features/trip/components/HeaderSection';
-import { EmptyState } from '../../src/features/trip/components/EmptyState';
+import TripCard from '../../components/TripCard';
+import BottomNavigation from '../../components/customNavigation';
+import { SearchBar } from '../../components/SearchBar';
+import { TravelStyleCategories } from '../../components/TravelStyleCategories';
+import { TripCountHeader } from '../../components/TripCountHeader';
+import { FloatingActionButton } from '../../components/FloatingActionButton';
+import { HeaderSection } from '../../components/HeaderSection';
+import { EmptyState } from '../../components/EmptyState';
 
 // Hooks
-import { useTrips } from '../../src/features/trip/hooks/useTrips';
-import { useTravelStyles } from '../../src/features/trip/hooks/useTravelStyles';
-import { useBookmarks } from '../../src/features/trip/hooks/useBookmarks';
-import { useSearchHistory } from '../../src/features/trip/hooks/useSearchHistory';
-import { useAuth } from '../../src/features/auth/useAuth';
-import { useTripFilters } from '../../src/features/trip/hooks/useTripFilter';
-import { useNavigationService } from '../../src/services/useNavigationServices';
+import { useTrips } from '../../features/trip/hooks/useTrips';
+import { useTravelStyles } from '../../features/trip/hooks/useTravelStyles';
+import { useBookmarks } from '../../features/trip/hooks/useBookmarks';
+import { useSearchHistory } from '../../features/trip/hooks/useSearchHistory';
+import { useAuth } from '../../features/auth/hooks/useAuth';
+import { useTripFilters } from '../../features/trip/hooks/useTripFilter';
+import { useNavigationService } from '../../services/useNavigationServices';
 
 // Styles
-import styles from '../../src/css/findTrip_css';
+import styles from '../../css/findTrip_css';
 
 const FindTripScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);

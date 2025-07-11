@@ -27,7 +27,7 @@ export const ImageUploadComponent = ({
         <View style={styles.uploadPlaceholder}>
           <View style={styles.personIcon}>
             <Image
-             source={require('../../../app/assets/images/images/images/image3.png')}
+             source={require('../app/assets/images/images/images/image3.png')}
               style={{ height: 27, width: 27, tintColor: "#9CA3AF" }}
               resizeMode="contain"
             />
@@ -106,7 +106,7 @@ export const DatePickerComponent = ({
         (errors.startDate || errors.endDate) && styles.inputError
       ]}>
         <Image 
-           source={require('../../../app/assets/images/images/images/image25.png')}
+           source={require('../app/assets/images/images/images/image25.png')}
           style={{ width: 14, height: 16, marginHorizontal: 10 }} 
         />
         
@@ -275,7 +275,7 @@ export const MaxParticipantsComponent = ({
         error && styles.inputError
       ]}>
         <Image
-          source={require('../../../app/assets/images/images/images/image11.png')}
+          source={require('../app/assets/images/images/images/image11.png')}
           style={{ height: 16, width: 16, marginHorizontal: isEditMode ? 3 : 10 }}
           resizeMode="contain"
         />
@@ -342,7 +342,7 @@ export const PricePerPersonComponent = ({
         error && styles.inputError
       ]}>
         <Image
-          source={require('../../../app/assets/images/images/images/image12.png')}
+          source={require('../app/assets/images/images/images/image12.png')}
           style={{ height: 16, width: 16, marginHorizontal: 3 }}
           resizeMode="contain"
         />
@@ -579,7 +579,7 @@ export const DestinationsComponent = ({
               backgroundColor: '#FFFFFF',
             }}>
               <Image
-              source={require('../../../app/assets/images/images/images/image9.png')}
+              source={require('../app/assets/images/images/images/image9.png')}
                 style={{ width: 16, height: 16 }}
               />
               {' '} ค้นหาสถานที่
