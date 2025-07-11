@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test": "jest",
+    "test": "jest --coverage",
+    "test:dev": "jest",
     "postinstall": "patch-package",
     "analyze:web": "npx expo export:web && npx webpack-bundle-analyzer web-build/static/js/*.js"
   },

@@ -1,0 +1,238 @@
+[33mcommit fb79ae6b05961bb0c55af48083ae71d4a73db45b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mRefactor[m[33m, [m[1;31morigin/Refactor[m[33m)[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Fri Jul 11 11:51:57 2025 +0700
+
+    Refactor: removed deprecated components, updated related screens
+
+[33mcommit 11ef751efe798bcaf1e6ff3f84d42bf719247bb0[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jul 10 22:06:36 2025 +0700
+
+    Refactor: Improving custom hooks and sub-components in findTrips
+
+[33mcommit 195d956b4ddc57548c8862da20d686488a1a7284[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jul 10 09:54:50 2025 +0700
+
+    fix(tabs): resolve issues in Review, SavedTrips, and StreamChat components
+
+[33mcommit 32a98a0571d8f3008866736b4cbec245cc17a0b2[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jul 10 09:06:35 2025 +0700
+
+    feat: initial implementation of travel styles, account verification, and profile features
+
+[33mcommit 30b912fba0b1be19c4d7f2f4a4efd80ce7845952[m[33m ([m[1;31morigin/V11[m[33m, [m[1;32mV11[m[33m)[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jul 9 22:32:12 2025 +0700
+
+    refactor(tabs): cleaned up unused components and simplified trip flow logic
+
+[33mcommit bf008741517c66cd30be1956b69a9ace992ce56c[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Tue Jul 8 09:43:02 2025 +0700
+
+    refactor(tabs): further improvements to trip edit flow
+
+[33mcommit 1f1ca09d39df20598eaae9f03d75d6a3df45591e[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Tue Jul 8 10:31:46 2025 +0700
+
+    fix : lint error
+
+[33mcommit 9635bb0ff4c3ad15e4238addc61c6282404efd08[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Tue Jul 8 10:05:32 2025 +0700
+
+    chore: resolved code conflict
+
+[33mcommit 81417ad2c590b89b4b4d62692787b4e08311faeb[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Tue Jul 8 10:05:17 2025 +0700
+
+    chore : resolved code conflict
+
+[33mcommit 04bb60664445e1a121d2df6f2316ee26de9fd738[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Mon Jul 7 15:46:23 2025 +0700
+
+    refactor(tabs): further improvements to trip creation flow
+
+[33mcommit 1eeb386c4472227b333e9cd4ba2764bac610a7c7[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Mon Jul 7 13:08:39 2025 +0700
+
+    refactor(tabs): restructure trip editing and creating components
+
+[33mcommit 729ff22f7157ccc5a4628259b5f936fe4b4751c5[m
+Merge: bf24cf6 2c671ff
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Mon Jul 7 10:49:31 2025 +0700
+
+    Merge branch 'V11' of https://github.com/rungroch-sudsud/tripmate-expo into V11
+
+[33mcommit 2c671ffed4c46d5c4dac6adc408a35acc573b451[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 10:38:47 2025 +0700
+
+    refactor(trip) : clean up create tirp form data code
+
+[33mcommit 33a6c0be284aee7731a41f417e375c28c7ec39dd[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 10:15:48 2025 +0700
+
+    refactor : implemented new folder structure
+
+[33mcommit bf24cf69aa9906d0aedb29a17e91f9277fc7d12d[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Mon Jul 7 09:55:25 2025 +0700
+
+    07 JULY
+
+[33mcommit 0f66343f83dd580ba020b00e316fc10cc1d366fb[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 09:46:53 2025 +0700
+
+    fix : The text has reached minimum required characters but still cannot create a trip
+
+[33mcommit 7a221781a79ecb9a7ee1463876c54d61490176dc[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 09:43:34 2025 +0700
+
+    fix : The empty space is too big
+
+[33mcommit 59b102e30eb91fb21c3e17923d02ccb0a679bcce[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 09:39:18 2025 +0700
+
+    fix : Remove outline in Facebook and Line input (Profile screen)
+
+[33mcommit fd024c4c5450992aca7431cb937494575bb5fb27[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 09:35:45 2025 +0700
+
+    fix : remove dupliated price per person label
+
+[33mcommit 0428eb68c670e7c6f7d4d1590e67a65a842125ef[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Mon Jul 7 09:32:57 2025 +0700
+
+    fix : Remove dulicated price per person placeholder
+
+[33mcommit a653ae8efd3105a7c628d4254db5c94f9e019bdd[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Fri Jul 4 13:49:47 2025 +0700
+
+    Update createTrip.tsx
+
+[33mcommit f92f04944e3acfae15aac065ae46e2a920a8eb18[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Fri Jul 4 13:47:21 2025 +0700
+
+    Update stramChat.tsx
+
+[33mcommit b8948003c993f6f75cb69d184b6e6e478677eedf[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Fri Jul 4 06:04:56 2025 +0700
+
+    Update stramChat.tsx
+
+[33mcommit 9036ab24be8637f853a33531a8e86a44a510a95f[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jul 3 11:23:41 2025 +0700
+
+    Update stramChat.tsx
+    
+    3/7/2025-2
+
+[33mcommit b6e1db4d92d2cdf585ec141a041bc64140f3c1f0[m
+Author: Salai David Poi Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jul 3 11:22:54 2025 +0700
+
+    Update customMessage.tsx
+    
+    3/7/2025
+
+[33mcommit ad848d6fa515db01c180164cf7ee170f0fc03fd2[m
+Author: dphlan <davidsalai9213@gmail.com>
+Date:   Mon Jun 30 16:22:49 2025 +0700
+
+    Versoion 11.2
+
+[33mcommit 945dd5866495cc6c9b782aece46cd6762ce3f923[m
+Author: dphlan <davidsalai9213@gmail.com>
+Date:   Mon Jun 30 13:08:08 2025 +0700
+
+    Branch Version V11
+
+[33mcommit 50d33766380fd20bafa43759f73f841df7e22f12[m[33m ([m[1;31morigin/V10[m[33m)[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jun 26 16:16:20 2025 +0700
+
+    26/06/2025 V10.3
+
+[33mcommit bd6b79279a7cce7f2b8139a8355c75d753676f23[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jun 25 15:35:22 2025 +0700
+
+    25/06/2025 V10.3
+
+[33mcommit 8a3985c0117f3f56b94e4f52aa94405d1e0bbdd8[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jun 25 14:47:00 2025 +0700
+
+    25/06/2025 V10.2
+
+[33mcommit 1622403a87d98b8a63747d4613bec215f9136fda[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jun 25 13:04:17 2025 +0700
+
+    25/06/2025 Bugs
+
+[33mcommit 5868d4b8ddcd55c50b5b0f5e25a46bb2550c3559[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Tue Jun 24 14:23:43 2025 +0700
+
+    23/06/2025 Bugs
+
+[33mcommit c29812bf2c4bb42f7eefab05438e3d09c50e8f80[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Mon Jun 23 15:35:13 2025 +0700
+
+    Second Deployment
+
+[33mcommit f8e132ad61cb8e44a0ff066fd7b1334857b862da[m
+Author: sanphetsongjindasak <sanphetsongjindasak@gmail.com>
+Date:   Thu Jun 19 16:33:49 2025 +0700
+
+    ci/cd : add deploy workflows
+
+[33mcommit 5475ea5912099d8486098684f54ab67d3876e0a9[m[33m ([m[1;31morigin/V9[m[33m)[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jun 19 15:20:24 2025 +0700
+
+    Development Version V7.4(Testing)+requirement
+
+[33mcommit eff4d6ec430c72cd9103c995b8bc0b36acaf630f[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Thu Jun 19 14:25:17 2025 +0700
+
+    Development Version V7.4(Testing)
+
+[33mcommit e71a97280bbf8b2f3aeb324b9b14da4b2615851e[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jun 18 15:41:33 2025 +0700
+
+    Development Version V7.3(Debugging)
+
+[33mcommit f84a8442f9943366de962ed54d67e686f16634c4[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Wed Jun 18 15:36:23 2025 +0700
+
+    Development Version V7.3(Debugging)
+
+[33mcommit 39bff12fac0b5cb0e908cd3e6d531eb9f6f4cce2[m
+Author: Salai-David-Poi-Hlan <davidsalai9213@gmail.com>
+Date:   Tue Jun 17 23:59:43 2025 +0700
+
+    Created a new Expo app

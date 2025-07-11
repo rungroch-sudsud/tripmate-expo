@@ -2,7 +2,8 @@ import { axiosInstance } from '../../../lib/axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { getAuth, signOut } from 'firebase/auth';
-
+import {User} from 'firebase/auth'
+import { AxiosError } from 'axios';
 export const STORAGE_KEYS = {
   GOOGLE_ID_TOKEN: 'googleIdToken',
   GOOGLE_ACCESS_TOKEN: 'googleAccessToken',
@@ -50,7 +51,7 @@ export const VALIDATION_REGEX = {
 };
 
 // Authentication and Storage functions
-export const storeUserTokens = async (user, googleAccessToken) => {
+export const storeUserTokens = async (user: User, googleAccessToken?:string) => {
   try {
     const promises = [AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid)];
     
@@ -86,32 +87,34 @@ export const clearStoredTokens = async () => {
 };
 
 // Profile management functions
-export const handleProfileError = async (error, user) => {
-  if (error.response?.status === API_STATUS.CONFLICT) {
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
-    const response=await getUserProfile(user.uid)
-    if(response){
-      if(response?.age!==-999){
-   return {
-      success: true,
-      route: NAVIGATION_ROUTES.FIND_TRIPS,
-      type: 'existing_user'
-    };
-      }
+export const handleProfileError = async (error: unknown, user: User) => {
+  const axiosError = error as AxiosError<{ message?: string }>;
 
-      else if(response?.age===-999){
-        return{
-         success: true,
-      route: NAVIGATION_ROUTES.TRAVEL_STYLE,
-      type: 'incomplete_profile'
-        }
+  if (axiosError.response?.status === API_STATUS.CONFLICT) {
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
+    const response = await getUserProfile(user.uid);
+
+    if (response) {
+      if (response.age !== -999) {
+        return {
+          success: true,
+          route: NAVIGATION_ROUTES.FIND_TRIPS,
+          type: 'existing_user',
+        };
+      } else if (response.age === -999) {
+        return {
+          success: true,
+          route: NAVIGATION_ROUTES.TRAVEL_STYLE,
+          type: 'incomplete_profile',
+        };
       }
     }
   }
+
   throw error;
 };
 
-export const createUserProfile = async (user) => {
+export const createUserProfile = async (user: User) => {
   const profileData = {
     userId: user.uid,
     profileImageUrl: "N/A",
@@ -147,13 +150,43 @@ export const createUserProfile = async (user) => {
   }
 };
 
-export const getUserProfile = async (userId) => {
+export const getUserProfile = async (userId: string): Promise<any | null> => {
   try {
     const response = await axiosInstance.get(`/users/profile/${userId}`);
-    return response.data.data;
-  } catch (error) {
-    console.error('Failed to get user profile:', error);
+    
+    if (response.status === 200) {
+      return response.data.data;
+    }
+    
     return null;
+  } catch (error: any) {
+    // Handle different error cases
+    if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      
+      if (status === 404) {
+        // User profile not found - this is expected behavior
+        console.log(`User profile not found for userId: ${userId}`);
+        return null;
+      } else if (status === 500) {
+        // Internal server error
+        console.error('Internal server error while fetching user profile:', error.response.data);
+        return null;
+      } else {
+        // Other HTTP errors
+        console.error(`HTTP error ${status} while fetching user profile:`, error.response.data);
+        return null;
+      }
+    } else if (error.request) {
+      // Network error - no response received
+      console.error('Network error while fetching user profile:', error.message);
+      return null;
+    } else {
+      // Other errors
+      console.error('Error fetching user profile:', error.message);
+      return null;
+    }
   }
 };
 

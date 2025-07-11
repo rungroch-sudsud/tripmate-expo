@@ -67,7 +67,7 @@ const Login = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user && !isLoading) {
         try {
-          const stored = await storeUserTokens(user, null);
+          const stored = await storeUserTokens(user, undefined);
           if (!stored) return;
 
           const profile = await getUserProfile(user.uid);
