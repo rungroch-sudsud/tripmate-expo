@@ -1001,7 +1001,7 @@ const handleChangeText = useCallback((text) => {
 
 
         {/* Travel Styles with Error */}
-       <TravelStylesComponent 
+  <TravelStylesComponent
   categories={categories}
   selectedItems={selectedItems}
   onToggleSelection={toggleSelection}

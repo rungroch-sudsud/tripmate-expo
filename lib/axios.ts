@@ -1,5 +1,4 @@
-// axios.ts
-import {auth} from '../firebaseConfig'; // Import from your config file
+import {auth} from '../firebaseConfig'; 
 import axios from 'axios';
 import {requirements} from '../requirement'
 
@@ -8,7 +7,7 @@ const axiosInstance = axios.create({
   timeout: 10000,
 });
 
-// Request interceptor: adds Firebase ID token
+
 axiosInstance.interceptors.request.use(
   async (config) => {
     try {
@@ -17,9 +16,9 @@ axiosInstance.interceptors.request.use(
       if (currentUser) {
         const idToken = await currentUser.getIdToken(true);
         config.headers.Authorization = `Bearer ${idToken}`;
-        console.log('Token added to request header'); // Debug log
+        console.log('Token added to request header'); 
       } else {
-        console.log('No current user found'); // Debug log
+        console.log('No current user found'); 
       }
     } catch (error) {
       console.error('Error getting Firebase token:', error);
@@ -32,7 +31,7 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor: handle token expiration
+
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;

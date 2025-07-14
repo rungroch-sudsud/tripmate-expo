@@ -1,7 +1,7 @@
 import React, { useState,useCallback,useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, ActivityIndicator } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-
+import {Category,TravelStylesComponentProps} from '../shared/schemas/api.schema'
 
 
  const ErrorMessage = ({ error }: { error: string }) => {
@@ -445,33 +445,58 @@ export const ServicesCheckboxComponent = ({
 };
 
 // 6. Travel Styles Component
-export const TravelStylesComponent = ({ 
-  categories, 
-  selectedItems, 
-  onToggleSelection, 
-  loading, 
-  error, 
+export const TravelStylesComponent: React.FC<TravelStylesComponentProps> = ({
+  categories,
+  selectedItems,
+  onToggleSelection,
+  loading,
+  error,
   clearError,
   styles,
-  isEditMode = false
+  isEditMode = false,
+  title = "สไตล์การเที่ยว",
+  subtitle,
+  selectedColor = "#29C4AF",
+  unselectedColor = "#000",
+  iconSize = { width: 14, height: 12 }
 }) => {
+  
+  const handleToggleSelection = (id: string) => {
+    onToggleSelection(id);
+    if (error && clearError) {
+      clearError();
+    }
+  };
+
+  const ErrorMessage = ({ error }: { error?: string | null }) => {
+    if (!error) return null;
+    return <Text style={styles.errorText}>{error}</Text>;
+  };
+
   return (
     <>
       <View style={styles.content}>
-        <Text style={styles.label}>สไตล์การเที่ยว</Text>
+        <Text style={styles.title || styles.label}>{title}</Text>
+        
+        {subtitle && (
+          <Text style={styles.subtitle}>
+            {subtitle}
+          </Text>
+        )}
+        
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#6366f1" />
+            <ActivityIndicator size="large" color={selectedColor} />
             <Text style={styles.loadingText}>กำลังโหลด...</Text>
           </View>
         ) : (
           <View style={styles.categoriesContainer}>
             {categories.map((category) => {
               const isSelected = selectedItems.includes(category.id);
-              const iconUrl = isSelected && category.activeIconImageUrl 
-                ? category.activeIconImageUrl 
+              const iconUrl = isSelected && category.activeIconImageUrl
+                ? category.activeIconImageUrl
                 : category.iconImageUrl;
-              
+
               return (
                 <TouchableOpacity
                   key={category.id}
@@ -479,19 +504,16 @@ export const TravelStylesComponent = ({
                     styles.categoryItem,
                     isSelected && styles.selectedItem
                   ]}
-                  onPress={() => {
-                    onToggleSelection(category.id);
-                    if (error) clearError('travelStyles');
-                  }}
+                  onPress={() => handleToggleSelection(category.id)}
                 >
                   <Image
-                    source={{ 
-                      uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?' 
+                    source={{
+                      uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?'
                     }}
                     style={{
-                      width: 14,
-                      height: 12,
-                      tintColor: isSelected ? '#29C4AF' : '#000',
+                      width: iconSize.width,
+                      height: iconSize.height,
+                      tintColor: isSelected ? selectedColor : unselectedColor,
                     }}
                     resizeMode="contain"
                   />
@@ -507,9 +529,17 @@ export const TravelStylesComponent = ({
           </View>
         )}
       </View>
-      
-      {!isEditMode && (
-        <View style={{paddingLeft: 20,marginBottom:20}}>
+
+
+      {(isEditMode)&&(
+        <View style={{marginTop:20}}>
+
+        </View>
+      )}
+
+      {/* Error handling - only show if not in edit mode or if explicitly requested */}
+      {(error) && (
+        <View style={{ paddingLeft: 20, marginBottom: 20 }}>
           <ErrorMessage error={error} />
         </View>
       )}

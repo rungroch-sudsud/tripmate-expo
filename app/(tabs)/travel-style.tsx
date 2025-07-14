@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   StatusBar,
   ActivityIndicator,
-  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { FontAwesome } from '@expo/vector-icons';
@@ -16,14 +15,15 @@ import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import { getAuth, signOut } from 'firebase/auth';
 import styles from '../../css/travelstyle_styles';
-import { Category, ApiResponse } from '../../shared/schemas/api.schema';
+import { Category } from '../../shared/schemas/api.schema';
 import { 
   getUserProfile, 
-  fetchUserProfile, 
   updateUserProfile, 
   fetchTravelStyles 
 } from '../../features/user/services/userServices';
-import ProgressBar from  '../../components/ProgressBar' 
+import ProgressBar from '../../components/ProgressBar';
+import { TravelStylesComponent } from '../../components/Edit_CreateTrip_jsx'; // Import your component
+
 const TravelStyleScreen: React.FC = () => {
   const router = useRouter();  
   const [email, setEmail] = useState<string | null>(null);
@@ -31,6 +31,7 @@ const TravelStyleScreen: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [profileLoaded, setProfileLoaded] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const progressAnimation = useRef(new Animated.Value(33.33)).current;
 
   // Memoized callback for fetchEmail
@@ -41,6 +42,7 @@ const TravelStyleScreen: React.FC = () => {
       setEmail(storedID);
     } catch (error) {
       console.error('Error fetching email:', error);
+      setError('Failed to fetch user information');
     }
   }, []);
 
@@ -48,11 +50,13 @@ const TravelStyleScreen: React.FC = () => {
   const loadTravelStyles = useCallback(async (): Promise<Category[]> => {
     try {
       setLoading(true);
+      setError(null);
       const categoriesData = await fetchTravelStyles();
       setCategories(categoriesData);
       return categoriesData;
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
+      setError('Failed to load travel styles');
       setCategories([]);
       return [];
     } finally {
@@ -96,6 +100,7 @@ const TravelStyleScreen: React.FC = () => {
       
     } catch (error) {
       console.error("User Profile Fetching Error:", error);
+      setError('Failed to load user profile');
       setSelectedItems([]);
       setProfileLoaded(true);
     }
@@ -129,6 +134,7 @@ const TravelStyleScreen: React.FC = () => {
         }
       } catch (error) {
         console.error('Error loading initial data:', error);
+        setError('Failed to load initial data');
       }
     };
 
@@ -161,8 +167,13 @@ const TravelStyleScreen: React.FC = () => {
     );
   }, []);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
   const handleContinue = useCallback(async (): Promise<void> => {
     try {
+      setError(null);
       const userId = await AsyncStorage.getItem('userId');
       
       const profileData = {
@@ -179,10 +190,13 @@ const TravelStyleScreen: React.FC = () => {
       } else {
         if (result.error?.response?.status === 404) {
           router.push("/login");
-        } 
+        } else {
+          setError('Failed to update travel styles');
+        }
       }
     } catch (error) {
       console.error("Failed to update travel styles:", error);
+      setError('Failed to update travel styles');
     }
   }, [selectedItems, router]);
 
@@ -222,48 +236,23 @@ const TravelStyleScreen: React.FC = () => {
         </View>
 
         {/* Progress Bar */}
-       <ProgressBar animation={progressAnimation} styles={styles}/>
+        <ProgressBar animation={progressAnimation} styles={styles}/>
 
-        {/* Content */}
-        <View style={styles.content}>
-          <Text style={styles.title}>
-            เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว
-          </Text>
-
-          <View style={styles.categoriesContainer}>
-            {categories.map((category) => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.categoryItem,
-                  selectedItems.includes(category.id) && styles.selectedItem
-                ]}
-                onPress={() => toggleSelection(category.id)}
-              >
-                <Image
-                  source={{ 
-                    uri: selectedItems.includes(category.id) 
-                      ? category.activeIconImageUrl || category.iconImageUrl
-                      : category.iconImageUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?'
-                  }}
-                  style={[
-                    styles.categoryIcon,
-                    {
-                      tintColor: selectedItems.includes(category.id) ? '#29C4AF' : '#000',
-                    }
-                  ]}
-                  resizeMode="contain"
-                />
-                <Text style={[
-                  styles.categoryText,
-                  selectedItems.includes(category.id) && styles.selectedText
-                ]}>
-                  {category.title}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        {/* Travel Styles Component */}
+        <TravelStylesComponent
+          categories={categories}
+          selectedItems={selectedItems}
+          onToggleSelection={toggleSelection}
+          loading={loading}
+          error={error}
+          clearError={clearError}
+          styles={styles}
+          isEditMode={false}
+          title="เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว"
+          selectedColor="#29C4AF"
+          unselectedColor="#000"
+          iconSize={{ width: 14, height: 12 }}
+        />
 
         {/* Bottom Button */}
         <View style={styles.bottomContainer}>
@@ -291,8 +280,8 @@ const TravelStyleScreen: React.FC = () => {
         </View>
       </SafeAreaView>
 
-      {/* Full Screen Loading Overlay */}
-      {loading && (
+      {/* Full Screen Loading Overlay - Only show for initial loading */}
+      {loading && categories.length === 0 && (
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingContent}>
             <ActivityIndicator size="large" color="#29C4AF" />

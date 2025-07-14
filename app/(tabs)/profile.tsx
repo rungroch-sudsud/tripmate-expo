@@ -3,8 +3,8 @@ import { FontAwesome } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
+import {DestinationsComponent} from '../../components/Edit_CreateTrip_jsx'
 import {
-  FlatList,
   View,
   Text,
   TextInput,
@@ -12,7 +12,6 @@ import {
   ScrollView,
   Image,
   SafeAreaView,
-  ActivityIndicator,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,7 +29,8 @@ import { PickedFile } from '@/shared/schemas/file_type'; '../../src/shared/schem
 import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../features/user/services/userServices'
 import {sanitizeValue} from '../../shared/utils/sanitizeValue'
 import  {convertBase64ToFile} from '../../shared/utils/file.util'
-
+import TextInputField from  '../../components/TextInputField'
+import {TravelStylesComponent} from '../../components/Edit_CreateTrip_jsx'
 const ProfileForm: React.FC = () => {
 
 
@@ -39,13 +39,13 @@ const ProfileForm: React.FC = () => {
   const [email, setEmail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
-
+ 
   // Destinations
   const [destinations, setDestinations] = useState<string[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
-
+const [destinationError, setDestinationError] = useState<string | null>(null);
   // Travel Styles
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
@@ -208,6 +208,10 @@ const ProfileForm: React.FC = () => {
   const removeDestination = (dest: string) => {
     setSelected(selected.filter(d => d !== dest));
   };
+
+  const clearError = () => {
+  setDestinationError(null);
+};
 
   const handleBack = (): void => {
     console.log("Resetting form to original values...");
@@ -577,40 +581,46 @@ const ProfileForm: React.FC = () => {
         {/* Form Fields */}
         <View style={styles.formSection}>
           {/* Full Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>ชื่อ</Text>
-            <TextInput
-              style={[styles.input, errors.fullName && styles.inputError]}
-              placeholder="ชื่อจริง และ นามสกุล"
-              value={formData.fullName}
-              onChangeText={(text: string) => {
-                setFormData({...formData, fullName: text});
-                if (errors.fullName) {
-                  setErrors({...errors, fullName: undefined});
-                }
-              }}
-              placeholderTextColor="#999"
-            />
-            {renderError(errors.fullName)}
-          </View>
+   <TextInputField
+  field="fullName"
+  label="ชื่อ"
+  placeholder="ชื่อจริง และ นามสกุล"
+  value={formData.fullName}
+  error={!!errors.fullName}
+  errorMessage={errors.fullName}
+  onChangeText={(text) => {
+    setFormData({...formData, fullName: text});
+    if (errors.fullName) {
+      setErrors({...errors, fullName: undefined});
+    }
+  }}
+  placeholderTextColor="#999"
+  inputStyle={styles.input}
+  containerStyle={styles.inputGroup}
+  labelStyle={styles.label}
+  renderError={renderError}
+/>
   
           {/* Nickname */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>ชื่อเล่น</Text>
-            <TextInput
-              style={[styles.input, errors.nickname && styles.inputError]}
-              placeholder="ชื่อสำหรับแสดงในแอป"
-              value={formData.nickname}
-              onChangeText={(text: string) => {
-                setFormData({ ...formData, nickname: text });
-                if (errors.nickname) {
-                  setErrors({ ...errors, nickname: undefined });
-                }
-              }}
-              placeholderTextColor="#999"
-            />
-            {renderError(errors.nickname)}
-          </View>
+         <TextInputField
+  field="nickname"
+  label="ชื่อเล่น"
+  placeholder="ชื่อสำหรับแสดงในแอป"
+  value={formData.nickname}
+  error={!!errors.nickname}
+  errorMessage={errors.nickname}
+  onChangeText={(text) => {
+    setFormData({ ...formData, nickname: text });
+    if (errors.nickname) {
+      setErrors({ ...errors, nickname: undefined });
+    }
+  }}
+  placeholderTextColor="#999"
+  inputStyle={styles.input}
+  containerStyle={styles.inputGroup}
+  labelStyle={styles.label}
+  renderError={renderError}
+/>
   
           {/* Email */}
           <View style={styles.inputGroup}>
@@ -754,124 +764,41 @@ const ProfileForm: React.FC = () => {
           {renderError(errors.lineId)}
   
           {/* Travel Interests Section */}
-          <View style={styles.content}>
-            <Text style={styles.title}>ความสนใจเที่ยว</Text>
-            
-            <Text style={styles.subtitle}>
-              เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว (เลือกได้หลายข้อ)
-            </Text>
-  
-            {loading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#6366f1" />
-                <Text style={styles.loadingText}>กำลังโหลด...</Text>
-              </View>
-            ) : (
-              <View style={styles.categoriesContainer}>
-                {categories.map((category: Category) => (
-                  <TouchableOpacity
-                    key={category.id}
-                    style={[
-                      styles.categoryItem,
-                      selectedItems.includes(category.id) && styles.selectedItem
-                    ]}
-                    onPress={() => toggleSelection(category.id)}
-                  >
-                    <Image
-                      source={{ 
-                        uri: selectedItems.includes(category.id) 
-                          ? category.activeIconImageUrl 
-                          : category.iconImageUrl 
-                      }}
-                      style={{
-                        width: 15.75,
-                        height: 14,
-                        tintColor: selectedItems.includes(category.id) ? '#6366f1' : '#000',
-                      }}
-                      resizeMode="contain"
-                    />
-  
-                    <Text style={[
-                      styles.categoryText,
-                      selectedItems.includes(category.id) && styles.selectedText
-                    ]}>
-                      {category.title}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+       <TravelStylesComponent
+  categories={categories}
+  selectedItems={selectedItems}
+  onToggleSelection={toggleSelection}
+  loading={loading}
+  styles={styles}
+  title="ความสนใจเที่ยว"
+  subtitle="เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว (เลือกได้หลายข้อ)"
+  selectedColor="#6366f1"
+  unselectedColor="#000"
+  iconSize={{ width: 15.75, height: 14 }}
+  isEditMode={false}
+/>
   
           {/* Destinations Section */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.title}>จุดหมายปลายทางที่อยากไป</Text>
-            <Text style={styles.subtitle}>เลือกประเทศที่คุณสนใจ</Text>
-  
-            {/* Destination Search and Dropdown */}
-            <View style={styles.destinationContainer}>
-              <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
-                <View style={styles.inputContainer}>
-                  {dropdownOpen ? (
-                    <TextInput
-                      style={styles.input}
-                      placeholder="ค้นหาสถานที่"
-                      value={searchText}
-                      onChangeText={setSearchText}
-                      autoFocus={true}
-                    />
-                  ) : (
-                    <Text style={styles.input}>
-                      <Image 
-                        source={require('../assets/images/images/images/image9.png')} 
-                        style={{width:16,height:16}}
-                      />
-                      {' '}ค้นหาสถานที่
-                    </Text>
-                  )}
-                </View>
-              </TouchableOpacity>
-  
-              {dropdownOpen && (
-                <View style={styles.dropdown}>
-                  {loading ? (
-                    <ActivityIndicator size="small" />
-                  ) : (
-                    <FlatList
-                      data={filteredDestinations}
-                      keyExtractor={item => item}
-                      renderItem={({ item }) => (
-                        <TouchableOpacity
-                          style={styles.dropdownItem}
-                          onPress={() => addDestination(item)}
-                        >
-                          <Text>{item}</Text>
-                        </TouchableOpacity>
-                      )}
-                      ListEmptyComponent={
-                        <Text style={styles.emptyText}>ไม่พบสถานที่ที่ค้นหา</Text>
-                      }
-                    />
-                  )}
-                </View>
-              )}
-                   {/* Selected Destinations Display */}
-            {selected.length > 0 && (
-              <View style={styles.tagsContainer}>
-                {selected.map((dest: string, index: number) => (
-                  <TouchableOpacity 
-                    key={index}
-                    style={styles.selectedTag}
-                    onPress={() => removeDestination(dest)}
-                  >
-                    <Text style={styles.selectedTagText}>{dest}</Text>
-                    <Ionicons name="close" size={16} color="#fff" />
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-            </View>
-          </View>
+       <View style={styles.inputGroup}>
+  <Text style={styles.title}>จุดหมายปลายทางที่อยากไป</Text>
+  <Text style={styles.subtitle}>เลือกประเทศที่คุณสนใจ</Text>
+
+  <DestinationsComponent
+    dropdownOpen={dropdownOpen}
+    setDropdownOpen={setDropdownOpen}
+    searchText={searchText}
+    setSearchText={setSearchText}
+    filteredDestinations={filteredDestinations}
+    selectedDestinations={selected}
+    onAddDestination={addDestination}
+    onRemoveDestination={removeDestination}
+    loading={loading}
+    error={destinationError}
+    clearError={clearError}
+    styles={styles}
+    isEditMode={false}
+  />
+</View>
         </View>
       </ScrollView>
   

@@ -1067,13 +1067,13 @@ return (
 
      
       
-    <TravelStylesComponent
+  <TravelStylesComponent
   categories={categories}
   selectedItems={selectedItems}
   onToggleSelection={(id) => toggleSelection(id, 'styles')}
   loading={stylesLoading}
   error={errors.travelStyles}
-  clearError={clearError}
+ clearError={() => clearError('travelStyles')}
   styles={styles}
   isEditMode={true}
 />

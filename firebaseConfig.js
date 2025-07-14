@@ -9,7 +9,6 @@ const firebaseConfig = {
   storageBucket: `${requirements.storageBucket}`,
   messagingSenderId: `${requirements.messagingSenderId}`,
   appId: `${requirements.appId}`,
-  // measurementId omitted here
 };
 
 const app = initializeApp(firebaseConfig);

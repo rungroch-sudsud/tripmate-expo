@@ -294,17 +294,16 @@ const PrivacySettings: React.FC = () => {
         <View style={styles.formSection}>
           <Text style={styles.sectionLabel}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
           
-          <TextInputField
-            field="fullName"
-            label=""
-            placeholder="กรอกชื่อจริงของคุณ"
-            value={formData.fullName.value}
-            error={formData.fullName.error}
-            errorMessage={formData.fullName.errorMessage}
-            onChangeText={(text) => updateFormField('fullName', { value: text })}
-            style={styles.input}
-               styles={styles}
-          />
+       <TextInputField
+  field="fullName"
+  placeholder="กรอกชื่อจริงของคุณ"
+  value={formData.fullName.value}
+  error={formData.fullName.error}
+  errorMessage={formData.fullName.errorMessage}
+  onChangeText={(text) => updateFormField('fullName', { value: text })}
+  inputStyle={styles.input}
+  containerStyle={styles.inputGroup}
+/>
           
           <UploadBox
           styles={styles}
@@ -334,37 +333,35 @@ const PrivacySettings: React.FC = () => {
 
           {/* Contact Information */}
           <View style={styles.contactSection}>
-            <TextInputField
-              field="phoneNumber"
-              label="เบอร์โทรศัพท์"
-              placeholder="เช่น 0891234567"
-              value={formData.phoneNumber.value}
-              error={formData.phoneNumber.error}
-              errorMessage={formData.phoneNumber.errorMessage}
-              onChangeText={(text) => {
-                const filteredText = text.replace(/[^0-9]/g, '');
-                if (filteredText.length <= 10) {
-                  updateFormField('phoneNumber', { value: filteredText });
-                }
-              }}
-              keyboardType="phone-pad"
-              style={styles.textInput}
-              styles={styles}
-            />
+         <TextInputField
+  field="phoneNumber"
+  label="เบอร์โทรศัพท์"
+  placeholder="เช่น 0891234567"
+  value={formData.phoneNumber.value}
+  error={formData.phoneNumber.error}
+  errorMessage={formData.phoneNumber.errorMessage}
+  onChangeText={(text) => updateFormField('phoneNumber', { value: text })}
+  keyboardType="phone-pad"
+  allowOnlyNumbers={true}
+  maxLength={10}
+  inputStyle={styles.textInput}
+  containerStyle={styles.inputGroup}
+/>
             
-            <TextInputField
-              field="email"
-              label="อีเมล"
-              placeholder="example@email.com"
-              value={formData.email.value}
-              error={formData.email.error}
-              errorMessage={formData.email.errorMessage}
-              onChangeText={(text) => updateFormField('email', { value: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.textInput}
-                 styles={styles}
-            />
+         <TextInputField
+  field="email"
+  label="อีเมล"
+  placeholder="example@email.com"
+  value={formData.email.value}
+  error={formData.email.error}
+  errorMessage={formData.email.errorMessage}
+  onChangeText={(text) => updateFormField('email', { value: text })}
+  keyboardType="email-address"
+  autoCapitalize="none"
+  allowOnlyEmail={true}
+  inputStyle={styles.textInput}
+  containerStyle={styles.inputGroup}
+/>
           </View>
         </View>
       </ScrollView>

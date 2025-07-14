@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import {
@@ -19,7 +19,7 @@ import {
   createUserProfile,
   getUserProfile
 } from '../../features/auth/authService';
-import ProgressBar from  '../../components/ProgressBar'
+import ProgressBar from '../../components/ProgressBar';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -29,8 +29,51 @@ const Login = () => {
   const progressAnimation = useRef(new Animated.Value(0)).current;
   const auth = getAuth();
 
+  // Memoized navigation helper
+  const navigateToRoute = useCallback((route) => {
+    setTimeout(() => router.push(route), 100);
+  }, [router]);
+
+  // Memoized error handler
+  const handleAuthError = useCallback(async (error, context) => {
+    console.error(`${context} error:`, error);
+    await clearStoredTokens();
+    setIsLoading(false);
+  }, []);
+
+  // Memoized user authentication flow
+  const processUserAuth = useCallback(async (user, accessToken) => {
+    const stored = await storeUserTokens(user, accessToken);
+    if (!stored) {
+      throw new Error('Token storage failed');
+    }
+    return stored;
+  }, []);
+
+  // Memoized profile creation flow
+  const handleProfileCreation = useCallback(async (user) => {
+    const { success, route } = await createUserProfile(user);
+    if (success) {
+      navigateToRoute(route);
+    } else {
+      throw new Error('Profile creation failed');
+    }
+  }, [navigateToRoute]);
+
+  // Memoized existing user flow
+  const handleExistingUser = useCallback(async (user) => {
+    await processUserAuth(user, undefined);
+    
+    const profile = await getUserProfile(user.uid);
+    console.log(profile);
+    
+    if (profile?.age !== -999) {
+      navigateToRoute(NAVIGATION_ROUTES.FIND_TRIPS);
+    }
+  }, [processUserAuth, navigateToRoute]);
+
   // Google Sign-In Handler
-  const handleGoogleSignIn = async () => {
+  const handleGoogleSignIn = useCallback(async () => {
     if (isLoading) return;
 
     setIsLoading(true);
@@ -44,48 +87,28 @@ const Login = () => {
       const user = result.user;
       const credential = GoogleAuthProvider.credentialFromResult(result);
 
-      const stored = await storeUserTokens(user, credential?.accessToken);
-      if (!stored) throw new Error('Token storage failed');
-
-      const { success, route } = await createUserProfile(user);
-      if (success) {
-        setTimeout(() => router.push(route), 100);
-      } else {
-        throw new Error('Profile creation failed');
-      }
+      await processUserAuth(user, credential?.accessToken);
+      await handleProfileCreation(user);
 
     } catch (error) {
-      console.error('Google sign-in error:', error);
-      await clearStoredTokens();
-    } finally {
-      setIsLoading(false);
+      await handleAuthError(error, 'Google sign-in');
     }
-  };
+  }, [isLoading, auth, processUserAuth, handleProfileCreation, handleAuthError]);
 
   // Auto-authenticated user handler
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       if (user && !isLoading) {
         try {
-          const stored = await storeUserTokens(user, undefined);
-          if (!stored) return;
-
-          const profile = await getUserProfile(user.uid);
-          console.log(profile);
-          if(profile){
-               if (profile?.age !== -999) {
-            router.push(NAVIGATION_ROUTES.FIND_TRIPS);
-          }
-          }
-       
-        } catch {
-          await clearStoredTokens();
+          await handleExistingUser(user);
+        } catch (error) {
+          await handleAuthError(error, 'Auto-authentication');
         }
       }
     });
 
     return unsubscribe;
-  }, []);
+  }, [auth, isLoading, handleExistingUser, handleAuthError]);
 
   // Progress animation on load
   useEffect(() => {
@@ -94,19 +117,53 @@ const Login = () => {
       duration: 300,
       useNativeDriver: false,
     }).start();
-  }, []);
+  }, [progressAnimation]);
 
+  // Render Google button content
+  const renderGoogleButtonContent = () => {
+    if (isLoading) {
+      return <ActivityIndicator size="small" color="#374151" />;
+    }
 
+    return (
+      <>
+        <View style={styles.googleIconContainer}>
+          <Text style={styles.googleIcon}>G</Text>
+        </View>
+        <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>
+      </>
+    );
+  };
+
+  // Render terms and conditions
+  const renderTermsText = () => (
+    <Text style={styles.termsText}>
+      <Text style={styles.descriptionText}>
+        เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
+      </Text>
+      {'\n\n\n\n'}
+      <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ </Text>
+      <TouchableOpacity>
+        <Text style={styles.linkText}>นโยบายความเป็นส่วนตัวและข้อกำหนดการใช้งาน</Text>
+      </TouchableOpacity>
+      <Text style={styles.termsBaseText}> ของเรา</Text>
+    </Text>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Stack.Screen options={{ headerShown: false, tabBarStyle: { display: 'none' } }} />
+      <Stack.Screen 
+        options={{ 
+          headerShown: false, 
+          tabBarStyle: { display: 'none' } 
+        }} 
+      />
 
       <View style={styles.header}>
         <Text style={styles.headerText}>เข้าสู่ระบบ</Text>
       </View>
 
-      <ProgressBar animation={progressAnimation} styles={styles}/>
+      <ProgressBar animation={progressAnimation} styles={styles} />
 
       <View style={styles.content}>
         <View style={styles.logoContainer}>
@@ -122,30 +179,11 @@ const Login = () => {
           disabled={isLoading}
         >
           <View style={styles.googleButtonContent}>
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#374151" />
-            ) : (
-              <>
-                <View style={styles.googleIconContainer}>
-                  <Text style={styles.googleIcon}>G</Text>
-                </View>
-                <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>
-              </>
-            )}
+            {renderGoogleButtonContent()}
           </View>
         </TouchableOpacity>
 
-        <Text style={styles.termsText}>
-          <Text style={styles.descriptionText}>
-            เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
-          </Text>
-          {'\n\n\n\n'}
-          <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ </Text>
-          <TouchableOpacity>
-            <Text style={styles.linkText}>นโยบายความเป็นส่วนตัวและข้อกำหนดการใช้งาน</Text>
-          </TouchableOpacity>
-          <Text style={styles.termsBaseText}> ของเรา</Text>
-        </Text>
+        {renderTermsText()}
       </View>
     </SafeAreaView>
   );
