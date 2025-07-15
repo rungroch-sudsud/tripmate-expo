@@ -12,18 +12,27 @@ const styles = StyleSheet.create({
       paddingHorizontal: 10,
       borderBottomWidth: 1,
       borderBottomColor: '#f0f0f0',
+      paddingTop:35,
+      paddingBottom:25
     },
+
     backButton: {
-      padding: 4,
-      marginRight: 12,
+      backgroundColor:'#E5E7EB',
+      padding: 8,
+    
+      marginLeft: 20,
+      borderRadius:20,
+      width:40,
+      height:40,
+      alignItems:'center',
+      justifyContent:'center'
     },
     headerText: {
-      fontSize: 19,
-      fontWeight: '300',
-      color: '#333',
+      fontSize: 16,
+      color: '#374151',
       flex: 1,
       textAlign: 'center',
-      fontFamily: 'InterTight-Regular'
+      fontFamily: 'LineSeedSansTH_A_Bd'
     },
     placeholder: {
       width: 50,
@@ -35,12 +44,11 @@ const styles = StyleSheet.create({
       paddingTop: 2,
     },
     title: {
-      fontSize: 16,
-      color: '#333',
-      fontWeight: '800',
+      fontSize: 15,
+      color: '#374151',
       marginBottom: 24,
       lineHeight: 24,
-      fontFamily: 'InterTight-Regular'
+      fontFamily: 'LineSeedSansTH_A_Bd'
     },
     categoriesContainer: {
       flexDirection: 'row',
@@ -59,8 +67,14 @@ const styles = StyleSheet.create({
       borderColor: '#e0e0e0',
     },
     selectedItem: {
-      backgroundColor: 'rgba(41, 196, 175, 0.1)',
-      borderColor: '#29C4AF',
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      height: 38,
+      borderRadius: 30,
+      marginBottom: 8,
+      borderWidth: 1,
     },
     categoryIcon: {
       width: 14,
@@ -68,14 +82,14 @@ const styles = StyleSheet.create({
     },
     categoryText: {
       marginLeft: 8,
-      fontSize: 14,
-      color: '#666',
-      fontWeight: '700',
-      fontFamily: 'InterTight-Regular'
+      fontSize: 12,
+      color: '#374151',
+     fontFamily: 'LineSeedSansTH_A_Bd'
     },
     selectedText: {
-      color: '#29C4AF',
-      fontFamily: 'InterTight-Regular'
+      color: '#374151',
+      fontFamily: 'LineSeedSansTH_A_Bd',
+       fontSize: 12,
     },
     bottomContainer: {
       paddingHorizontal: 20,
@@ -86,7 +100,7 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#29C4AF',
+      backgroundColor: '#3B82F6',
       paddingVertical: 16,
       borderRadius: 12,
     },
@@ -94,10 +108,10 @@ const styles = StyleSheet.create({
       backgroundColor: '#f0f0f0',
     },
     continueButtonText: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#fff',
+      fontSize: 15,
+      color: '#FFFFFF',
       marginRight: 8,
+      fontFamily:'LineSeedSansTH_A_Bd'
     },
     disabledButtonText: {
       color: '#ccc',

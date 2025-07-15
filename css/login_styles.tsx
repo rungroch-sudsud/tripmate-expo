@@ -22,7 +22,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
- 
+    paddingBottom:25,
+    paddingTop:35,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -36,10 +37,9 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '500',
-    color: '#1F2937',
-    fontFamily: 'InterTight-SemiBold',
+    fontSize: 16,
+    color: '#374151',
+    fontFamily: 'LineSeedSansTH_A_Bd',
     marginVertical:10
   },
   placeholder: {
@@ -50,15 +50,15 @@ const styles = StyleSheet.create({
     paddingBottom: 15,
   },
   progressBar: {
-    height: 4,
+    height: 5,
     backgroundColor: '#e0e0e0',
     borderRadius: 2,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#6366f1',
     borderRadius: 2,
+    overflow:'hidden'
   },
   content: {
     flex: 1,
@@ -75,18 +75,25 @@ const styles = StyleSheet.create({
     borderRadius: 48,
     backgroundColor: '#3B82F6',
   },
-  appName: {
-    fontSize: 24,
-    fontFamily: 'InterTight-SemiBold',
-    color: '#333333',
+appName: {
+  fontSize: 24,
+  fontFamily: 'LineSeedSansTH_A_XBd',
+  color: 'linear-gradient(90deg, #585DDB 0%, #FF956E 100%)',
+  textAlign: 'center',
+},
+    gradientContainer: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 8,
     marginBottom: 8,
+    alignSelf: 'center', 
   },
   subtitle: {
-    fontFamily: 'InterTight-Regular',
-    marginBottom: 60,
+    fontFamily: 'LineSeedSansTH',
+    marginBottom: 40,
     textAlign: 'center',
-    color: '#6B7280',
-    fontSize: 14,
+    color: '#4B5563',
+    fontSize: 15,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',
@@ -152,14 +159,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   googleIcon: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#4285f4',
+    height:23,
+    width:23,
   },
   googleButtonText: {
-    color: '#374151',
-    fontSize: 16,
-    fontFamily: 'InterTight-SemiBold',
+    color: '#0000008A',
+    fontSize: 15,
+    fontWeight:700,
+    fontFamily: 'LineSeedSansTH',
     lineHeight: 16,
   },
   termsText: {
@@ -170,19 +177,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   descriptionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
     textAlign: 'center',
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH',
   },
   termsBaseText: {
-    fontFamily: 'InterTight-Regular',
-    fontSize: 12,
+    fontFamily: 'LineSeedSansTH',
+    fontWeight:400,
     color: '#6B7280',
   },
   linkText: {
     color: '#3B82F6',
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH',
     fontSize: 12,
     textDecorationLine: 'underline',
   },

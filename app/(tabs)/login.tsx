@@ -8,10 +8,11 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Animated,
+  Image,
+  Platform
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import styles from '../../css/login_styles';
-
 import { NAVIGATION_ROUTES } from '../../features/user/services/userServices';
 import {
   storeUserTokens,
@@ -92,7 +93,9 @@ const Login = () => {
 
     } catch (error) {
       await handleAuthError(error, 'Google sign-in');
-    }
+    }finally {
+  setIsLoading(false); // Ensure loading is cleared
+}
   }, [isLoading, auth, processUserAuth, handleProfileCreation, handleAuthError]);
 
   // Auto-authenticated user handler
@@ -128,7 +131,10 @@ const Login = () => {
     return (
       <>
         <View style={styles.googleIconContainer}>
-          <Text style={styles.googleIcon}>G</Text>
+           <Image 
+                  source={require('../assets/images/images/images/image31.png')}
+                  style={styles.googleIcon}
+                />
         </View>
         <Text style={styles.googleButtonText}>เข้าสู่ระบบด้วย Google</Text>
       </>
@@ -141,12 +147,10 @@ const Login = () => {
       <Text style={styles.descriptionText}>
         เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
       </Text>
-      {'\n\n\n\n'}
-      <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ </Text>
-      <TouchableOpacity>
+      {'\n\n\n'}
+      <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ  <TouchableOpacity onPress={()=>router.push('/Privacy-Policy')}>
         <Text style={styles.linkText}>นโยบายความเป็นส่วนตัวและข้อกำหนดการใช้งาน</Text>
-      </TouchableOpacity>
-      <Text style={styles.termsBaseText}> ของเรา</Text>
+      </TouchableOpacity> ของเรา</Text>
     </Text>
   );
 
@@ -154,8 +158,7 @@ const Login = () => {
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
         options={{ 
-          headerShown: false, 
-          tabBarStyle: { display: 'none' } 
+          headerShown: false,
         }} 
       />
 
@@ -170,7 +173,19 @@ const Login = () => {
           <View style={styles.logo} />
         </View>
 
-        <Text style={styles.appName}>TripMate</Text>
+    <Text 
+  style={[
+    styles.appName,
+    Platform.OS === 'web' && {
+      background: 'linear-gradient(90deg, #585DDB 0%, #FF956E 100%)',
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text',
+    }
+  ]}
+>
+  TripMate
+</Text>
         <Text style={styles.subtitle}>หาเพื่อนเที่ยวที่ใช่ในสไตล์คุณ</Text>
 
         <TouchableOpacity

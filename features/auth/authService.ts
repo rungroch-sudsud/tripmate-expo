@@ -89,7 +89,7 @@ export const handleProfileError = async (error: unknown, user: User) => {
   }
 
   // Handle conflict (user already exists)
-  if (axiosError.response?.status === API_STATUS.CONFLICT) {
+  if (axiosError.response?.status === API_STATUS.BAD_REQUEST) {
     try {
       await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, user.uid);
       const response = await getUserProfile(user.uid);

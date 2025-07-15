@@ -13,6 +13,6 @@ export const API_STATUS = {
 } as const;
 
 export const NAVIGATION_ROUTES = {
-  TRAVEL_STYLE: 'TravelStyle',
-  FIND_TRIPS: 'FindTrips',
+  TRAVEL_STYLE: 'travel-style',
+  FIND_TRIPS: 'findTrips',
 };

@@ -1,8 +1,8 @@
 import React, { useState,useCallback,useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, ActivityIndicator,StyleSheet } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import {Category,TravelStylesComponentProps} from '../shared/schemas/api.schema'
-
+import {Category,TravelStylesComponentProps,TravelInterestComponentProps} from '../shared/schemas/api.schema'
+import { LinearGradient } from 'expo-linear-gradient';
 
  const ErrorMessage = ({ error }: { error: string }) => {
     if (!error) return null;
@@ -445,7 +445,7 @@ export const ServicesCheckboxComponent = ({
 };
 
 // 6. Travel Styles Component
-export const TravelStylesComponent: React.FC<TravelStylesComponentProps> = ({
+export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   categories,
   selectedItems,
   onToggleSelection,
@@ -458,7 +458,6 @@ export const TravelStylesComponent: React.FC<TravelStylesComponentProps> = ({
   subtitle,
   selectedColor = "#29C4AF",
   unselectedColor = "#000",
-  iconSize = { width: 14, height: 12 }
 }) => {
   
   const handleToggleSelection = (id: string) => {
@@ -493,50 +492,44 @@ export const TravelStylesComponent: React.FC<TravelStylesComponentProps> = ({
           <View style={styles.categoriesContainer}>
             {categories.map((category) => {
               const isSelected = selectedItems.includes(category.id);
-              const iconUrl = isSelected && category.activeIconImageUrl
-                ? category.activeIconImageUrl
-                : category.iconImageUrl;
-
+              
               return (
-                <TouchableOpacity
-                  key={category.id}
-                  style={[
-                    styles.categoryItem,
-                    isSelected && styles.selectedItem
-                  ]}
-                  onPress={() => handleToggleSelection(category.id)}
-                >
-                  <Image
-                    source={{
-                      uri: iconUrl || 'https://via.placeholder.com/30x30/000000/FFFFFF?text=?'
-                    }}
-                    style={{
-                      width: iconSize.width,
-                      height: iconSize.height,
-                      tintColor: isSelected ? selectedColor : unselectedColor,
-                    }}
-                    resizeMode="contain"
-                  />
-                  <Text style={[
-                    styles.categoryText,
-                    isSelected && styles.selectedText
-                  ]}>
-                    {category.title}
-                  </Text>
-                </TouchableOpacity>
+             <TouchableOpacity
+  key={category.id}
+  style={[
+    styles.categoryItem,
+    isSelected && styles.selectedItem
+  ]}
+  onPress={() => handleToggleSelection(category.id)}
+>
+  {isSelected && (
+<LinearGradient
+  colors={['#7B80E2', '#FF9B7A']}  // Lighter blue and softer orange
+  locations={[0, 1]}
+  start={{ x: 0.25, y: 0.5 }}
+  end={{ x: 0.75, y: 0.5 }}
+  style={[StyleSheet.absoluteFillObject, { borderRadius: 30 }]}
+/>
+
+  )}
+  <Text style={[
+    styles.categoryText,
+    isSelected && styles.selectedText
+  ]}>
+    {category.title}
+  </Text>
+</TouchableOpacity>
               );
             })}
           </View>
         )}
       </View>
-
-
-      {(isEditMode)&&(
-        <View style={{marginTop:20}}>
-
+      
+      {(isEditMode) && (
+        <View style={{marginTop: 20}}>
         </View>
       )}
-
+      
       {/* Error handling - only show if not in edit mode or if explicitly requested */}
       {(error) && (
         <View style={{ paddingLeft: 20, marginBottom: 20 }}>

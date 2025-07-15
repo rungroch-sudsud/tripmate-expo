@@ -22,7 +22,7 @@ import { validateEmail, validateFullName, validatePhoneNumber } from '../../shar
 import { updateUserProfile } from '../../features/user/services/userServices';
 import UploadBox from '../../components/UploadBox';
 import TextInputField from '../../components/TextInputField';
-import ProgressBar from '../../components/ProgressBar';
+//import ProgressBar from '../../components/ProgressBar';
 
 type FormField = {
   value: string;
@@ -271,8 +271,8 @@ const PrivacySettings: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Progress Bar Component */}
-      <ProgressBar animation={progressAnimation} styles={styles}/>
+      {/* Progress Bar Component
+      <ProgressBar animation={progressAnimation} styles={styles}/> */}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Privacy Shield Section */}

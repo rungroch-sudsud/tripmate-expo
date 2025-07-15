@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
+  Image,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +20,8 @@ import { Category } from '../../shared/schemas/api.schema';
 import { 
   getUserProfile, 
   updateUserProfile, 
-  fetchTravelStyles 
+  fetchTravelStyles,
+  fetTravelInterest
 } from '../../features/user/services/userServices';
 import ProgressBar from '../../components/ProgressBar';
 import { TravelStylesComponent } from '../../components/Edit_CreateTrip_jsx'; // Import your component
@@ -47,22 +49,23 @@ const TravelStyleScreen: React.FC = () => {
   }, []);
 
   // Memoized callback for fetchTravelStyles using service
-  const loadTravelStyles = useCallback(async (): Promise<Category[]> => {
-    try {
-      setLoading(true);
-      setError(null);
-      const categoriesData = await fetchTravelStyles();
-      setCategories(categoriesData);
-      return categoriesData;
-    } catch (error) {
-      console.error('Failed to fetch travel styles:', error);
-      setError('Failed to load travel styles');
-      setCategories([]);
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+ const loadTravelStyles = useCallback(async (): Promise<Category[]> => {
+  try {
+    setLoading(true);
+    setError(null);
+    // Changed from fetchTravelStyles to fetTravelInterest
+    const categoriesData = await fetTravelInterest();
+    setCategories(categoriesData);
+    return categoriesData;
+  } catch (error) {
+    console.error('Failed to fetch travel styles:', error);
+    setError('Failed to load travel styles');
+    setCategories([]);
+    return [];
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   // Memoized callback for fetching user profile using service
   const loadUserProfile = useCallback(async (userId: string, categoriesData: Category[]): Promise<void> => {
@@ -89,11 +92,11 @@ const TravelStyleScreen: React.FC = () => {
         }).filter((id: string | null) => id !== null);
         
         console.log('Mapped travel style IDs:', travelStyleIds);
-        setSelectedItems(travelStyleIds);
+        setSelectedItems([]);
       } else {
         // Assume userTravelStyles are already IDs
         console.log('Setting travel styles as IDs:', userTravelStyles);
-        setSelectedItems(userTravelStyles);
+        setSelectedItems([]);
       }
       
       setProfileLoaded(true);
@@ -229,7 +232,7 @@ const TravelStyleScreen: React.FC = () => {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-            <FontAwesome name="angle-left" size={24} color="#333" />
+         <Image source={require('../assets/images/back.png')} style={{height:8,width:14}}/>
           </TouchableOpacity>
           <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
           <View style={styles.placeholder} />
@@ -239,20 +242,19 @@ const TravelStyleScreen: React.FC = () => {
         <ProgressBar animation={progressAnimation} styles={styles}/>
 
         {/* Travel Styles Component */}
-        <TravelStylesComponent
-          categories={categories}
-          selectedItems={selectedItems}
-          onToggleSelection={toggleSelection}
-          loading={loading}
-          error={error}
-          clearError={clearError}
-          styles={styles}
-          isEditMode={false}
-          title="เลือกกิจกรรมที่คุณชอบทำเวลาเที่ยว"
-          selectedColor="#29C4AF"
-          unselectedColor="#000"
-          iconSize={{ width: 14, height: 12 }}
-        />
+      <TravelStylesComponent
+  categories={categories}
+  selectedItems={selectedItems}
+  onToggleSelection={toggleSelection}
+  loading={loading}
+  error={error}
+  clearError={clearError}
+  styles={styles}
+  isEditMode={false}
+  title="เลือกกิจกรรมที่คุณสนใจ"
+  selectedColor="#29C4AF"
+  unselectedColor="#000"
+/>
 
         {/* Bottom Button */}
         <View style={styles.bottomContainer}>

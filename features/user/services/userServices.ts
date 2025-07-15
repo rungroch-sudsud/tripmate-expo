@@ -256,6 +256,22 @@ export const fetchTravelStyles = async () => {
   }
 };
 
+
+export const fetTravelInterest=async()=>{
+  try{
+      const response=await axiosInstance.get('/interested-activities');
+      const result=response.data
+      const mappedInterest=result.data.map(item=>({
+        id:item.id,
+        title:item.title
+      }))
+      return mappedInterest
+  }catch(error){
+     console.error("Failed to fetch travel interest: ",error);
+     
+  }
+}
+
 // Image handling functions
 export const pickImageFromLibrary = (options = {}) => {
   return new Promise((resolve, reject) => {
