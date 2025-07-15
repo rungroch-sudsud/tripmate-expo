@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      backgroundColor: '#3B82F6',
+      backgroundColor: '#585DDB',
       paddingVertical: 16,
       borderRadius: 12,
     },

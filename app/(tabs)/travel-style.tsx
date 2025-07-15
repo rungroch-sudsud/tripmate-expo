@@ -268,14 +268,9 @@ const TravelStyleScreen: React.FC = () => {
               styles.continueButtonText,
               selectedItems.length === 0 && styles.disabledButtonText
             ]}>
-              ยืนยันและดำเนินการต่อ
+              บันทึกและดำเนินการต่อ
             </Text>
-            <Ionicons 
-              name="arrow-forward" 
-              size={20} 
-              color={selectedItems.length === 0 ? '#ccc' : '#fff'} 
-              style={styles.buttonIcon}
-            />
+        
           </TouchableOpacity>
         </View>
       </SafeAreaView>
