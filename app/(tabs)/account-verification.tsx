@@ -261,14 +261,14 @@ const PrivacySettings: React.FC = () => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
-          <FontAwesome name="angle-left" size={24} color="#333" />
+          <FontAwesome name="angle-left" size={30} color="#333" style={{marginLeft:10}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ยืนยันตัวตน</Text>
-        <TouchableOpacity onPress={handleSkip}>
+       {/**<TouchableOpacity onPress={handleSkip}>
           <View style={styles.flagContainer}>
             <Text style={styles.flag}>ข้าม</Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */} 
       </View>
 
       {/* Progress Bar Component
@@ -284,26 +284,49 @@ const PrivacySettings: React.FC = () => {
               resizeMode="contain"
             />
           </View>
-          <Text style={styles.privacyTitle}>ยืนยันตัวตนของคุณ</Text>
+          <Text style={[styles.privacyTitle,{marginBottom:10}]}>ยืนยันตัวตนของคุณ</Text>
           <Text style={styles.privacySubtitle}>
-            เพิ่มความน่าเชื่อถือให้โปรไฟล์ของคุณ และสร้างความปลอดภัยในคอมมูนิตี้ (ไม่บังคับ)
+            เพิ่มความน่าเชื่อถือให้โปรไฟล์ของคุณ 
+          </Text>
+          <Text style={[styles.privacySubtitle,{marginTop:-8}]}>
+            และสร้างความปลอดภัยในคอมมูนิตี้ (ไม่บังคับ)
           </Text>
         </View>
 
         {/* Form Section */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionLabel}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
-          
-       <TextInputField
+ 
+    <TextInputField
   field="fullName"
-  placeholder="กรอกชื่อจริงของคุณ"
+  placeholder="ชื่อ-นามสกุล (ตามบัตรประชาชน)"
+  secondaryPlaceholder="เกรอกชื่อจริงของคุณ"
   value={formData.fullName.value}
   error={formData.fullName.error}
   errorMessage={formData.fullName.errorMessage}
   onChangeText={(text) => updateFormField('fullName', { value: text })}
   inputStyle={styles.input}
   containerStyle={styles.inputGroup}
+  
+  // Primary placeholder customization
+  placeholderTextColor="#9CA3AF"
+  primaryPlaceholderStyle={{
+    fontSize: 10,
+    letterSpacing: '0%',
+    color:'#9CA3AF',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
+  
+  // Secondary placeholder customization
+  secondaryPlaceholderColor="#9CA3AF"
+  secondaryPlaceholderStyle={{
+    fontSize: 13,
+    color:'#9CA3AF',
+    marginTop: 3,
+    letterSpacing: '0%',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
 />
+  
           
           <UploadBox
           styles={styles}
@@ -335,8 +358,8 @@ const PrivacySettings: React.FC = () => {
           <View style={styles.contactSection}>
          <TextInputField
   field="phoneNumber"
-  label="เบอร์โทรศัพท์"
-  placeholder="เช่น 0891234567"
+  placeholder="เบอร์โทรศัพท์"
+  secondaryPlaceholder='0891234567'
   value={formData.phoneNumber.value}
   error={formData.phoneNumber.error}
   errorMessage={formData.phoneNumber.errorMessage}
@@ -344,14 +367,31 @@ const PrivacySettings: React.FC = () => {
   keyboardType="phone-pad"
   allowOnlyNumbers={true}
   maxLength={10}
-  inputStyle={styles.textInput}
+  inputStyle={styles.input}
   containerStyle={styles.inputGroup}
+
+  placeholderTextColor='#9CA3AF'
+  primaryPlaceholderStyle={{
+    fontSize:10,
+    letterSpacing: '0%',
+    color:'#9CA3AF',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
+
+    secondaryPlaceholderColor="#9CA3AF"
+  secondaryPlaceholderStyle={{
+    fontSize: 13,
+    color:'#9CA3AF',
+    marginTop: 3,
+    letterSpacing: '0%',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
 />
             
          <TextInputField
   field="email"
-  label="อีเมล"
-  placeholder="example@email.com"
+  placeholder="อีเมล"
+  secondaryPlaceholder='example@email.com'
   value={formData.email.value}
   error={formData.email.error}
   errorMessage={formData.email.errorMessage}
@@ -359,8 +399,24 @@ const PrivacySettings: React.FC = () => {
   keyboardType="email-address"
   autoCapitalize="none"
   allowOnlyEmail={true}
-  inputStyle={styles.textInput}
+  inputStyle={styles.input}
   containerStyle={styles.inputGroup}
+   placeholderTextColor='#9CA3AF'
+  primaryPlaceholderStyle={{
+    fontSize:10,
+    letterSpacing: '0%',
+    color:'#9CA3AF',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
+
+    secondaryPlaceholderColor="#9CA3AF"
+  secondaryPlaceholderStyle={{
+    fontSize: 13,
+    color:'#9CA3AF',
+    marginTop: 3,
+    letterSpacing: '0%',
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
 />
           </View>
         </View>

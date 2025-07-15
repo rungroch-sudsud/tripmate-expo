@@ -31,6 +31,9 @@ interface TextInputFieldProps {
   // Custom placeholder color
   placeholderTextColor?: string;
   
+  // Primary placeholder styling
+  primaryPlaceholderStyle?: any;
+  
   // Input filtering/validation
   allowOnlyNumbers?: boolean;
   allowOnlyEmail?: boolean;
@@ -42,6 +45,12 @@ interface TextInputFieldProps {
   // Left/Right components
   leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
+  
+  // NEW: Two-line placeholder support
+  secondaryPlaceholder?: string;
+  secondaryPlaceholderColor?: string;
+  secondaryPlaceholderStyle?: any;
+  placeholderContainerStyle?: any;
 }
 
 const TextInputField: React.FC<TextInputFieldProps> = ({
@@ -73,6 +82,9 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
   
   placeholderTextColor,
   
+  // Primary placeholder styling
+  primaryPlaceholderStyle,
+  
   // Input filtering
   allowOnlyNumbers = false,
   allowOnlyEmail = false,
@@ -83,6 +95,12 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
   // Components
   leftComponent,
   rightComponent,
+  
+  // NEW: Two-line placeholder props
+  secondaryPlaceholder,
+  secondaryPlaceholderColor,
+  secondaryPlaceholderStyle,
+  placeholderContainerStyle,
 }) => {
   
   // Handle text change with filtering
@@ -112,12 +130,21 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
     return "#C0C0C0";
   };
   
+  // Default secondary placeholder color
+  const getSecondaryPlaceholderColor = () => {
+    if (secondaryPlaceholderColor) return secondaryPlaceholderColor;
+    return "#999"; // Slightly different from primary
+  };
+  
   // Default error renderer
   const defaultErrorRenderer = (errorMsg: string) => (
     <Text style={[defaultStyles.errorText, errorStyle]}>
       {errorMsg}
     </Text>
   );
+
+  // Check if we should show custom placeholder (when input is empty and has secondary placeholder)
+  const shouldShowCustomPlaceholder = !value && secondaryPlaceholder;
 
   return (
     <View style={[defaultStyles.container, containerStyle]}>
@@ -130,32 +157,60 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
       <View style={defaultStyles.inputContainer}>
         {leftComponent}
         
-        <TextInput
-          style={[
-            defaultStyles.input,
-            inputStyle,
-            error && defaultStyles.inputError,
-            multiline && { textAlignVertical: 'top' },
-            leftComponent && { paddingLeft: 0 },
-            rightComponent && { paddingRight: 0 },
-          ]}
-          value={value}
-          onChangeText={handleTextChange}
-          placeholder={placeholder}
-          placeholderTextColor={getPlaceholderColor()}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          maxLength={maxLength}
-          multiline={multiline}
-          numberOfLines={numberOfLines}
-          secureTextEntry={secureTextEntry}
-          editable={editable}
-          autoFocus={autoFocus}
-          returnKeyType={returnKeyType}
-          onSubmitEditing={onSubmitEditing}
-          onFocus={onFocus}
-          onBlur={onBlur}
-        />
+        <View style={{ flex: 1, position: 'relative' }}>
+          <TextInput
+            style={[
+              defaultStyles.input,
+              inputStyle,
+              error && defaultStyles.inputError,
+              multiline && { textAlignVertical: 'top' },
+              leftComponent && { paddingLeft: 0 },
+              rightComponent && { paddingRight: 0 },
+            ]}
+            value={value}
+            onChangeText={handleTextChange}
+            placeholder={shouldShowCustomPlaceholder ? '' : placeholder}
+            placeholderTextColor={getPlaceholderColor()}
+            keyboardType={keyboardType}
+            autoCapitalize={autoCapitalize}
+            maxLength={maxLength}
+            multiline={multiline}
+            numberOfLines={numberOfLines}
+            secureTextEntry={secureTextEntry}
+            editable={editable}
+            autoFocus={autoFocus}
+            returnKeyType={returnKeyType}
+            onSubmitEditing={onSubmitEditing}
+            onFocus={onFocus}
+            onBlur={onBlur}
+          />
+          
+          {/* Custom two-line placeholder overlay */}
+          {shouldShowCustomPlaceholder && (
+            <View 
+              style={[
+                defaultStyles.placeholderOverlay,
+                placeholderContainerStyle
+              ]}
+              pointerEvents="none"
+            >
+              <Text style={[
+                defaultStyles.primaryPlaceholder,
+                { color: getPlaceholderColor() },
+                primaryPlaceholderStyle
+              ]}>
+                {placeholder}
+              </Text>
+              <Text style={[
+                defaultStyles.secondaryPlaceholder,
+                { color: getSecondaryPlaceholderColor() },
+                secondaryPlaceholderStyle
+              ]}>
+                {secondaryPlaceholder}
+              </Text>
+            </View>
+          )}
+        </View>
         
         {rightComponent}
       </View>
@@ -180,16 +235,16 @@ const defaultStyles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+
   },
   input: {
     flex: 1,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    outlineColor:'white',
     borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
+    backgroundColor: '#E5E7EB',
+    paddingHorizontal: 12,
+    paddingVertical: 18,
   },
   inputError: {
     borderColor: 'red',
@@ -199,6 +254,23 @@ const defaultStyles = StyleSheet.create({
     color: 'red',
     fontSize: 12,
     marginTop: 4,
+  },
+  // NEW: Custom placeholder overlay styles
+  placeholderOverlay: {
+    position: 'absolute',
+    left: 12,
+    top: 8,
+    right: 12,
+    justifyContent: 'center',
+  },
+  primaryPlaceholder: {
+    fontSize: 16,
+    lineHeight: 20,
+  },
+  secondaryPlaceholder: {
+    fontSize: 14,
+    lineHeight: 18,
+    marginTop: 2,
   },
 });
 

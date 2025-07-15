@@ -29,7 +29,7 @@ const UploadBox: React.FC<UploadBoxProps> = ({
 }) => {
   return (
     <View style={styles.uploadSection}>
-      <Text style={styles.uploadLabel}>{label}</Text>
+     
       <TouchableOpacity
         style={[
           styles.uploadBox,
@@ -40,7 +40,9 @@ const UploadBox: React.FC<UploadBoxProps> = ({
         {pickedFile ? (
           <Image source={{ uri: pickedFile.uri }} style={styles.uploadedImage} />
         ) : (
+          
           <View style={styles.uploadPlaceholder}>
+             <Text style={styles.uploadLabel}>{label}</Text>
             <View style={styles.cameraIcon}>
               <Image source={iconSource} style={{ height: 24, width: 24 }} resizeMode="contain" />
             </View>

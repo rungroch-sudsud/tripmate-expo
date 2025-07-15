@@ -12,10 +12,11 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       justifyContent: 'space-between',
       paddingHorizontal: 10,
-    
-     
+      paddingTop:35,
+      paddingBottom:25,
       borderBottomWidth: 1,
       borderBottomColor: '#f0f0f0',
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.09)',
     },
     backButton: {
       width: 30,
@@ -29,13 +30,11 @@ const styles = StyleSheet.create({
       color: '#374151',
     },
     headerTitle: {
-      fontSize: 18,
-      fontFamily:'InterTightBold',
-      color: '#1F2937',
+      fontSize: 16,
+      fontFamily:'LineSeedSansTH_A_Bd',
+      color: '#374151',
       flex: 1,
       textAlign: 'center',
-      marginBottom:12,
-      marginTop:12
     },
     placeholder: {
       width: 50,
@@ -75,10 +74,10 @@ const styles = StyleSheet.create({
       fontSize: 28,
     },
     privacyTitle: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: '#1F2937',
+      fontSize: 20,
+      color: '#374151',
       marginBottom: 8,
+      fontFamily:'LineSeedSansTH_A_Bd'
     },
     privacySubtitle: {
       fontSize: 14,
@@ -87,6 +86,7 @@ const styles = StyleSheet.create({
       lineHeight: 20,
       paddingHorizontal: 16,
       marginBottom: 8,
+      fontFamily:'LineSeedSansTH'
     },
     noteText: {
       fontSize: 12,
@@ -118,14 +118,11 @@ const styles = StyleSheet.create({
       fontFamily:'Inter_500Medium'
     },
     uploadBox: {
-      borderWidth: 2,
-      borderColor: '#E5E7EB',
-      borderStyle: 'dashed',
       borderRadius: 12,
       padding: 24,
       alignItems: 'center',
       minHeight: 120,
-      backgroundColor:'#F9FAFB80'
+      backgroundColor:'#F3F4F6'
     },
     uploadPlaceholder: {
       alignItems: 'center',
@@ -156,14 +153,14 @@ const styles = StyleSheet.create({
     },
     uploadText: {
       fontSize: 14,
-      fontFamily:"Inter_500Medium",
+      fontFamily:"LineSeedSansTH_A_Bd",
       color: '#374151',
       marginBottom: 4,
       lineHeight: 14,
     },
     uploadSubtext: {
       fontSize: 12,
-      fontFamily:'Inter_400Regular',
+      fontFamily:'LineSeedSansTH',
       color: '#6B7280',
       textAlign: 'center',
       lineHeight: 12,
@@ -179,6 +176,8 @@ const styles = StyleSheet.create({
     },
     inputGroup: {
       marginBottom: 16,
+      backgroundColor:'#F3F4F6',
+      borderRadius:9
     },
     inputLabel: {
       fontSize: 14,
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
        borderRadius: 100,
      },
      input:{
-      borderWidth: 2,
+   
       borderColor: '#E5E7EB',
       borderStyle: 'solid',
       borderRadius: 12,
