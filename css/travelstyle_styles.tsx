@@ -12,8 +12,8 @@ const styles = StyleSheet.create({
       paddingHorizontal: 10,
       borderBottomWidth: 1,
       borderBottomColor: '#f0f0f0',
-      paddingTop:35,
-      paddingBottom:25
+      paddingTop:40,
+      paddingBottom:20
     },
 
     backButton: {
@@ -59,29 +59,28 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingVertical: 25,
       height: 38,
       borderRadius: 30,
       marginBottom: 8,
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
+        boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',
     },
     selectedItem: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingVertical: 25,
       height: 38,
       borderRadius: 30,
       marginBottom: 8,
-      borderWidth: 1,
+       boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)',
     },
     categoryIcon: {
       width: 14,
       height: 12,
     },
     categoryText: {
-      marginLeft: 8,
+  
       fontSize: 12,
       color: '#374151',
      fontFamily: 'LineSeedSansTH_A_Bd'

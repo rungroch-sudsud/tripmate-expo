@@ -142,17 +142,31 @@ const Login = () => {
   };
 
   // Render terms and conditions
-  const renderTermsText = () => (
-    <Text style={styles.termsText}>
-      <Text style={styles.descriptionText}>
-        เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
-      </Text>
-      {'\n\n\n'}
-      <Text style={styles.termsBaseText}>การเข้าสู่ระบบเป็นการยอมรับ  <TouchableOpacity onPress={()=>router.push('/Privacy-Policy')}>
-        <Text style={styles.linkText}>นโยบายความเป็นส่วนตัวและข้อกำหนดการใช้งาน</Text>
-      </TouchableOpacity> ของเรา</Text>
+const renderTermsText = () => (
+  <Text style={styles.termsText}>
+    <Text style={styles.descriptionText}>
+      เข้าสู่ระบบด้วย Google เพื่อความสะดวกและปลอดภัย
     </Text>
-  );
+    {'\n\n'}
+
+    <Text style={styles.termsBaseText}>
+      การเข้าสู่ระบบเป็นการยอมรับ{' '}
+      <TouchableOpacity onPress={() => router.push('/Privacy-Policy')}>
+        <Text style={styles.linkText}>นโยบาย ความเป็นส่วนตัว</Text>
+      </TouchableOpacity>
+    </Text>
+
+    {'\n'}
+
+    <Text style={styles.termsBaseText}>
+      <TouchableOpacity onPress={() => router.push('/Privacy-Policy')}>
+        <Text style={styles.linkText}>ข้อกำหนดการใช้งาน</Text>
+      </TouchableOpacity>{' '}
+      และ ของเรา
+    </Text>
+  </Text>
+);
+
 
   return (
     <SafeAreaView style={styles.container}>

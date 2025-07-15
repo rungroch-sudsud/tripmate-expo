@@ -22,8 +22,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 10,
-    paddingBottom:25,
-    paddingTop:35,
+    paddingBottom:20,
+    paddingTop:40,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#3B82F6',
+    backgroundColor: '#585DDB',
   },
 appName: {
   fontSize: 24,
@@ -90,7 +90,7 @@ appName: {
   },
   subtitle: {
     fontFamily: 'LineSeedSansTH',
-    marginBottom: 40,
+    marginBottom: 20,
     textAlign: 'center',
     color: '#4B5563',
     fontSize: 15,
@@ -128,7 +128,7 @@ appName: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 10,
-    marginBottom: 5,
+    marginBottom: 20,
     width: 350,
     height: 58,
     borderWidth: 1,
@@ -165,8 +165,7 @@ appName: {
   googleButtonText: {
     color: '#0000008A',
     fontSize: 15,
-    fontWeight:700,
-    fontFamily: 'LineSeedSansTH',
+    fontFamily: 'LineSeedSansTH_A_Bd',
     lineHeight: 16,
   },
   termsText: {
@@ -181,11 +180,13 @@ appName: {
     color: '#6B7280',
     textAlign: 'center',
     fontFamily: 'LineSeedSansTH',
+    marginBottom:20,
   },
   termsBaseText: {
     fontFamily: 'LineSeedSansTH',
-    fontWeight:400,
+    fontSize:12,
     color: '#6B7280',
+
   },
   linkText: {
     color: '#3B82F6',

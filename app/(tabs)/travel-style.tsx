@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { FontAwesome } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,7 +19,6 @@ import { Category } from '../../shared/schemas/api.schema';
 import { 
   getUserProfile, 
   updateUserProfile, 
-  fetchTravelStyles,
   fetTravelInterest
 } from '../../features/user/services/userServices';
 import ProgressBar from '../../components/ProgressBar';
@@ -234,7 +232,7 @@ const TravelStyleScreen: React.FC = () => {
           <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
          <Image source={require('../assets/images/back.png')} style={{height:8,width:14}}/>
           </TouchableOpacity>
-          <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
+          <Text style={styles.headerText}>สไตล์เที่ยว</Text>
           <View style={styles.placeholder} />
         </View>
 

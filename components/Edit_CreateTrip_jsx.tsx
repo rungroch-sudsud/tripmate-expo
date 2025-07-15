@@ -504,12 +504,13 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
 >
   {isSelected && (
 <LinearGradient
-  colors={['#7B80E2', '#FF9B7A']}  // Lighter blue and softer orange
+  colors={['#C7CAF4', '#FFD1C2']}  // Pale blue and pale peach
   locations={[0, 1]}
   start={{ x: 0.25, y: 0.5 }}
   end={{ x: 0.75, y: 0.5 }}
   style={[StyleSheet.absoluteFillObject, { borderRadius: 30 }]}
 />
+
 
   )}
   <Text style={[
