@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1752460198274" clover="3.2.0">
-  <project timestamp="1752460198275" name="All files">
-    <metrics statements="116" coveredstatements="93" conditionals="31" coveredconditionals="25" methods="12" coveredmethods="8" elements="159" coveredelements="126" complexity="0" loc="116" ncloc="116" packages="4" files="4" classes="4"/>
+<coverage generated="1752590163392" clover="3.2.0">
+  <project timestamp="1752590163393" name="All files">
+    <metrics statements="116" coveredstatements="89" conditionals="31" coveredconditionals="20" methods="12" coveredmethods="8" elements="159" coveredelements="117" complexity="0" loc="116" ncloc="116" packages="4" files="4" classes="4"/>
     <package name="features.auth">
-      <metrics statements="69" coveredstatements="69" conditionals="25" coveredconditionals="25" methods="5" coveredmethods="5"/>
-      <file name="authService.ts" path="/home/david/Documents/tripmate-expo/features/auth/authService.ts">
-        <metrics statements="69" coveredstatements="69" conditionals="25" coveredconditionals="25" methods="5" coveredmethods="5"/>
+      <metrics statements="69" coveredstatements="65" conditionals="25" coveredconditionals="20" methods="5" coveredmethods="5"/>
+      <file name="authService.ts" path="/Users/sanphetsongjindasak/Desktop/development/tripmate/tripmate-expo/features/auth/authService.ts">
+        <metrics statements="69" coveredstatements="65" conditionals="25" coveredconditionals="20" methods="5" coveredmethods="5"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
         <line num="6" count="1" type="stmt"/>
@@ -28,10 +28,10 @@
         <line num="39" count="1" type="stmt"/>
         <line num="40" count="1" type="stmt"/>
         <line num="44" count="1" type="stmt"/>
-        <line num="45" count="9" type="stmt"/>
-        <line num="46" count="9" type="stmt"/>
-        <line num="48" count="4" type="cond" truecount="1" falsecount="0"/>
-        <line num="49" count="3" type="stmt"/>
+        <line num="45" count="7" type="stmt"/>
+        <line num="46" count="7" type="stmt"/>
+        <line num="48" count="2" type="cond" truecount="1" falsecount="0"/>
+        <line num="49" count="1" type="stmt"/>
         <line num="52" count="1" type="stmt"/>
         <line num="55" count="5" type="cond" truecount="2" falsecount="0"/>
         <line num="57" count="3" type="stmt"/>
@@ -53,17 +53,17 @@
         <line num="87" count="11" type="cond" truecount="1" falsecount="0"/>
         <line num="88" count="2" type="stmt"/>
         <line num="92" count="9" type="cond" truecount="1" falsecount="0"/>
-        <line num="93" count="4" type="stmt"/>
-        <line num="94" count="4" type="stmt"/>
-        <line num="95" count="4" type="stmt"/>
-        <line num="97" count="3" type="cond" truecount="1" falsecount="0"/>
-        <line num="98" count="1" type="stmt"/>
-        <line num="102" count="2" type="stmt"/>
-        <line num="104" count="2" type="stmt"/>
-        <line num="113" count="2" type="stmt"/>
-        <line num="118" count="5" type="cond" truecount="1" falsecount="0"/>
+        <line num="93" count="1" type="stmt"/>
+        <line num="94" count="1" type="stmt"/>
+        <line num="95" count="1" type="stmt"/>
+        <line num="97" count="0" type="cond" truecount="0" falsecount="1"/>
+        <line num="98" count="0" type="stmt"/>
+        <line num="102" count="0" type="stmt"/>
+        <line num="104" count="0" type="stmt"/>
+        <line num="113" count="1" type="stmt"/>
+        <line num="118" count="8" type="cond" truecount="1" falsecount="0"/>
         <line num="119" count="3" type="stmt"/>
-        <line num="123" count="2" type="stmt"/>
+        <line num="123" count="5" type="stmt"/>
         <line num="127" count="1" type="stmt"/>
         <line num="129" count="5" type="cond" truecount="1" falsecount="0"/>
         <line num="130" count="1" type="stmt"/>
@@ -79,7 +79,7 @@
     </package>
     <package name="features.auth.hooks">
       <metrics statements="14" coveredstatements="14" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
-      <file name="useAuth.ts" path="/home/david/Documents/tripmate-expo/features/auth/hooks/useAuth.ts">
+      <file name="useAuth.ts" path="/Users/sanphetsongjindasak/Desktop/development/tripmate/tripmate-expo/features/auth/hooks/useAuth.ts">
         <metrics statements="14" coveredstatements="14" conditionals="0" coveredconditionals="0" methods="3" coveredmethods="3"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
@@ -99,7 +99,7 @@
     </package>
     <package name="lib">
       <metrics statements="30" coveredstatements="7" conditionals="6" coveredconditionals="0" methods="4" coveredmethods="0"/>
-      <file name="axios.ts" path="/home/david/Documents/tripmate-expo/lib/axios.ts">
+      <file name="axios.ts" path="/Users/sanphetsongjindasak/Desktop/development/tripmate/tripmate-expo/lib/axios.ts">
         <metrics statements="30" coveredstatements="7" conditionals="6" coveredconditionals="0" methods="4" coveredmethods="0"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
@@ -135,7 +135,7 @@
     </package>
     <package name="shared.constants">
       <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
-      <file name="keysAndRoutes.ts" path="/home/david/Documents/tripmate-expo/shared/constants/keysAndRoutes.ts">
+      <file name="keysAndRoutes.ts" path="/Users/sanphetsongjindasak/Desktop/development/tripmate/tripmate-expo/shared/constants/keysAndRoutes.ts">
         <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
         <line num="1" count="1" type="stmt"/>
         <line num="7" count="1" type="stmt"/>

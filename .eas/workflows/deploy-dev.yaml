@@ -1,0 +1,12 @@
+name: Deploy for dev environment
+
+on:
+  push:
+    branches: ['dev']
+
+jobs:
+  deploy_web:
+    type: deploy
+    params:
+      alias: dev
+      prod: false
