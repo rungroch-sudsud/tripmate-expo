@@ -46,11 +46,14 @@ interface TextInputFieldProps {
   leftComponent?: React.ReactNode;
   rightComponent?: React.ReactNode;
   
-  // NEW: Two-line placeholder support
+  // Two-line placeholder support
   secondaryPlaceholder?: string;
   secondaryPlaceholderColor?: string;
   secondaryPlaceholderStyle?: any;
   placeholderContainerStyle?: any;
+  
+  // NEW: Force show primary placeholder
+  alwaysShowPrimaryPlaceholder?: boolean;
 }
 
 const TextInputField: React.FC<TextInputFieldProps> = ({
@@ -96,11 +99,14 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
   leftComponent,
   rightComponent,
   
-  // NEW: Two-line placeholder props
+  // Two-line placeholder props
   secondaryPlaceholder,
   secondaryPlaceholderColor,
   secondaryPlaceholderStyle,
   placeholderContainerStyle,
+  
+  // NEW: Force show primary placeholder
+  alwaysShowPrimaryPlaceholder = false,
 }) => {
   
   // Handle text change with filtering
@@ -136,15 +142,22 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
     return "#999"; // Slightly different from primary
   };
   
-  // Default error renderer
   const defaultErrorRenderer = (errorMsg: string) => (
     <Text style={[defaultStyles.errorText, errorStyle]}>
       {errorMsg}
     </Text>
   );
 
-  // Check if we should show custom placeholder (when input is empty and has secondary placeholder)
-  const shouldShowCustomPlaceholder = !value && secondaryPlaceholder;
+  // Enhanced logic for showing custom placeholder
+  const shouldShowCustomPlaceholder = !value && (secondaryPlaceholder || alwaysShowPrimaryPlaceholder);
+  
+  // Determine what placeholder to show in TextInput
+  const getTextInputPlaceholder = () => {
+    if (shouldShowCustomPlaceholder) {
+      return ''; // Hide native placeholder when showing custom overlay
+    }
+    return placeholder;
+  };
 
   return (
     <View style={[defaultStyles.container, containerStyle]}>
@@ -169,7 +182,7 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
             ]}
             value={value}
             onChangeText={handleTextChange}
-            placeholder={shouldShowCustomPlaceholder ? '' : placeholder}
+            placeholder={getTextInputPlaceholder()}
             placeholderTextColor={getPlaceholderColor()}
             keyboardType={keyboardType}
             autoCapitalize={autoCapitalize}
@@ -185,7 +198,7 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
             onBlur={onBlur}
           />
           
-          {/* Custom two-line placeholder overlay */}
+          {/* Custom placeholder overlay - always shows primary when needed */}
           {shouldShowCustomPlaceholder && (
             <View 
               style={[
@@ -201,13 +214,15 @@ const TextInputField: React.FC<TextInputFieldProps> = ({
               ]}>
                 {placeholder}
               </Text>
-              <Text style={[
-                defaultStyles.secondaryPlaceholder,
-                { color: getSecondaryPlaceholderColor() },
-                secondaryPlaceholderStyle
-              ]}>
-                {secondaryPlaceholder}
-              </Text>
+              {secondaryPlaceholder && (
+                <Text style={[
+                  defaultStyles.secondaryPlaceholder,
+                  { color: getSecondaryPlaceholderColor() },
+                  secondaryPlaceholderStyle
+                ]}>
+                  {secondaryPlaceholder}
+                </Text>
+              )}
             </View>
           )}
         </View>
@@ -235,11 +250,10 @@ const defaultStyles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-
   },
   input: {
     flex: 1,
-    outlineColor:'white',
+    outlineColor: 'white',
     borderRadius: 8,
     fontSize: 16,
     backgroundColor: '#E5E7EB',
@@ -255,22 +269,28 @@ const defaultStyles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
   },
-  // NEW: Custom placeholder overlay styles
+  // Custom placeholder overlay styles
   placeholderOverlay: {
     position: 'absolute',
     left: 12,
     top: 8,
     right: 12,
     justifyContent: 'center',
+    // Ensure overlay doesn't interfere with touch events
+    zIndex: 1,
   },
   primaryPlaceholder: {
     fontSize: 16,
     lineHeight: 20,
+    // Better support for Thai fonts
+    includeFontPadding: false,
   },
   secondaryPlaceholder: {
     fontSize: 14,
     lineHeight: 18,
     marginTop: 2,
+    // Better support for Thai fonts
+    includeFontPadding: false,
   },
 });
 

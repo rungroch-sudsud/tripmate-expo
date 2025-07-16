@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       paddingVertical: 24,
       backgroundColor: '#FFFFFF',
-      marginTop: 16,
+      marginTop: 26,
       borderRadius: 12,
       marginBottom: 16,
     },
@@ -96,8 +96,9 @@ const styles = StyleSheet.create({
     formSection: {
       backgroundColor: '#FFFFFF',
       borderRadius: 12,
-      padding: 16,
+      paddingHorizontal: 16,
       marginBottom: 16,
+      marginTop:-20
     },
     sectionLabel: {
       fontSize: 14,
@@ -106,26 +107,25 @@ const styles = StyleSheet.create({
       marginBottom: 8,
     },
     uploadSection: {
-      marginTop:16,
-      marginBottom: 12,
-      height:208
+     marginBottom:10
     },
     uploadLabel: {
-      fontSize: 14,
-     
-      color: '#374151',
-      marginBottom: 8,
-      fontFamily:'Inter_500Medium'
+      fontSize: 10,
+      textAlign:'left',
+      color: '#9CA3AF',
+      fontWeight:'700',
+      marginBottom: 25,
+      fontFamily:'LineSeedSansTH_A_Bd',
+      marginLeft:20
     },
     uploadBox: {
       borderRadius: 12,
-      padding: 24,
-      alignItems: 'center',
-      minHeight: 120,
+      paddingVertical: 24,
+         height:215,
       backgroundColor:'#F3F4F6'
     },
     uploadPlaceholder: {
-      alignItems: 'center',
+      alignItems:'center'
     },
     cameraIcon: {
       width: 64,
@@ -154,14 +154,16 @@ const styles = StyleSheet.create({
     uploadText: {
       fontSize: 14,
       fontFamily:"LineSeedSansTH_A_Bd",
+      fontWeight:'700',
       color: '#374151',
-      marginBottom: 4,
+      marginBottom: 14,
       lineHeight: 14,
     },
     uploadSubtext: {
       fontSize: 12,
       fontFamily:'LineSeedSansTH',
       color: '#6B7280',
+      fontWeight:'400',
       textAlign: 'center',
       lineHeight: 12,
     },
@@ -206,7 +208,7 @@ const styles = StyleSheet.create({
       opacity: 0.6,
     },
     submitButton: {
-      backgroundColor: '#29C4AF',
+      backgroundColor: '#585DDB',
       borderRadius: 12,
       paddingVertical: 16,
       flexDirection: 'row',
@@ -217,20 +219,22 @@ const styles = StyleSheet.create({
     },
     submitButtonText: {
       fontSize: 16,
-      fontFamily:'Inter_500Medium',
+      fontFamily:'LineSeedSansTH_A_Bd',
+      fontWeight:'700',
       color: '#FFFFFF',
-      marginRight: 8,
+      marginLeft:8
     },
     checkMark: {
       fontSize: 16,
       color: '#FFFFFF',
     },
     disclaimer: {
+      marginTop:5,
       fontSize: 12,
       color: '#9CA3AF',
+      fontWeight:'400',
       textAlign: 'center',
-    
-      fontFamily:'Inter_400Regular',
+      fontFamily:'LineSeedSansTH',
     },
     progressContainer: {
       paddingBottom: 15,

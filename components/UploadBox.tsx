@@ -37,18 +37,21 @@ const UploadBox: React.FC<UploadBoxProps> = ({
         ]}
         onPress={onPress}
       >
+         <Text style={styles.uploadLabel}>{label}</Text>
         {pickedFile ? (
           <Image source={{ uri: pickedFile.uri }} style={styles.uploadedImage} />
         ) : (
+      
           
           <View style={styles.uploadPlaceholder}>
-             <Text style={styles.uploadLabel}>{label}</Text>
+          
             <View style={styles.cameraIcon}>
               <Image source={iconSource} style={{ height: 24, width: 24 }} resizeMode="contain" />
             </View>
             <Text style={styles.uploadText}>{placeholder}</Text>
             <Text style={styles.uploadSubtext}>{subtitle}</Text>
           </View>
+       
         )}
       </TouchableOpacity>
       {error && (

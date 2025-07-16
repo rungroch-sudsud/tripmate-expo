@@ -10,14 +10,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-
+  paddingTop:40,
+      paddingBottom:20,
     borderBottomWidth: 1,
     borderBottomColor: '#e5e5e5',
     backgroundColor: '#fff',
   },
   backButton: {
-    marginRight: 12,
-    padding: 10,
+       backgroundColor:'#E5E7EB',
+      padding: 8,
+    
+      marginLeft: 20,
+      borderRadius:20,
+      width:40,
+      height:40,
+      alignItems:'center',
+      justifyContent:'center'
   },
   headerTitle: {
     fontSize: 18,
@@ -51,7 +59,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#29C4AF',
+    backgroundColor: '#585DDB',
     borderRadius: 9999,
     width: 36,
     height: 36,
@@ -240,13 +248,11 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   headerText: {
-    fontSize: 18,
-    fontFamily: 'InterTight-Regular',
-    color: '#1F2937',
+    fontSize: 16,
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    color: '#374151',
     flex: 1,
     textAlign: 'center',
-    marginBottom: 12,
-    marginTop: 12,
     marginLeft: -25,
   },
   placeholder: {

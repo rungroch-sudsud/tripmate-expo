@@ -535,7 +535,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <FontAwesome name="angle-left" size={24} color="#333" />
+         <Image source={require('../assets/images/back.png')} style={{height:8,width:14}}/>
         </TouchableOpacity>
         <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
             {userId?  (<TouchableOpacity onPress={handleLogout}>
@@ -554,9 +554,9 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
         contentContainerStyle={styles.scrollContent}
       >
         {/* Profile Picture */}
-        <View style={styles.profileSection}>
+        <View style={[styles.profileSection]}>
           <TouchableOpacity 
-            style={styles.profileImageContainer}
+            style={[styles.profileImageContainer]}
             onPress={pickImage}
           >
             <Image
@@ -565,7 +565,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
                 user?.profileImageUrl ? { uri: user.profileImageUrl } :
                 { uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' }
               }
-              style={styles.profileImage}
+              style={[styles.profileImage, imageFile?.uri ?{borderWidth:0}:{borderColor:'#585DDB',borderWidth:1}]}
             />
             <View style={styles.cameraButton}>
               <Image
@@ -575,12 +575,28 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
               />
             </View>
           </TouchableOpacity>
-          <Text style={styles.uploadText}>อัพโหลดรูปโปรไฟล์ของคุณ</Text>
         </View>
   
         {/* Form Fields */}
         <View style={styles.formSection}>
           {/* Full Name */}
+
+
+         <View>
+          <Text style={{}}>ชื่อ-นามสกุล</Text>
+           <TextInput
+          value={formData.fullName}
+          onChangeText={(text)=>{
+            setFormData({...formData,fullName:text})
+            if(errors.fullName){
+              setErrors({...errors,fullName:undefined})
+            }
+          }}
+          
+          placeholder='กรอกชื่อจริงและนามสกุลของคุณ'
+          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0}}
+          />
+         </View>
    <TextInputField
   field="fullName"
   label="ชื่อ"

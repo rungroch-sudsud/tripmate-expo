@@ -3,9 +3,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  ScrollView,
+  TextInput,
   Image,
   Animated,
+  ScrollView,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -21,8 +22,6 @@ import { convertBase64ToFile } from '../../shared/utils/file.util';
 import { validateEmail, validateFullName, validatePhoneNumber } from '../../shared/utils/profileForm_util';
 import { updateUserProfile } from '../../features/user/services/userServices';
 import UploadBox from '../../components/UploadBox';
-import TextInputField from '../../components/TextInputField';
-//import ProgressBar from '../../components/ProgressBar';
 
 type FormField = {
   value: string;
@@ -31,7 +30,8 @@ type FormField = {
 };
 
 const PrivacySettings: React.FC = () => {
-  const [pickedFiles, setPickedFiles] = useState<(PickedFile | null)[]>([null, null]);
+  // Changed to single image instead of array
+  const [pickedFile, setPickedFile] = useState<PickedFile | null>(null);
   const [uploading, setUploading] = useState(false);
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
   const [isLoading, setLoading] = useState(false);
@@ -40,7 +40,6 @@ const PrivacySettings: React.FC = () => {
     fullName: { value: '', error: false, errorMessage: '' },
     phoneNumber: { value: '', error: false, errorMessage: '' },
     email: { value: '', error: false, errorMessage: '' },
-    idCard: { error: false, errorMessage: '' },
     selfie: { error: false, errorMessage: '' },
   });
 
@@ -61,6 +60,23 @@ const PrivacySettings: React.FC = () => {
     }));
   };
 
+  // Function to validate field on blur
+  const validateField = (field: string, value: string) => {
+    if (validators[field]) {
+      const error = validators[field](value);
+      if (error) {
+        updateFormField(field, { error: true, errorMessage: error });
+      } else {
+        updateFormField(field, { error: false, errorMessage: '' });
+      }
+    }
+  };
+
+  // Function to format phone number (remove non-digits)
+  const formatPhoneNumber = (text: string) => {
+    return text.replace(/[^0-9]/g, '');
+  };
+
   const fetchUserProfile = useCallback(async () => {
     try {
       const userId = await AsyncStorage.getItem('userId');
@@ -70,6 +86,7 @@ const PrivacySettings: React.FC = () => {
 
       if (userProfile.email) {
         updateFormField('email', { value: userProfile.email });
+         updateFormField('fullName', { value: userProfile.fullname });
       }
     } catch (error) {
       console.error("Error in fetching user profile", error);
@@ -94,7 +111,7 @@ const PrivacySettings: React.FC = () => {
     }, 300);
   }, []);
 
-  const pickImage = (index: number) => {
+  const pickImage = () => {
     const options = {
       mediaType: 'photo' as const,
       includeBase64: false,
@@ -130,11 +147,9 @@ const PrivacySettings: React.FC = () => {
           };
         }
 
-        setPickedFiles(prev => {
-          const newFiles = [...prev];
-          newFiles[index] = fileData;
-          return newFiles;
-        });
+        setPickedFile(fileData);
+        // Clear selfie error when image is selected
+        updateFormField('selfie', { error: false, errorMessage: '' });
       }
     });
   };
@@ -173,15 +188,7 @@ const PrivacySettings: React.FC = () => {
       }
     });
 
-    // Validate images
-    if (!pickedFiles[0]) {
-      updateFormField('idCard', { error: true, errorMessage: 'กรุณาอัพโหลดรูปบัตรประชาชน' });
-      hasError = true;
-    } else {
-      updateFormField('idCard', { error: false, errorMessage: '' });
-    }
-
-    if (!pickedFiles[1]) {
+    if (!pickedFile) {
       updateFormField('selfie', { error: true, errorMessage: 'กรุณาอัพโหลดภาพถ่ายยืนยันตัวตน' });
       hasError = true;
     } else {
@@ -205,12 +212,9 @@ const PrivacySettings: React.FC = () => {
         throw result.error;
       }
 
-      // Upload images
-      if (pickedFiles[0]) {
-        await uploadImage(pickedFiles[0], 'id-card/image');
-      }
-      if (pickedFiles[1]) {
-        await uploadImage(pickedFiles[1], 'portrait/image');
+      // Upload image
+      if (pickedFile) {
+        await uploadImage(pickedFile, 'portrait/image');
       }
 
       setResponseMessage('Success: Profile updated successfully');
@@ -231,22 +235,16 @@ const PrivacySettings: React.FC = () => {
   };
 
   const resetFormState = () => {
-    setPickedFiles([null, null]);
+    setPickedFile(null);
     setFormData({
       fullName: { value: '', error: false, errorMessage: '' },
       phoneNumber: { value: '', error: false, errorMessage: '' },
       email: { value: '', error: false, errorMessage: '' },
-      idCard: { error: false, errorMessage: '' },
       selfie: { error: false, errorMessage: '' },
     });
     setUploading(false);
     setResponseMessage(null);
     setLoading(false);
-  };
-
-  const handleSkip = () => {
-    resetFormState();
-    router.push('/profile');
   };
 
   const handleGoBack = () => {
@@ -264,17 +262,14 @@ const PrivacySettings: React.FC = () => {
           <FontAwesome name="angle-left" size={30} color="#333" style={{marginLeft:10}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>ยืนยันตัวตน</Text>
-       {/**<TouchableOpacity onPress={handleSkip}>
-          <View style={styles.flagContainer}>
-            <Text style={styles.flag}>ข้าม</Text>
-          </View>
-        </TouchableOpacity> */} 
       </View>
 
-      {/* Progress Bar Component
-      <ProgressBar animation={progressAnimation} styles={styles}/> */}
-
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 20 }}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Privacy Shield Section */}
         <View style={styles.privacySection}>
           <View style={styles.shieldIcon}>
@@ -295,143 +290,110 @@ const PrivacySettings: React.FC = () => {
 
         {/* Form Section */}
         <View style={styles.formSection}>
- 
-    <TextInputField
-  field="fullName"
-  placeholder="ชื่อ-นามสกุล (ตามบัตรประชาชน)"
-  secondaryPlaceholder="เกรอกชื่อจริงของคุณ"
-  value={formData.fullName.value}
-  error={formData.fullName.error}
-  errorMessage={formData.fullName.errorMessage}
-  onChangeText={(text) => updateFormField('fullName', { value: text })}
-  inputStyle={styles.input}
-  containerStyle={styles.inputGroup}
-  
-  // Primary placeholder customization
-  placeholderTextColor="#9CA3AF"
-  primaryPlaceholderStyle={{
-    fontSize: 10,
-    letterSpacing: '0%',
-    color:'#9CA3AF',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-  
-  // Secondary placeholder customization
-  secondaryPlaceholderColor="#9CA3AF"
-  secondaryPlaceholderStyle={{
-    fontSize: 13,
-    color:'#9CA3AF',
-    marginTop: 3,
-    letterSpacing: '0%',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-/>
-  
-          
-          <UploadBox
-          styles={styles}
-            index={0}
-            label="บัตรประชาชน"
-            placeholder="อัพโหลดรูปถ่ายบัตรประชาชน"
-            subtitle="ถ่ายในที่แสงสว่างเพียงพอ เห็นหน้าชัดเจน"
-            iconSource={require('../assets/images/images/images/image2.png')}
-            pickedFile={pickedFiles[0]}
-            onPress={() => pickImage(0)}
-            error={formData.idCard.error}
-            errorMessage={formData.idCard.errorMessage}
-          />
-          
+          {/* Full Name Input */}
+          <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15, borderColor: formData.fullName.error ? 'red' : 'transparent',}}>
+            <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
+            <TextInput
+              value={formData.fullName.value}
+              onChangeText={(text) => updateFormField('fullName', { value: text })}
+              onBlur={() => validateField('fullName', formData.fullName.value)}
+              placeholder='กรอกชื่อจริงของคุณ'
+              style={{
+                fontFamily:'LineSeedSansTH_A_Bd',
+                color:'#9CA3AF',
+                backgroundColor:'#F3F4F6',
+                outlineWidth:0,
+                borderRadius: 8,
+       
+                paddingVertical: 2
+              }}
+            />
+          </View>
+          {formData.fullName.error && (
+            <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+              {formData.fullName.errorMessage}
+            </Text>
+          )}
+        
           <UploadBox
             styles={styles}
             index={1}
             label="ภาพถ่ายยืนยันตัวตน"
-            placeholder="ถ่ายรูปหน้าตรงกับบัตรประชาชน"
-            subtitle="กรุณาถ่ายรูปให้ตรงกับบัตร เสื้อผ้าเรียบร้อย"
+            placeholder="ถ่ายภาพตัวเองคู่กับบัตรประชาชน"
+            subtitle="ถ่ายในที่แสงสว่างเพียงพอ เห็นหน้าชัดเจน"
             iconSource={require('../assets/images/images/images/image3.png')}
-            pickedFile={pickedFiles[1]}
-            onPress={() => pickImage(1)}
+            pickedFile={pickedFile}
+            onPress={pickImage}
             error={formData.selfie.error}
             errorMessage={formData.selfie.errorMessage}
           />
 
           {/* Contact Information */}
           <View style={styles.contactSection}>
-         <TextInputField
-  field="phoneNumber"
-  placeholder="เบอร์โทรศัพท์"
-  secondaryPlaceholder='0891234567'
-  value={formData.phoneNumber.value}
-  error={formData.phoneNumber.error}
-  errorMessage={formData.phoneNumber.errorMessage}
-  onChangeText={(text) => updateFormField('phoneNumber', { value: text })}
-  keyboardType="phone-pad"
-  allowOnlyNumbers={true}
-  maxLength={10}
-  inputStyle={styles.input}
-  containerStyle={styles.inputGroup}
-
-  placeholderTextColor='#9CA3AF'
-  primaryPlaceholderStyle={{
-    fontSize:10,
-    letterSpacing: '0%',
-    color:'#9CA3AF',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-
-    secondaryPlaceholderColor="#9CA3AF"
-  secondaryPlaceholderStyle={{
-    fontSize: 13,
-    color:'#9CA3AF',
-    marginTop: 3,
-    letterSpacing: '0%',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-/>
-            
-         <TextInputField
-  field="email"
-  placeholder="อีเมล"
-  secondaryPlaceholder='example@email.com'
-  value={formData.email.value}
-  error={formData.email.error}
-  errorMessage={formData.email.errorMessage}
-  onChangeText={(text) => updateFormField('email', { value: text })}
-  keyboardType="email-address"
-  autoCapitalize="none"
-  allowOnlyEmail={true}
-  inputStyle={styles.input}
-  containerStyle={styles.inputGroup}
-   placeholderTextColor='#9CA3AF'
-  primaryPlaceholderStyle={{
-    fontSize:10,
-    letterSpacing: '0%',
-    color:'#9CA3AF',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-
-    secondaryPlaceholderColor="#9CA3AF"
-  secondaryPlaceholderStyle={{
-    fontSize: 13,
-    color:'#9CA3AF',
-    marginTop: 3,
-    letterSpacing: '0%',
-    fontFamily:'LineSeedSansTH_A_Bd'
-  }}
-/>
+            {/* Phone Number Input */}
+            <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+              <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>เบอร์โทรศัพท์</Text>
+              <TextInput
+                value={formData.phoneNumber.value}
+                onChangeText={(text) => {
+                  const formattedText = formatPhoneNumber(text);
+                  updateFormField('phoneNumber', { value: formattedText });
+                }}
+                onBlur={() => validateField('phoneNumber', formData.phoneNumber.value)}
+                placeholder='0891234567'
+                keyboardType="numeric"
+                maxLength={10}
+                style={{
+                  fontFamily:'LineSeedSansTH_A_Bd',
+                  color:'#374151',
+                  backgroundColor:'#F3F4F6',
+                  outlineWidth:0,
+                  borderRadius: 8,
+                  paddingVertical: 2
+                }}
+              />
+            </View>
+            {formData.phoneNumber.error && (
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+                {formData.phoneNumber.errorMessage}
+              </Text>
+            )}
+     
+            {/* Email Input */}
+            <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+              <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>อีเมล</Text>
+              <TextInput
+                keyboardType="email-address"
+                value={formData.email.value}
+                onChangeText={(text) => updateFormField('email', { value: text })}
+                onBlur={() => validateField('email', formData.email.value)}
+                placeholder='example@email.com'
+                style={{
+                  fontFamily:'LineSeedSansTH_A_Bd',
+                  color:'#374151',
+                  backgroundColor:'#F3F4F6',
+                  outlineWidth:0,
+                  borderRadius: 8,
+                  paddingVertical: 2
+                }}
+              />
+            </View>
+            {formData.email.error && (
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+                {formData.email.errorMessage}
+              </Text>
+            )}
           </View>
         </View>
-      </ScrollView>
 
-      {/* Submit Button */}
-      <View style={styles.bottomSection}>
+       
+      </ScrollView>
+     <View style={{paddingHorizontal:15,paddingBottom:10}}>
         <TouchableOpacity
           style={[styles.submitButton, isLoading && styles.disabledButton]}
           onPress={handleSubmit}
           disabled={isLoading}
         >
-          <Text style={styles.submitButtonText}>
-            {isLoading ? 'กำลังบันทึก...' : 'ยืนยันตัวตน'}
-          </Text>
           {!isLoading && (
             <Image
               source={require('../assets/images/images/images/image5.png')}
@@ -439,7 +401,11 @@ const PrivacySettings: React.FC = () => {
               resizeMode="contain"
             />
           )}
+          <Text style={styles.submitButtonText}>
+            ยืนยันตัวตน
+          </Text>
         </TouchableOpacity>
+
         <Text style={styles.disclaimer}>
           <Image
             source={require('../assets/images//images/images/image4.png')}
@@ -447,7 +413,7 @@ const PrivacySettings: React.FC = () => {
             resizeMode="contain"
           /> ข้อมูลของคุณจะถูกเก็บรักษาอย่างปลอดภัย
         </Text>
-      </View>
+     </View>
     </View>
   );
 };
