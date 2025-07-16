@@ -154,9 +154,17 @@ const TripCard: React.FC<TripCardProps> = ({
         
         {/* Date Badge */}
         <View style={styles.dateBadge}>
-           <Image source={require('../app/assets/images/images/images/image25.png')} style={{width:10.5,height:12,marginRight:5}}/>
+           <Image source={require('../app/assets/images/calendar.png')} style={{width:10.5,height:12,marginRight:5}}/>
           <Text style={styles.dateText}>
             {formatDateRange(trip.startDate, trip.endDate)}
+          </Text>
+        </View>
+        
+        {/* Price Badge - New position below date */}
+        <View style={styles.priceBadge}>
+          <Image source={require('../app/assets/images/coin.png')} style={{width:10.5,height:12,marginRight:5}}/>
+          <Text style={styles.priceBadgeText}>
+            {trip.pricePerPerson.toLocaleString()} บาท/คน
           </Text>
         </View>
         
@@ -164,7 +172,7 @@ const TripCard: React.FC<TripCardProps> = ({
         <View style={styles.participantBadge}>
          <Image source={require('../app/assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:5}}/>
           <Text style={styles.participantText}>
-            ต้องการ {trip.maxParticipants} คน
+            {trip.participants.length}/{trip.maxParticipants} คน
           </Text>
         </View>
       </View>
@@ -179,8 +187,8 @@ const TripCard: React.FC<TripCardProps> = ({
             
             {trip.destinations.length > 0 && (
               <View style={styles.destinationRow}>
-                <Text style={styles.locationIcon}>📍</Text>
-                <Text style={styles.destinationText} numberOfLines={1}>
+                <Image source={require('../app/assets/images/destination.png')} style={{width:15,height:12,marginRight:5}}/>
+                <Text style={styles.destinationText}>
                   {trip.destinations.join(', ')}
                 </Text>
               </View>
@@ -193,7 +201,7 @@ const TripCard: React.FC<TripCardProps> = ({
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <View style={styles.bookmarkIcon}>
-              {isBookmarked ? <Image source={require('../app/assets/images/images/images/image22.png')} style={{width:12,height:16,tintColor:'#29C4AF'}}/> : <Image source={require('../app/assets/images/images/images/image21.png')} style={{width:12,height:16}}  />}
+              {isBookmarked ? <Image source={require('../app/assets/images/images/images/image22.png')} style={{width:12,height:20,tintColor:'#FACC15'}}/> : <Image source={require('../app/assets/images/saved.png')} style={{width:12,height:20}}  />}
             </View>
           </TouchableOpacity>
         </View>
@@ -233,14 +241,6 @@ const TripCard: React.FC<TripCardProps> = ({
           </Text>
         )}
 
-        {/* Price Container */}
-        <View style={styles.priceContainer}>
-          <Text style={styles.priceLabel}>ราคา:</Text>
-          <Text style={styles.priceValue}>
-            ฿{trip.pricePerPerson.toLocaleString()} /คน
-          </Text>
-        </View>
-
         {/* Included Services Tags */}
         {trip.includedServices.length > 0 && (
           <View style={styles.tagsContainer}>
@@ -271,7 +271,7 @@ const TripCard: React.FC<TripCardProps> = ({
               <Text style={styles.ownerName} numberOfLines={1}>
                 {ownerInfo.displayName}
               </Text>
-              <Text style={styles.ownerAge}>{ownerInfo.age}</Text>
+             {/*  <Text style={styles.ownerAge}>{ownerInfo.age}</Text>*/}
             </View>
           </View>
 
@@ -280,11 +280,11 @@ const TripCard: React.FC<TripCardProps> = ({
             onPress={handleJoinPress} // Updated to use the new handler
             activeOpacity={0.8}
           >
-            <Text style={styles.joinButtonText}>สนใจเข้าร่วม</Text>
+            <Text style={styles.joinButtonText}>ดูรายละเอียด</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Participants Info */}
+        {/* Participants Info 
         <View style={styles.participantsInfo}>
           <View style={styles.participantsProgressBar}>
             <View 
@@ -297,7 +297,7 @@ const TripCard: React.FC<TripCardProps> = ({
           <Text style={styles.participantsText}>
             ผู้เข้าร่วม: {trip.participants.length}/{trip.maxParticipants} คน
           </Text>
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   imageContainer: {
-    height: 200,
+    height: 150,
     position: 'relative',
   },
   backgroundImage: {
@@ -349,12 +349,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   dateText: {
     color: '#1F2937',
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily:'InterTight-Regular'
+    fontSize: 10,
+    fontWeight: '400',
+    fontFamily:'LineSeedSansTH'
+  },
+  priceBadge: {
+    flexDirection:'row',
+    position: 'absolute',
+    top: 48, // Position below the date badge
+    left: 12,
+    backgroundColor: '#FFFFFFE5',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  priceBadgeText: {
+    color: '#374151',
+    fontSize: 10,
+    fontWeight: '400',
+    fontFamily:'LineSeedSansTH'
   },
   participantBadge: {
     position: 'absolute',
@@ -367,12 +382,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-
   participantText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '500',
-    fontFamily:'InterTight-Regular'
+    fontSize: 10,
+    fontWeight: '700',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   content: {
     padding: 16,
@@ -388,31 +402,45 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   tripName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#374151',
     marginBottom: 4,
-    fontFamily:'InterTight-Regular'
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
-  destinationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
+destinationRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#FFF7ED',
+  paddingVertical: 10,
+  paddingHorizontal: 10,
+  borderRadius: 10,
+  alignSelf: 'flex-start',
+}
+,
   locationIcon: {
     fontSize: 14,
     marginRight: 4,
     fontFamily:'InterTight-Regular'
   },
   destinationText: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: '#374151',
     flex: 1,
-    fontFamily:'InterTight-Regular'
+    fontWeight:'400',
+    fontFamily:'LineSeedSansTH',
+    
   },
-  bookmarkButton: {
-    padding: 4,
-  },
+bookmarkButton: {
+  height: 24,
+  width: 24,
+  backgroundColor: '#FFFFFF',
+  justifyContent: 'center',
+  alignItems: 'center',
+  borderRadius: 12, // half of width/height for circle
+  overflow: 'hidden', // ensures nothing bleeds out
+},
+
   bookmarkIcon: {
     backgroundColor:'#E5E7EB',
     borderRadius:9999,
@@ -427,12 +455,12 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   atmosphere: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
+    fontSize: 11,
+    color: '#374151',
+    lineHeight: 17,
+    fontWeight:'400',
     flex: 1,
-      fontFamily:'InterTight-Regular',
-      fontStyle:'italic'
+    fontFamily:'LineSeedSansTH',
   },
   expandButton: {
     marginLeft: 4,
@@ -445,28 +473,12 @@ const styles = StyleSheet.create({
       fontFamily:'InterTight-Regular'
   },
   description: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
+    fontSize: 11,
+    color: '#374151',
+    lineHeight: 17,
     marginBottom: 12,
-      fontFamily:'InterTight-Regular'
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  priceLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginRight: 8,
-      fontFamily:'InterTight-Regular'
-  },
-  priceValue: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#29C4AF',
-      fontFamily:'InterTight-Regular'
+    fontWeight:'400',
+    fontFamily:'LineSeedSansTH'
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -475,17 +487,17 @@ const styles = StyleSheet.create({
   },
   serviceTag: {
     backgroundColor: '#E8F4FD',
-    borderRadius: 16,
+    borderRadius: 7,
     paddingHorizontal: 8,
     paddingVertical: 4,
     marginRight: 6,
     marginBottom: 6,
   },
   serviceTagText: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#1976D2',
-    fontWeight: '500',
-      fontFamily:'InterTight-Regular'
+    fontWeight: '400',
+      fontFamily:'LineSeedSansTH'
   },
   bottomRow: {
     flexDirection: 'row',
@@ -510,9 +522,9 @@ const styles = StyleSheet.create({
   },
   ownerName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-      fontFamily:'InterTight-Regular'
+    fontWeight: '500',
+    color: '#374151',
+    fontFamily:'InterTight-SemiBold'
   },
   ownerAge: {
     fontSize: 12,
@@ -521,16 +533,16 @@ const styles = StyleSheet.create({
       fontFamily:'InterTight-Regular'
   },
   joinButton: {
-    backgroundColor: '#29C4AF',
-    borderRadius:8,
+    backgroundColor: '#FF956E',
+    borderRadius:10,
     paddingHorizontal: 16,
     paddingVertical: 8,
   },
   joinButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '500',
-    fontFamily:'InterTight-Regular'
+    fontWeight: '700',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   participantsInfo: {
     borderTopWidth: 1,

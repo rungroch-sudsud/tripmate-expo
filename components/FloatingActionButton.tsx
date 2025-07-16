@@ -12,6 +12,6 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ onPr
     onPress={onPress}
     activeOpacity={0.8}
   >
-    <Image source={require('../app/assets/images/images/images/image27.png')} style={{height:21,width:21}}/>
+    <Image source={require('../app/assets/images/images/images/image27.png')} style={{height:35,width:35}}/>
   </TouchableOpacity>
 );

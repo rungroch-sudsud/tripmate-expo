@@ -13,7 +13,7 @@ import BottomNavigation from '../../components/customNavigation';
 import { SearchBar } from '../../components/SearchBar';
 import { TravelStyleCategories } from '../../components/TravelStyleCategories';
 import { TripCountHeader } from '../../components/TripCountHeader';
-import { FloatingActionButton } from '../../components/FloatingActionButton';
+
 import { HeaderSection } from '../../components/HeaderSection';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -215,7 +215,7 @@ const FindTripScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      <FloatingActionButton onPress={handleCreateTrip} />
+   
      
       <BottomNavigation currentScreen="findTrips" userId={userId} />
     </View>

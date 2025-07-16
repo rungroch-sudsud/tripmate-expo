@@ -1,22 +1,21 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet,SafeAreaView,Platform } from 'react-native';
 import { useRouter } from 'expo-router';
+import {FloatingActionButton} from './FloatingActionButton'
 
 const BottomNavigation = ({ currentScreen, userId }) => {
-
-
   const router = useRouter();
 
   const handleNavigation = (screen) => {
     switch (screen) {
-      //case 'home':
-       // router.push('/home'); // or whatever your home route is
-       // break;
       case 'findTrips':
         router.push('/findTrips');
         break;
       case 'savedTrips':
         router.push('/savedTrips');
+        break;
+      case 'channel':
+       // router.push('/channel');
         break;
       case 'profile':
         router.push(`/profile?userId=${userId}`);
@@ -24,104 +23,142 @@ const BottomNavigation = ({ currentScreen, userId }) => {
     }
   };
 
-  const getIconStyle = (screen) => {
+
+
+ const getHomeIconStyle = (screen) => {
     return currentScreen === screen 
-      ? [styles.navIcon, { tintColor: '#29C4AF' }] 
-      : styles.navIcon;
+      ? [styles.navHomeIcon, { tintColor: '#585DDB' }] 
+      : styles.navHomeIcon;
   };
+
+   const getSaveIconStyle = (screen) => {
+    return currentScreen === screen 
+      ? [styles.navSaveIcon, { tintColor: '#585DDB' }] 
+      : styles.navSaveIcon;
+  };
+    const getMessageIconStyle = (screen) => {
+    return currentScreen === screen 
+      ? [styles.navMessageIcon, { tintColor: '#585DDB' }] 
+      : styles.navMessageIcon;
+  };
+     const getProfileIconStyle = (screen) => {
+    return currentScreen === screen 
+      ? [styles.navProfileIcon, { tintColor: '#585DDB' }] 
+      : styles.navProfileIcon;
+  };
+
+
 
   const getTextStyle = (screen) => {
     return currentScreen === screen 
-      ? [styles.navText, { color: '#29C4AF',fontFamily:'InterTight-Regular' }] 
+      ? [styles.navText, { color: '#585DDB', fontFamily: 'LineSeedSansTH_A_Bd' }] 
       : styles.navText;
   };
 
-  const getSavedIconStyle = () => {
-    return currentScreen === 'savedTrips' 
-      ? [styles.savedIcon, { tintColor: '#29C4AF' }] 
-      : styles.savedIcon;
-  };
+ const webShadowStyle = Platform.OS === 'web' ? { boxShadow: '0px -4px 12px rgba(0, 0, 0, 0.1)' } : {};
+
 
   return (
-    <View style={styles.bottomNav}>
-      {/* Home */}
-      <TouchableOpacity 
-        style={styles.navItem} 
-        onPress={() => handleNavigation('home')}
-      >
-        <Image
-          source={require('../app/assets/images/images/images/image18.png')}
-          style={getIconStyle('home')}
-        />
-        <Text style={getTextStyle('home')}>หน้าหลัก</Text>
-      </TouchableOpacity>
+<SafeAreaView style={{  backgroundColor: '#FFFFFF',}}>
+      <View style={[styles.bottomNav, webShadowStyle]}>
 
-      {/* Find Trips */}
+      <FloatingActionButton onPress={() => router.push('/createTrip')} />
+
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => handleNavigation('findTrips')}
       >
         <Image
-          source={require('../app/assets/images/images/images/image23.png')}
-          style={getIconStyle('findTrips')}
+          source={require('../app/assets/images/images/images/image18.png')}
+          style={getHomeIconStyle('findTrips')}
         />
-        <Text style={getTextStyle('findTrips')}>ค้นหา</Text>
+        <Text style={getTextStyle('findTrips')}>หน้าหลัก</Text>
       </TouchableOpacity>
 
-      {/* Saved Trips */}
       <TouchableOpacity 
-        style={styles.navItem} 
+        style={[styles.navItem,{marginRight:90}]} 
         onPress={() => handleNavigation('savedTrips')}
       >
         <Image
-          source={require('../app/assets/images/images/images/image21.png')}
-          style={getSavedIconStyle()}
+          source={require('../app/assets/images/saved.png')}
+          style={getSaveIconStyle('savedTrips')}
         />
         <Text style={getTextStyle('savedTrips')}>บันทึก</Text>
       </TouchableOpacity>
 
-      {/* Profile */}
+      <TouchableOpacity 
+        style={styles.navItem} 
+        onPress={() => handleNavigation('channel')}
+      >
+        <Image
+          source={require('../app/assets/images/message-icon.png')}
+          style={getMessageIconStyle('channel')}
+        />
+        <Text style={getTextStyle('channel')}>แชท</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity 
         style={styles.navItem} 
         onPress={() => handleNavigation('profile')}
       >
         <Image
-          source={require('../app/assets/images/images/images/image20.png')}
-          style={getIconStyle('profile')}
+          source={require('../app/assets/images/profile-icon.png')}
+          style={getProfileIconStyle('profile')}
         />
         <Text style={getTextStyle('profile')}>โปรไฟล์</Text>
       </TouchableOpacity>
     </View>
+</SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-around',
-    paddingVertical: 10,
     borderTopWidth: 1,
+    paddingTop: 30,
+    paddingBottom: 30,
+    height: 120,
+    backgroundColor: '#FFFFFF',
     borderTopColor: '#E5E7EB',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50
   },
   navItem: {
     alignItems: 'center',
   },
-  navIcon: {
-    width: 24,
+  navHomeIcon: {
+    width: 27,
     height: 24,
     marginBottom: 10,
+    resizeMode: 'contain', 
   },
-  savedIcon: {
-    height: 20,
-    width: 15,
+ navSaveIcon: {
+    width: 18,
+    height: 23,
     marginBottom: 10,
+    resizeMode: 'contain', 
   },
+   navMessageIcon: {
+    width: 32,
+    height: 32,
+    marginBottom: 10,
+    resizeMode: 'contain', 
+  },
+  navProfileIcon:{
+    width: 35,
+    height: 35,
+    marginBottom: 10,
+    resizeMode: 'contain', 
+  },
+
   navText: {
     fontSize: 12,
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH_A_Bd',
     color: '#6B7280',
-    alignItems: 'baseline',
+    textAlign: 'center',
   },
 });
 

@@ -32,7 +32,7 @@ export default function RootLayout() {
 'LineSeedSansTH_A_XBd':require('./assets/fonts/LINESeedSansTH_A_XBd.ttf'),
 'LineSeedSansTH_A_Bd':require('./assets/fonts/LINESeedSansTH_A_Bd.ttf'),
 'LineSeedSansTH_A_Th':require('./assets/fonts/LINESeedSansTH_A_Th.ttf'),
-'LineSeedSansTH_A_He':require('./assets/fonts/LINESeedSansTH_A_XBd.ttf'),
+'LineSeedSansTH_A_He':require('./assets/fonts/LINESeedSansTH_A_He.ttf'),
 
 
 

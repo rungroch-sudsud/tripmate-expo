@@ -349,15 +349,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   
-  // Floating Button Styles
+
   floatingButton: {
     position: 'absolute',
-    bottom: 90, // Above bottom navigation
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#29C4AF',
+    bottom: 70, 
+    right: 180,
+    width: 66.67,
+    height: 66.67,
+    borderRadius: 9999,
+    backgroundColor: '#FF956E',
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
   },
   floatingButtonIcon: {
     color: '#fff',
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: 'bold',
     lineHeight: 24,
   },

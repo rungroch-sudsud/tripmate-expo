@@ -224,28 +224,16 @@ const useTrips = (bookmarkedTripIds: string[]) => {
     onRefresh
   };
 };
-
 const Header: React.FC = () => (
   <View style={styles.header}>
-    <View style={styles.headerLeft}>
-      <Image 
-        source={require('../assets/images/images/images/image21.png')} 
-        style={styles.headerIcon}
-      />
-      <Text style={styles.headerTitle}>ทริปที่บันทึกไว้</Text>
-    </View>
-    <View style={styles.headerRight}>
-      <Image 
-        source={require('../assets/images/images/images/image16.png')} 
-        style={styles.headerActionIcon} 
-      />
-      <Image 
-        source={require('../assets/images/images/images/image17.png')} 
-        style={[styles.headerActionIcon, { marginLeft: 15 }]} 
-      />
-    </View>
+    <Text style={styles.headerTitle}>ทริปที่บันทึกไว้</Text>
+    <Image 
+      source={require('../assets/images/date-icon.png')} 
+      style={styles.headerActionIcon} 
+    />
   </View>
 );
+
 
 
 
@@ -428,13 +416,15 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     flex:0.9,
-    fontSize: 18,
-    color: '#1F2937',
+    fontSize: 16,
+    color: '#374151',
     textAlign: 'left',
     paddingVertical: 16,
+    fontFamily:'LineSeedSansTH_A_Bd',
     marginLeft:10
   },
   scrollView: {
+    backgroundColor:'#FFFFFF',
     flex: 1,
   },
   loadingContainer: {
@@ -788,12 +778,12 @@ const styles = StyleSheet.create({
     height: 40,
     width: 40,
   },
-  bookmarkIcon: { height: 20, width: 15 },
+  bookmarkIcon: { height: 30, width: 15 },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start' },
   tripInfo: { flex: 0.9 },
-  headerRight: { flexDirection: 'row', alignItems: 'center' },
-  headerActionIcon: { width: 18, height: 18 },
-  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white' },
+  headerRight: { flexDirection: 'row', alignItems: 'flex-end' },
+  headerActionIcon: { width: 20, height: 20 },
+  header: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'white',paddingBottom:25,paddingTop:35,paddingHorizontal:16 ,justifyContent:'space-between'},
   headerLeft: { display: 'flex', flexDirection: 'row', flex: 0.9, alignItems: 'center' },
   headerIcon: { height: 20, width: 15, marginLeft: 5 },
 });

@@ -161,7 +161,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       // Fetch destinations and travel styles in parallel
       const [destinationsResponse, travelStylesResponse] = await Promise.all([
         axiosInstance.get('/destinations'),
-        axiosInstance.get('/travel-styles')
+        axiosInstance.get('/interested-activities')
       ]);
 
       // Set destinations
@@ -582,8 +582,8 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
           {/* Full Name */}
 
 
-         <View>
-          <Text style={{}}>ชื่อ-นามสกุล</Text>
+         <View style={[{backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:15},!errors.fullName && { marginBottom: 20 }]}>
+          <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',color:'#374151',fontSize:10}}>ชื่อ-นามสกุล</Text>
            <TextInput
           value={formData.fullName}
           onChangeText={(text)=>{
@@ -594,10 +594,24 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
           }}
           
           placeholder='กรอกชื่อจริงและนามสกุลของคุณ'
-          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0}}
+          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
           />
          </View>
-   <TextInputField
+                  {errors.fullName && (
+    <Text style={{
+      color: 'red',
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft:20,
+      marginBottom:20,
+      fontFamily: 'LineSeedSansTH_A_Bd',
+      fontWeight: '700'
+    }}>
+      {errors.fullName}
+    </Text>
+  )}
+
+     {/* <TextInputField
   field="fullName"
   label="ชื่อ"
   placeholder="ชื่อจริง และ นามสกุล"
@@ -615,10 +629,39 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
   containerStyle={styles.inputGroup}
   labelStyle={styles.label}
   renderError={renderError}
-/>
+/>*/}
   
           {/* Nickname */}
-         <TextInputField
+
+           <View style={[{backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:15}, !errors.nickname && { marginBottom: 20 },]}>
+          <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',color:'#374151',fontSize:10}}>ชื่อเล่น</Text>
+           <TextInput
+          value={formData.nickname}
+          onChangeText={(text)=>{
+            setFormData({...formData,nickname:text})
+            if(errors.fullName){
+              setErrors({...errors,nickname:undefined})
+            }
+          }}
+          
+          placeholder='กรอกชื่อสำหรับสแดงในแอป'
+          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          />
+         </View>
+           {errors.nickname && (
+    <Text style={{
+      color: 'red',
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft:20,
+      marginBottom:20,
+      fontFamily: 'LineSeedSansTH_A_Bd',
+      fontWeight: '700'
+    }}>
+      {errors.nickname}
+    </Text>
+  )}
+        {/*   <TextInputField
   field="nickname"
   label="ชื่อเล่น"
   placeholder="ชื่อสำหรับแสดงในแอป"
@@ -636,36 +679,48 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
   containerStyle={styles.inputGroup}
   labelStyle={styles.label}
   renderError={renderError}
-/>
+/>*/}
   
           {/* Email */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>อีเมล</Text>
-            <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              placeholder="example@email.com"
-              value={formData.email}
-              onChangeText={(text: string) => {
-                setFormData({...formData, email: text});
-                if (errors.email) {
-                  setErrors({...errors, email: undefined});
-                }
-              }}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor="#999"
-            />
-            {renderError(errors.email)}
-          </View>
+
+                <View style={[{backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:15},!errors.email && { marginBottom: 20 }]}>
+          <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',color:'#374151',fontSize:10}}>อีเมล</Text>
+           <TextInput
+          value={formData.email}
+          onChangeText={(text)=>{
+            setFormData({...formData,email:text})
+            if(errors.fullName){
+              setErrors({...errors,email:undefined})
+            }
+          }}
+          
+          placeholder='example@email.com'
+          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          />
+         </View>
+                {errors.nickname && (
+    <Text style={{
+      color: 'red',
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft:20,
+      marginBottom:20,
+      fontFamily: 'LineSeedSansTH_A_Bd',
+      fontWeight: '700'
+    }}>
+      {errors.nickname}
+    </Text>
+  )}
+       
   
           {/* Age and Gender Row */}
           <View style={[{ flexDirection: 'row', gap: 10 }, styles.inputGroup]}>
             {/* Age */}
             <View style={[{ flex: 1 }]}>
-              <Text style={styles.label}>อายุ</Text>
+              <Text>อายุ</Text>
               <TextInput
                 value={formData.age}
-                style={[styles.input, errors.age && styles.inputError]}
+                style={[errors.age && styles.inputError]}
                 onChangeText={(text) => {
                   const numericText = text.replace(/[^0-9]/g, '');
                   let age=parseInt(numericText,10)
@@ -685,7 +740,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
   
             {/* Gender Dropdown */}
             <View style={{ flex: 1 }}>
-              <Text style={styles.label}>เพศ</Text>
+              <Text>เพศ</Text>
               
               <View style={[styles.inputWithIcon, errors.gender && styles.inputError]}>
                 <View style={styles.textDisplayArea}>
