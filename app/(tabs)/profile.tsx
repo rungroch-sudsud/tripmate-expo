@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { FontAwesome } from '@expo/vector-icons';
 import { Animated } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -29,17 +28,18 @@ import { PickedFile } from '@/shared/schemas/file_type'; '../../src/shared/schem
 import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../features/user/services/userServices'
 import {sanitizeValue} from '../../shared/utils/sanitizeValue'
 import  {convertBase64ToFile} from '../../shared/utils/file.util'
-import TextInputField from  '../../components/TextInputField'
+
 import {TravelStylesComponent} from '../../components/Edit_CreateTrip_jsx'
 const ProfileForm: React.FC = () => {
 
 
   // State management
+  const [imageTextArray,setimageTextArray]=useState([])
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
   const [email, setEmail] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [responseMessage, setResponseMessage] = useState<string | null>(null);
- 
+   
   // Destinations
   const [destinations, setDestinations] = useState<string[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -161,7 +161,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       // Fetch destinations and travel styles in parallel
       const [destinationsResponse, travelStylesResponse] = await Promise.all([
         axiosInstance.get('/destinations'),
-        axiosInstance.get('/interested-activities')
+        axiosInstance.get('/travel-styles')
       ]);
 
       // Set destinations
@@ -324,6 +324,64 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       }
     });
   };
+
+
+  const pickImageWithText=()=>{
+    const options={
+       mediaType: 'photo',
+       maxWidth:1024,
+       maxHeight:1024,
+       storageOptions:{
+        skipBackup:true,
+        path:'images'
+       },
+       presentationStyle: 'overFullScreen',
+    };
+    launchImageLibrary(options,(response)=>{
+      if(response.didCancel){
+        console.log("User Canceled Image Picker");
+        return
+      }
+      if(response.errorMessage){
+          console.log('ImagePicker Error: ', response.errorMessage);
+          return
+      }
+      if(response.assets && response.assets.length>0){
+        const pickedImage=response.assets[0]
+        if(!pickedImage.uri){
+          console.log("No Image uri receieved, Please Try Again");
+           return
+        }
+
+
+        const newImageItem={
+          id:Date.now().toString(),
+          uri: pickedImage.uri,
+          type: pickedImage.type ?? 'image/jpeg',
+          name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+          text: '', 
+        }
+
+         setimageTextArray(prev => [...prev, newImageItem]);
+         console.log('Image added to array successfully');
+      }
+      
+    })
+  }
+
+
+  const removeImageFromArray=(id)=>{
+    setimageTextArray(prev => prev.filter(item => item.id !== id))
+  }
+
+
+const updateImageText = (id, newText) => {
+  setimageTextArray(prev => 
+    prev.map(item => 
+      item.id === id ? { ...item, text: newText } : item
+    )
+  );
+};
 
   const uploadImageWithFetch = async () => {
     if (!imageFile) {
@@ -611,25 +669,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
     </Text>
   )}
 
-     {/* <TextInputField
-  field="fullName"
-  label="ชื่อ"
-  placeholder="ชื่อจริง และ นามสกุล"
-  value={formData.fullName}
-  error={!!errors.fullName}
-  errorMessage={errors.fullName}
-  onChangeText={(text) => {
-    setFormData({...formData, fullName: text});
-    if (errors.fullName) {
-      setErrors({...errors, fullName: undefined});
-    }
-  }}
-  placeholderTextColor="#999"
-  inputStyle={styles.input}
-  containerStyle={styles.inputGroup}
-  labelStyle={styles.label}
-  renderError={renderError}
-/>*/}
+   
   
           {/* Nickname */}
 
@@ -661,25 +701,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       {errors.nickname}
     </Text>
   )}
-        {/*   <TextInputField
-  field="nickname"
-  label="ชื่อเล่น"
-  placeholder="ชื่อสำหรับแสดงในแอป"
-  value={formData.nickname}
-  error={!!errors.nickname}
-  errorMessage={errors.nickname}
-  onChangeText={(text) => {
-    setFormData({ ...formData, nickname: text });
-    if (errors.nickname) {
-      setErrors({ ...errors, nickname: undefined });
-    }
-  }}
-  placeholderTextColor="#999"
-  inputStyle={styles.input}
-  containerStyle={styles.inputGroup}
-  labelStyle={styles.label}
-  renderError={renderError}
-/>*/}
+ 
   
           {/* Email */}
 
@@ -850,9 +872,9 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
 />
   
           {/* Destinations Section */}
-       <View style={styles.inputGroup}>
-  <Text style={styles.title}>จุดหมายปลายทางที่อยากไป</Text>
-  <Text style={styles.subtitle}>เลือกประเทศที่คุณสนใจ</Text>
+       <View style={{backgroundColor:'#F3F4F6',borderRadius:15,paddingTop:10}}>
+  <Text style={[styles.title,{marginLeft:22,fontFamily:'LineSeedSansTH_A_Bd',color:"#374151"}]}>จุดหมายปลายทางที่อยากไป</Text>
+  <Text style={[styles.subtitle,{margin:22,marginTop:10,fontFamily:'LineSeedSansTH'}]}>เลือกสถานที่ที่คุณวางแผนจะไปเที่ยว</Text>
 
   <DestinationsComponent
     dropdownOpen={dropdownOpen}

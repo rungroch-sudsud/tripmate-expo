@@ -559,12 +559,12 @@ export const DestinationsComponent = ({
 }) => {
   return (
     <View style={{
-      backgroundColor: '#fff',
+      backgroundColor: '#F3F4F6',
       position: 'relative',
       zIndex: 1000,
       marginBottom: dropdownOpen ? 220 : 30,
       marginTop: 10,
-      marginHorizontal: 20
+      marginHorizontal: 20,
     }}>
       <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
         <View>

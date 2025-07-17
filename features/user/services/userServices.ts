@@ -259,7 +259,7 @@ export const fetchTravelStyles = async () => {
 
 export const fetTravelInterest=async()=>{
   try{
-      const response=await axiosInstance.get('/interested-activities');
+      const response=await axiosInstance.get('/travel-styles');
       const result=response.data
       const mappedInterest=result.data.map(item=>({
         id:item.id,

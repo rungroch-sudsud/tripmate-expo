@@ -19,7 +19,7 @@ import { Category } from '../../shared/schemas/api.schema';
 import { 
   getUserProfile, 
   updateUserProfile, 
-  fetTravelInterest
+  fetTravelInterest,
 } from '../../features/user/services/userServices';
 import ProgressBar from '../../components/ProgressBar';
 import { TravelStylesComponent } from '../../components/Edit_CreateTrip_jsx'; // Import your component
