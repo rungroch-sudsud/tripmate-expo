@@ -25,15 +25,19 @@ import {User} from '../../shared/schemas/user_schema'
 import {ValidationErrors}  from  '../../shared/schemas/errors_schema'
 import {ProfileFormData} from  '../../shared/schemas/form_schema'
 import { PickedFile } from '@/shared/schemas/file_type'; '../../src/shared/schemas/file_type'
-import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId} from  '../../features/user/services/userServices'
+import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId, fetchTravelStyles} from  '../../features/user/services/userServices'
 import {sanitizeValue} from '../../shared/utils/sanitizeValue'
 import  {convertBase64ToFile} from '../../shared/utils/file.util'
-
+import {travelPersonalities,transportationStyles} from '../../features/user/services/userServices'
 import {TravelStylesComponent} from '../../components/Edit_CreateTrip_jsx'
 const ProfileForm: React.FC = () => {
 
 
   // State management
+  const [selectedTravel, setSelectedTravel] = useState([]);
+  const [selectedTransport, setSelectedTransport] = useState([]);
+  const [selectedTravelIds, setSelectedTravelIds] = useState([]);
+  const [selectedTransportIds, setSelectedTransportIds] = useState([]);
   const [imageTextArray,setimageTextArray]=useState([])
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
   const [email, setEmail] = useState<string | null>(null);
@@ -159,9 +163,11 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
       setEmail(storedID);
 
       // Fetch destinations and travel styles in parallel
-      const [destinationsResponse, travelStylesResponse] = await Promise.all([
+      const [destinationsResponse, travelStylesResponse,travelPersonalitiesResponse, transportationRespons] = await Promise.all([
         axiosInstance.get('/destinations'),
-        axiosInstance.get('/travel-styles')
+        axiosInstance.get('/travel-styles'),
+         travelPersonalities(),
+        transportationStyles() 
       ]);
 
       // Set destinations
@@ -176,12 +182,16 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
         activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
       }));
       setCategories(mappedCategories);
-
+    setSelectedTravel(travelPersonalitiesResponse || []);
+    setSelectedTransport(transportationRespons || []);
+    
       console.log('Initial data loaded successfully');
     } catch (error) {
       console.error('Failed to load initial data:', error);
       setDestinations([]);
       setCategories([]);
+      setSelectedTravel([]);
+      setSelectedTransport([]);
       Alert.alert('Error', 'Failed to load initial data. Please try again.');
     } finally {
       setLoading(false);
@@ -196,6 +206,22 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
         : [...prev, id]
     );
   };
+
+  const handleTravelPersonalityToggle = (id) => {
+  setSelectedTravelIds(prev => 
+    prev.includes(id) 
+      ? prev.filter(item => item !== id)
+      : [...prev, id]
+  );
+};
+
+const handleTransportToggle = (id) => {
+  setSelectedTransportIds(prev => 
+    prev.includes(id) 
+      ? prev.filter(item => item !== id)
+      : [...prev, id]
+  );
+};
 
   const addDestination = (dest: string) => {
     if (!selected.includes(dest)) {
@@ -474,8 +500,11 @@ const updateImageText = (id, newText) => {
         destinations: Array.from(new Set(selected)),
         lineId: formData.lineId || '',
         facebookUrl: formData.facebookUrl || '',
+        transportationStyles: selectedTransportIds
       };
-
+       
+      console.log(imageTextArray);
+      
       console.log('Submitting profile data:', profileData);
 
       const profileResponse = await axiosInstance.patch(
@@ -870,7 +899,41 @@ const updateImageText = (id, newText) => {
   iconSize={{ width: 15.75, height: 14 }}
   isEditMode={false}
 />
-  
+
+{/* Travel Personalities Section 
+<TravelStylesComponent
+  categories={selectedTravel}
+  selectedItems={selectedTravelIds}
+  onToggleSelection={handleTravelPersonalityToggle}
+  loading={loading}
+  styles={styles}
+  title="บุคลิกการเดินทาง"
+  subtitle="เลือกสไตล์การเดินทางที่เหมาะกับคุณ"
+  selectedColor="#6366f1"
+  unselectedColor="#000"
+  iconSize={{ width: 15.75, height: 14 }}
+  isEditMode={false}
+/>*/}
+
+
+<View style={{marginTop:20}}>
+  {/* Transportation Styles Section */}
+<TravelStylesComponent
+  categories={selectedTransport}
+  selectedItems={selectedTransportIds}
+  onToggleSelection={handleTransportToggle}
+  loading={loading}
+  styles={styles}
+  title="รูปแบบการเดินทาง"
+  subtitle="เลือกวิธีการเดินทางที่คุณชอบ"
+  selectedColor="#6366f1"
+  unselectedColor="#000"
+  iconSize={{ width: 15.75, height: 14 }}
+  isEditMode={false}
+/>
+</View>
+
+
           {/* Destinations Section */}
        <View style={{backgroundColor:'#F3F4F6',borderRadius:15,paddingTop:10}}>
   <Text style={[styles.title,{marginLeft:22,fontFamily:'LineSeedSansTH_A_Bd',color:"#374151"}]}>จุดหมายปลายทางที่อยากไป</Text>
@@ -892,6 +955,95 @@ const updateImageText = (id, newText) => {
     isEditMode={false}
   />
 </View>
+
+ <View style={{ backgroundColor: '#F3F4F6', borderRadius: 15, paddingTop: 10, marginTop: 20 }}>
+      <Text style={[styles.title, { marginLeft: 22, fontFamily: 'LineSeedSansTH_A_Bd', color: "#374151" }]}>
+        รูปภาพที่เกี่ยวข้อง
+      </Text>
+      <Text style={[styles.subtitle, { margin: 22, marginTop: 10, fontFamily: 'LineSeedSansTH' }]}>
+        เพิ่มรูปภาพและข้อความ (ไม่บังคับ)
+      </Text>
+
+      {/* Image Grid */}
+      <ScrollView 
+        showsHorizontalScrollIndicator={false}
+        style={{ paddingHorizontal: 22, paddingBottom: 20 }}
+      >
+        {imageTextArray.map((item) => (
+          <View key={item.id} style={{ marginRight: 15, width: 150 }}>
+            <View style={{ position: 'relative' }}>
+              <Image
+                source={{ uri: item.uri }}
+                style={{
+                  width: 150,
+                  height: 120,
+                  borderRadius: 10,
+                  backgroundColor: '#E5E7EB'
+                }}
+                resizeMode="cover"
+              />
+              
+              {/* Remove button */}
+              <TouchableOpacity
+                onPress={() => removeImageFromArray(item.id)}
+                style={{
+                  position: 'absolute',
+                  top: 5,
+                  right: 5,
+                  backgroundColor: 'red',
+                  borderRadius: 10,
+                  width: 20,
+                  height: 20,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+              >
+                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>×</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Text input for each image */}
+            <TextInput
+              style={{
+                marginTop: 8,
+                backgroundColor: 'white',
+                borderRadius: 8,
+                paddingHorizontal: 10,
+                paddingVertical: 8,
+                fontSize: 12,
+                fontFamily: 'LineSeedSansTH',
+                borderWidth: 1,
+                borderColor: '#E5E7EB'
+              }}
+              placeholder="เพิ่มข้อความ (ไม่บังคับ)"
+              value={item.text}
+              onChangeText={(text) => updateImageText(item.id, text)}
+              multiline
+              numberOfLines={2}
+            />
+          </View>
+        ))}
+
+        {/* Add new image button */}
+        <TouchableOpacity
+          onPress={pickImageWithText}
+          style={{
+            width: 150,
+            height: 120,
+            borderRadius: 10,
+            backgroundColor: '#E5E7EB',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderWidth: 2,
+            borderColor: '#9CA3AF',
+            borderStyle: 'dashed',
+          }}
+        >
+          <Text style={{ fontSize: 40, color: '#9CA3AF' }}>+</Text>
+          <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 5 }}>เพิ่มรูปภาพ</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
         </View>
       </ScrollView>
   

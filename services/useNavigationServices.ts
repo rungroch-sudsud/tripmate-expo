@@ -21,6 +21,7 @@ export const useNavigationService = () => {
         router.push(`/EditTrip?tripId=${trip.id}`);
       } else {
         console.log("User is not the owner, no action taken");
+        router.push(`/tripDetails?tripId=${trip.id}`)
       }
     } catch (error) {
       console.error('Error handling trip press:', error);

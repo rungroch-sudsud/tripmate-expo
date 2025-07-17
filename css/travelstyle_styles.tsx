@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     categoryItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: 30,
       paddingVertical: 25,
       height: 38,
       borderRadius: 30,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     selectedItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: 30,
       paddingVertical: 25,
       height: 38,
       borderRadius: 30,

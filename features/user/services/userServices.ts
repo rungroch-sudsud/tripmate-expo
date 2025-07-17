@@ -257,6 +257,34 @@ export const fetchTravelStyles = async () => {
 };
 
 
+
+export const travelPersonalities=async()=>{
+  try{
+   const response=await axiosInstance.get('/travel-personalities');
+      const result=response.data
+      const mappedInterest=result.data.map(item=>({
+        id:item.id,
+        title:item.title
+      }))
+      return mappedInterest
+  }catch{
+   console.error("Failed to fetch travel interest: ",error); 
+  }
+}
+export const transportationStyles=async()=>{
+  try{
+   const response=await axiosInstance.get('/transportation-styles');
+      const result=response.data
+      const mappedInterest=result.data.map(item=>({
+        id:item.id,
+        title:item.title
+      }))
+      return mappedInterest
+  }catch{
+   console.error("Failed to fetch travel interest: ",error); 
+  }
+}
+
 export const fetTravelInterest=async()=>{
   try{
       const response=await axiosInstance.get('/travel-styles');
