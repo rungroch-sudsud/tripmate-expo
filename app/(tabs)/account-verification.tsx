@@ -27,6 +27,7 @@ type FormField = {
   value: string;
   error: boolean;
   errorMessage: string;
+  touched:boolean;
 };
 
 const PrivacySettings: React.FC = () => {
@@ -294,26 +295,30 @@ const PrivacySettings: React.FC = () => {
           <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15, borderColor: formData.fullName.error ? 'red' : 'transparent',}}>
              <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
             <TextInput
-              value={formData.fullName.value}
-              onChangeText={(text) => {
-                 updateFormField('fullName', { value: text });
-   
-                  if (formData.fullName.error) {
-                   updateFormField('fullName', { error: false, errorMessage: '' });
-                     }
-                      }}
-                   onBlur={() => validateField('fullName', formData.fullName.value)}
-                   placeholder='กรอกชื่อจริงของคุณ'
-                   placeholderTextColor='#9CA3AF'
-                   style={{
-                     fontFamily: 'LineSeedSansTH_A_Bd',
-                     color: '#374151',
-                     backgroundColor: '#F3F4F6',
-                     outlineWidth: 0,
-                     borderRadius: 8,
-                     paddingVertical: 2
-                     }}
-                     />
+  value={formData.fullName.value}
+  onChangeText={(text) => {
+    updateFormField('fullName', { value: text });
+    // Clear error immediately when user starts typing (good UX)
+    if (formData.fullName.error) {
+      updateFormField('fullName', { error: false, errorMessage: '' });
+    }
+  }}
+  onBlur={() => {
+    // Mark field as touched and then validate
+    updateFormField('fullName', { touched: true });
+    validateField('fullName', formData.fullName.value);
+  }}
+  placeholder='กรอกชื่อจริงของคุณ'
+  placeholderTextColor='#9CA3AF'
+  style={{
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    color: '#374151',
+    backgroundColor: '#F3F4F6',
+    outlineWidth: 0,
+    borderRadius: 8,
+    paddingVertical: 2
+  }}
+/>
           </View>
           {formData.fullName.error && (
             <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
@@ -339,7 +344,7 @@ const PrivacySettings: React.FC = () => {
             {/* Phone Number Input */}
             <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
               <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>เบอร์โทรศัพท์</Text>
-             <TextInput
+      <TextInput
   value={formData.phoneNumber.value}
   onChangeText={(text) => {
     const formattedText = formatPhoneNumber(text);
@@ -349,7 +354,11 @@ const PrivacySettings: React.FC = () => {
       updateFormField('phoneNumber', { error: false, errorMessage: '' });
     }
   }}
-  onBlur={() => validateField('phoneNumber', formData.phoneNumber.value)}
+  onBlur={() => {
+    // Mark field as touched and then validate
+    updateFormField('phoneNumber', { touched: true });
+    validateField('phoneNumber', formData.phoneNumber.value);
+  }}
   placeholder='0891234567'
   placeholderTextColor='#9CA3AF'
   keyboardType="numeric"
@@ -373,7 +382,7 @@ const PrivacySettings: React.FC = () => {
             {/* Email Input */}
             <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
               <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>อีเมล</Text>
-           <TextInput
+        <TextInput
   keyboardType="email-address"
   value={formData.email.value}
   onChangeText={(text) => {
@@ -383,7 +392,11 @@ const PrivacySettings: React.FC = () => {
       updateFormField('email', { error: false, errorMessage: '' });
     }
   }}
-  onBlur={() => validateField('email', formData.email.value)}
+  onBlur={() => {
+    // Mark field as touched and then validate
+    updateFormField('email', { touched: true });
+    validateField('email', formData.email.value);
+  }}
   placeholder='example@email.com'
   placeholderTextColor='#9CA3AF'
   style={{
