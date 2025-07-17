@@ -68,14 +68,14 @@ const Login = () => {
     const profile = await getUserProfile(user.uid);
     console.log(profile);
     
-    if (profile?.age !== -999) {
+    if ( profile?.age !== -999) {
       navigateToRoute(NAVIGATION_ROUTES.FIND_TRIPS);
     }
   }, [processUserAuth, navigateToRoute]);
 
   // Google Sign-In Handler
   const handleGoogleSignIn = useCallback(async () => {
-    if (isLoading) return;
+
 
     setIsLoading(true);
 

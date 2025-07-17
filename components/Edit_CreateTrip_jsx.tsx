@@ -651,7 +651,7 @@ export const DestinationsComponent = ({
                     }}
                     onPress={() => onAddDestination(item)}
                   >
-                    <Text style={{ fontSize: 14, color: '#374151', fontFamily: 'InterTight-Regular' }}>
+                    <Text style={{ fontSize: 14, color: '#374151', fontFamily: 'LineSeedSansTH' }}>
                       {item}
                     </Text>
                   </TouchableOpacity>

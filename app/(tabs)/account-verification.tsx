@@ -292,25 +292,31 @@ const PrivacySettings: React.FC = () => {
         <View style={styles.formSection}>
           {/* Full Name Input */}
           <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15, borderColor: formData.fullName.error ? 'red' : 'transparent',}}>
-            <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
+             <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ชื่อ-นามสกุล (ตามบัตรประชาชน)</Text>
             <TextInput
               value={formData.fullName.value}
-              onChangeText={(text) => updateFormField('fullName', { value: text })}
-              onBlur={() => validateField('fullName', formData.fullName.value)}
-              placeholder='กรอกชื่อจริงของคุณ'
-              style={{
-                fontFamily:'LineSeedSansTH_A_Bd',
-                color:'#9CA3AF',
-                backgroundColor:'#F3F4F6',
-                outlineWidth:0,
-                borderRadius: 8,
-       
-                paddingVertical: 2
-              }}
-            />
+              onChangeText={(text) => {
+                 updateFormField('fullName', { value: text });
+   
+                  if (formData.fullName.error) {
+                   updateFormField('fullName', { error: false, errorMessage: '' });
+                     }
+                      }}
+                   onBlur={() => validateField('fullName', formData.fullName.value)}
+                   placeholder='กรอกชื่อจริงของคุณ'
+                   placeholderTextColor='#9CA3AF'
+                   style={{
+                     fontFamily: 'LineSeedSansTH_A_Bd',
+                     color: '#374151',
+                     backgroundColor: '#F3F4F6',
+                     outlineWidth: 0,
+                     borderRadius: 8,
+                     paddingVertical: 2
+                     }}
+                     />
           </View>
           {formData.fullName.error && (
-            <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+            <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
               {formData.fullName.errorMessage}
             </Text>
           )}
@@ -333,28 +339,33 @@ const PrivacySettings: React.FC = () => {
             {/* Phone Number Input */}
             <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
               <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>เบอร์โทรศัพท์</Text>
-              <TextInput
-                value={formData.phoneNumber.value}
-                onChangeText={(text) => {
-                  const formattedText = formatPhoneNumber(text);
-                  updateFormField('phoneNumber', { value: formattedText });
-                }}
-                onBlur={() => validateField('phoneNumber', formData.phoneNumber.value)}
-                placeholder='0891234567'
-                keyboardType="numeric"
-                maxLength={10}
-                style={{
-                  fontFamily:'LineSeedSansTH_A_Bd',
-                  color:'#374151',
-                  backgroundColor:'#F3F4F6',
-                  outlineWidth:0,
-                  borderRadius: 8,
-                  paddingVertical: 2
-                }}
-              />
+             <TextInput
+  value={formData.phoneNumber.value}
+  onChangeText={(text) => {
+    const formattedText = formatPhoneNumber(text);
+    updateFormField('phoneNumber', { value: formattedText });
+    // Clear error immediately when user starts typing
+    if (formData.phoneNumber.error) {
+      updateFormField('phoneNumber', { error: false, errorMessage: '' });
+    }
+  }}
+  onBlur={() => validateField('phoneNumber', formData.phoneNumber.value)}
+  placeholder='0891234567'
+  placeholderTextColor='#9CA3AF'
+  keyboardType="numeric"
+  maxLength={10}
+  style={{
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    color: '#374151',
+    backgroundColor: '#F3F4F6',
+    outlineWidth: 0,
+    borderRadius: 8,
+    paddingVertical: 2
+  }}
+/>
             </View>
             {formData.phoneNumber.error && (
-              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
                 {formData.phoneNumber.errorMessage}
               </Text>
             )}
@@ -362,24 +373,31 @@ const PrivacySettings: React.FC = () => {
             {/* Email Input */}
             <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
               <Text style={{color:'#9CA3AF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>อีเมล</Text>
-              <TextInput
-                keyboardType="email-address"
-                value={formData.email.value}
-                onChangeText={(text) => updateFormField('email', { value: text })}
-                onBlur={() => validateField('email', formData.email.value)}
-                placeholder='example@email.com'
-                style={{
-                  fontFamily:'LineSeedSansTH_A_Bd',
-                  color:'#374151',
-                  backgroundColor:'#F3F4F6',
-                  outlineWidth:0,
-                  borderRadius: 8,
-                  paddingVertical: 2
-                }}
-              />
+           <TextInput
+  keyboardType="email-address"
+  value={formData.email.value}
+  onChangeText={(text) => {
+    updateFormField('email', { value: text });
+    // Clear error immediately when user starts typing
+    if (formData.email.error) {
+      updateFormField('email', { error: false, errorMessage: '' });
+    }
+  }}
+  onBlur={() => validateField('email', formData.email.value)}
+  placeholder='example@email.com'
+  placeholderTextColor='#9CA3AF'
+  style={{
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    color: '#374151',
+    backgroundColor: '#F3F4F6',
+    outlineWidth: 0,
+    borderRadius: 8,
+    paddingVertical: 2
+  }}
+/>
             </View>
             {formData.email.error && (
-              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20 }}>
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
                 {formData.email.errorMessage}
               </Text>
             )}

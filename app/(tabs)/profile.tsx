@@ -352,54 +352,65 @@ const handleTransportToggle = (id) => {
   };
 
 
-  const pickImageWithText=()=>{
-    const options={
-       mediaType: 'photo',
-       maxWidth:1024,
-       maxHeight:1024,
-       storageOptions:{
-        skipBackup:true,
-        path:'images'
-       },
-       presentationStyle: 'overFullScreen',
-    };
-    launchImageLibrary(options,(response)=>{
-      if(response.didCancel){
-        console.log("User Canceled Image Picker");
-        return
+const pickImageWithText = () => {
+  const options = {
+    mediaType: 'photo',
+    maxWidth: 1024,
+    maxHeight: 1024,
+    storageOptions: {
+      skipBackup: true,
+      path: 'images'
+    },
+    presentationStyle: 'overFullScreen',
+  };
+  
+  launchImageLibrary(options, (response) => {
+    if (response.didCancel) {
+      console.log("User Canceled Image Picker");
+      return;
+    }
+    if (response.errorMessage) {
+      console.log('ImagePicker Error: ', response.errorMessage);
+      return;
+    }
+    if (response.assets && response.assets.length > 0) {
+      const pickedImage = response.assets[0];
+      if (!pickedImage.uri) {
+        console.log("No Image uri received, Please Try Again");
+        return;
       }
-      if(response.errorMessage){
-          console.log('ImagePicker Error: ', response.errorMessage);
-          return
-      }
-      if(response.assets && response.assets.length>0){
-        const pickedImage=response.assets[0]
-        if(!pickedImage.uri){
-          console.log("No Image uri receieved, Please Try Again");
-           return
-        }
 
-
-        const newImageItem={
-          id:Date.now().toString(),
-          uri: pickedImage.uri,
-          type: pickedImage.type ?? 'image/jpeg',
-          name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
-          text: '', 
-        }
-
-         setimageTextArray(prev => [...prev, newImageItem]);
-         console.log('Image added to array successfully');
-      }
+      // Generate a more unique ID
+      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-    })
-  }
+      const newImageItem = {
+        id: uniqueId,
+        uri: pickedImage.uri,
+        type: pickedImage.type ?? 'image/jpeg',
+        name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+        text: '',
+      };
 
+      // Add with duplicate check (extra safety)
+      setimageTextArray(prev => {
+        const exists = prev.find(item => item.id === uniqueId);
+        if (exists) {
+          console.log('Duplicate ID detected, regenerating...');
+          const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.random().toString(36).substr(2, 5)}`;
+          return [...prev, { ...newImageItem, id: newId }];
+        }
+        return [...prev, newImageItem];
+      });
+      
+      console.log('Image added to array successfully with ID:', uniqueId);
+    }
+  });
+};
 
-  const removeImageFromArray=(id)=>{
-    setimageTextArray(prev => prev.filter(item => item.id !== id))
-  }
-
+const removeImageFromArray = (id) => {
+  setimageTextArray(prev => prev.filter(item => item.id !== id));
+  console.log('Image removed with ID:', id);
+};
 
 const updateImageText = (id, newText) => {
   setimageTextArray(prev => 
@@ -407,6 +418,16 @@ const updateImageText = (id, newText) => {
       item.id === id ? { ...item, text: newText } : item
     )
   );
+};
+
+// Optional
+const checkForDuplicates = () => {
+  const ids = imageTextArray.map(item => item.id);
+  const duplicates = ids.filter((id, index) => ids.indexOf(id) !== index);
+  if (duplicates.length > 0) {
+    console.log('Duplicate IDs found:', duplicates);
+  }
+  return duplicates;
 };
 
   const uploadImageWithFetch = async () => {
@@ -476,59 +497,94 @@ const updateImageText = (id, newText) => {
   };
 
   const handleSubmit = async (): Promise<void> => {
-    if (!validateForm()) {
-      console.log('Validation failed');
-      return;
+  if (!validateForm()) {
+    console.log('Validation failed');
+    return;
+  }
+
+  const userId = await AsyncStorage.getItem('userId');
+  if (!userId) {
+    console.log('No userId found');
+    return;
+  }
+
+  try {
+    const selectedStyleIds = selectedItems;
+    const profileData = {
+      fullname: formData.fullName,
+      nickname: formData.nickname,
+      email: formData.email,
+      gender: formData.gender,
+      age: Number(formData.age),
+      travelStyles: selectedStyleIds,
+      destinations: Array.from(new Set(selected)),
+      lineId: formData.lineId || '',
+      facebookUrl: formData.facebookUrl || '',
+      transportationStyles: selectedTransportIds
+    };
+
+    console.log('Submitting profile data:', profileData);
+    
+    // Update profile first
+    const profileResponse = await axiosInstance.patch(
+      `/users/profile/${userId}`,
+      profileData,
+      {
+        headers: {
+          "Content-Type": 'application/json'
+        }
+      }
+    );
+    
+    console.log("Profile updated successfully:", profileResponse.data);
+
+    // Upload profile image if exists
+    if (imageFile) {
+      await uploadImageWithFetch();
     }
 
-    const userId = await AsyncStorage.getItem('userId');
-    if (!userId) {
-      console.log('No userId found');
-      return;
+    // Upload past trip images
+    if (imageTextArray.length > 0) {
+      await uploadPastTripImages();
     }
 
-    try {
-      const selectedStyleIds = selectedItems;
+    router.push('/findTrips');
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    Alert.alert('Error', 'Failed to update profile. Please try again.');
+  }
+};
 
-      const profileData = {
-        fullname: formData.fullName,
-        nickname: formData.nickname,
-        email: formData.email,
-        gender: formData.gender,
-        age: Number(formData.age),
-        travelStyles: selectedStyleIds,
-        destinations: Array.from(new Set(selected)),
-        lineId: formData.lineId || '',
-        facebookUrl: formData.facebookUrl || '',
-        transportationStyles: selectedTransportIds
-      };
-       
-      console.log(imageTextArray);
+// New function to upload past trip images
+const uploadPastTripImages = async (): Promise<void> => {
+  try {
+    for (const imageItem of imageTextArray) {
+      const formData = new FormData();
       
-      console.log('Submitting profile data:', profileData);
+      // Convert base64 to blob/file
+      const response = await fetch(imageItem.uri);
+      const blob = await response.blob();
+      
+      formData.append('file', blob, imageItem.name);
+      formData.append('description', imageItem.text || 'A sample file');
 
-      const profileResponse = await axiosInstance.patch(
-        `/users/profile/${userId}`,
-        profileData,
+      const uploadResponse = await axiosInstance.post(
+        '/users/past-trip-image',
+        formData,
         {
           headers: {
-            "Content-Type": 'application/json'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         }
       );
-
-      console.log("Profile updated successfully:", profileResponse.data);
-
-      if (imageFile) {
-        await uploadImageWithFetch();
-      }
-
-      router.push('/findTrips');
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      
+      console.log(`Past trip image ${imageItem.id} uploaded successfully:`, uploadResponse.data);
     }
-  };
+  } catch (error) {
+    console.error('Error uploading past trip images:', error);
+    throw error; // Re-throw to handle in main try-catch
+  }
+};
 
   // Effects
   useEffect(() => {
@@ -626,7 +682,7 @@ const updateImageText = (id, newText) => {
         </TouchableOpacity>
         <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
             {userId?  (<TouchableOpacity onPress={handleLogout}>
-          <Text style={{color:'blue'}}>Logout</Text>
+          <Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH',fontSize:14}}>บันทึก</Text>
         </TouchableOpacity>):null}
       </View>
   
@@ -933,6 +989,20 @@ const updateImageText = (id, newText) => {
 />
 </View>
 
+{/* Travel Personalities Section 
+<TravelStylesComponent
+  categories={selectedTravel}
+  selectedItems={selectedTravelIds}
+  onToggleSelection={handleTravelPersonalityToggle}
+  loading={loading}
+  styles={styles}
+  title="บุคลิกการเดินทาง"
+  subtitle="เลือกสไตล์การเดินทางที่เหมาะกับคุณ"
+  selectedColor="#6366f1"
+  unselectedColor="#000"
+  iconSize={{ width: 15.75, height: 14 }}
+  isEditMode={false}
+/>*/}
 
           {/* Destinations Section */}
        <View style={{backgroundColor:'#F3F4F6',borderRadius:15,paddingTop:10}}>
@@ -1015,7 +1085,7 @@ const updateImageText = (id, newText) => {
                 borderWidth: 1,
                 borderColor: '#E5E7EB'
               }}
-              placeholder="เพิ่มข้อความ (ไม่บังคับ)"
+              placeholder="Text PLcaeHOlder"
               value={item.text}
               onChangeText={(text) => updateImageText(item.id, text)}
               multiline

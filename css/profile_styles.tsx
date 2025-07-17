@@ -355,7 +355,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#374151',
     marginBottom: 6,
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH_A_Bd',
   },
 
   subtitle: {
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
     lineHeight: 13,
     color: '#4B5563',
     marginBottom: 12,
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH',
   },
   loadingContainer: {
     flex: 1,
@@ -402,14 +402,19 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     marginLeft: 8,
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     textAlign: 'center',
     verticalAlign: 'middle',
-    fontFamily: 'Inter_400Regular',
+    fontFamily: 'LineSeedSansTH_A_Bd',
   },
   selectedText: {
-    color: '#6366f1',
+     marginLeft: 8,
+    fontSize: 12,
+    color: '#374151',
+    textAlign: 'center',
+    verticalAlign: 'middle',
+    fontFamily: 'LineSeedSansTH_A_Bd',
   },
   // Updated styles to match your existing input style
   inputWithIcon: {

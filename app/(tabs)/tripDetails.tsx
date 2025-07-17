@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { useRouter,useLocalSearchParams } from 'expo-router';
+import { useRouter,useLocalSearchParams,Stack } from 'expo-router';
 import { axiosInstance } from '../../lib/axios';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -125,6 +125,7 @@ const getRemainingParticipants = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
+          <Stack.Screen options={{ headerShown: false }} />
         <ActivityIndicator size="large" color="#6366F1" />
         <Text style={styles.loadingText}>กำลังโหลด...</Text>
       </View>
@@ -145,10 +146,11 @@ const getRemainingParticipants = () => {
 
   return (
     <ScrollView style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.card}>
         {/* Header Icons */}
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.iconButton}>
+          <TouchableOpacity style={styles.iconButton} onPress={()=>router.push('/findTrips')}>
             <Ionicons name="chevron-back" size={24} color="#000" />
           </TouchableOpacity>
           <View style={styles.rightIcons}>
@@ -189,7 +191,7 @@ const getRemainingParticipants = () => {
             <Text style={styles.tripTitle}>{trip.name}</Text>
             <View style={styles.participantsInfo}>
               <Text style={styles.participantsCount}>
-          decr4
+                Ramining Participants
               </Text>
             </View>
           </View>
@@ -197,12 +199,12 @@ const getRemainingParticipants = () => {
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color="#EF4444" />
             <Text style={styles.locationText}>
-            wwsfxs
+            Destinations
             </Text>
           </View>
 
           <Text style={styles.tripDescription}>
-            {trip.detail || 'เที่ยวอุทยานแห่งชาติอุบล ตำบลหนองปลาสวย กับคำใช้ชีวิตมาเก่าพิเศษ'}
+           Trip Name
           </Text>
 
           <Text style={styles.loremText}>
@@ -232,9 +234,9 @@ const getRemainingParticipants = () => {
                   <Ionicons name="calendar-outline" size={20} color="#FF9800" />
                 </View>
                 <View>
-                  <Text style={styles.detailLabel}>วันเดินทาง</Text>
+                  <Text style={styles.detailLabel}>Start Date-End Date</Text>
                   <Text style={styles.detailValue}>
-                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+                  Date
                   </Text>
                 </View>
               </View>
@@ -246,7 +248,7 @@ const getRemainingParticipants = () => {
                 <View>
                   <Text style={styles.detailLabel}>ราคาต่อคน</Text>
                   <Text style={styles.detailValue}>
-                    {formatPrice(trip.pricePerPerson)} บาท/คน
+                  pPPerson
                   </Text>
                 </View>
               </View>
