@@ -55,7 +55,7 @@ const UploadBox: React.FC<UploadBoxProps> = ({
         )}
       </TouchableOpacity>
       {error && (
-        <Text style={{ color: 'red', fontSize: 12, marginTop: 4 }}>
+        <Text style={{ color: 'red', fontSize: 12, marginTop: 4,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'400',marginLeft:20 }}>
           {errorMessage}
         </Text>
       )}

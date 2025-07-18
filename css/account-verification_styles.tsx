@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 4,
     marginBottom: 8,
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   });
 

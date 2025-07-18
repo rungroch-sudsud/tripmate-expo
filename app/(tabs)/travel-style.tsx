@@ -252,6 +252,7 @@ const TravelStyleScreen: React.FC = () => {
   title="เลือกกิจกรรมที่คุณสนใจ"
   selectedColor="#29C4AF"
   unselectedColor="#000"
+  highlightType="gradientcolor" 
 />
 
         {/* Bottom Button */}

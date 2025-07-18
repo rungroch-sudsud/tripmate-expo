@@ -321,7 +321,7 @@ const PrivacySettings: React.FC = () => {
 />
           </View>
           {formData.fullName.error && (
-            <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
+            <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH_A_XBd' }}>
               {formData.fullName.errorMessage}
             </Text>
           )}
@@ -374,7 +374,7 @@ const PrivacySettings: React.FC = () => {
 />
             </View>
             {formData.phoneNumber.error && (
-              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH_A_XBd' }}>
                 {formData.phoneNumber.errorMessage}
               </Text>
             )}
@@ -410,7 +410,7 @@ const PrivacySettings: React.FC = () => {
 />
             </View>
             {formData.email.error && (
-              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH' }}>
+              <Text style={{ color: 'red', fontSize: 12, marginTop: -10, marginBottom: 10, marginLeft: 20,fontFamily:'LineSeedSansTH_A_XBd' }}>
                 {formData.email.errorMessage}
               </Text>
             )}

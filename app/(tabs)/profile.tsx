@@ -25,11 +25,14 @@ import {User} from '../../shared/schemas/user_schema'
 import {ValidationErrors}  from  '../../shared/schemas/errors_schema'
 import {ProfileFormData} from  '../../shared/schemas/form_schema'
 import { PickedFile } from '@/shared/schemas/file_type'; '../../src/shared/schemas/file_type'
-import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId, fetchTravelStyles} from  '../../features/user/services/userServices'
+import {validateAge,validateEmail,validateFacebookUrl,validateFullName,validateNickname,validateLineId, fetchTravelStyles,validateOccupation} from  '../../features/user/services/userServices'
 import {sanitizeValue} from '../../shared/utils/sanitizeValue'
 import  {convertBase64ToFile} from '../../shared/utils/file.util'
 import {travelPersonalities,transportationStyles} from '../../features/user/services/userServices'
 import {TravelStylesComponent} from '../../components/Edit_CreateTrip_jsx'
+
+
+
 const ProfileForm: React.FC = () => {
 
 
@@ -58,6 +61,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ProfileFormData>({
     fullName: '',
     nickname: '',
+    occupation:'',
     age: '',
     gender: '',
     customGender: '',
@@ -87,6 +91,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
     formData: {
       fullName: '',
       nickname: '',
+      occupation:'',
       age: '',
       gender: '',
       customGender: '',
@@ -110,6 +115,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
     const fullNameError = validateFullName(formData.fullName);
     if (fullNameError) newErrors.fullName = fullNameError;
 
+
     const nicknameError = validateNickname(formData.nickname);
     if (nicknameError) newErrors.nickname = nicknameError;
 
@@ -128,7 +134,7 @@ const [destinationError, setDestinationError] = useState<string | null>(null);
 
     const lineError = validateLineId(formData.lineId);
     if (lineError) newErrors.lineId = lineError;
-
+  
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -504,6 +510,7 @@ const checkForDuplicates = () => {
     const profileData = {
       fullname: formData.fullName,
       nickname: formData.nickname,
+      occupation: formData.occupation,
       email: formData.email,
       gender: formData.gender,
       age: Number(formData.age),
@@ -887,6 +894,39 @@ const uploadPastTripImages = async (): Promise<void> => {
               {renderError(errors.gender)}
             </View>
           </View>
+
+
+
+          {/* Occupation */}
+
+           <View style={[{backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:15}, !errors.nickname && { marginBottom: 20 },]}>
+          <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',color:'#374151',fontSize:10}}>อาชีพ</Text>
+           <TextInput
+          value={formData.occupation}
+          onChangeText={(text)=>{
+            setFormData({...formData,occupation:text})
+            if(errors.fullName){
+              setErrors({...errors,occupation:undefined})
+            }
+          }}
+          
+          placeholder='กรอกอาชีพของคุณ'
+          style={{backgroundColor:'#F3F4F6',color:'#374151',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          />
+         </View>
+           {errors.occupation && (
+    <Text style={{
+      color: 'red',
+      fontSize: 12,
+      marginTop: 4,
+      marginLeft:20,
+      marginBottom:20,
+      fontFamily: 'LineSeedSansTH_A_Bd',
+      fontWeight: '700'
+    }}>
+      {errors.occupation}
+    </Text>
+  )}
   
           {/* Additional Contacts */}
           <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:14,marginBottom:20}}>ช่องทางการติดต่อ</Text>

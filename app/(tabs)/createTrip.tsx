@@ -8,8 +8,10 @@ import {
   ScrollView,
   SafeAreaView,
   Alert,
+  Image,
+  TextInput
 } from 'react-native';
-import {ImageUploadComponent,
+import {
   DatePickerComponent,
   MaxParticipantsComponent,
   PricePerPersonComponent,
@@ -82,7 +84,7 @@ const ThaiFormScreen = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  
+    const [imageTextArray,setimageTextArray]=useState([])
   const [errors, setErrors] = useState({
     tripName: '',
     startDate: '',
@@ -220,6 +222,56 @@ const ThaiFormScreen = () => {
       }
     });
   };
+  
+
+  const pickImageWithText = useCallback(() => {
+    const options = {
+      mediaType: 'photo',
+      maxWidth: 1024,
+      maxHeight: 1024,
+      quality: 0.8, // Add compression
+      storageOptions: {
+        skipBackup: true,
+        path: 'images'
+      },
+      presentationStyle: 'overFullScreen',
+    };
+    
+    launchImageLibrary(options, (response) => {
+      if (response.didCancel || response.errorMessage) {
+        if (response.errorMessage) {
+          console.log('ImagePicker Error: ', response.errorMessage);
+        }
+        return;
+      }
+  
+      const pickedImage = response.assets?.[0];
+      if (!pickedImage?.uri) {
+        console.log("No Image uri received, Please Try Again");
+        return;
+      }
+  
+      // More efficient ID generation
+      const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+      
+      const newImageItem = {
+        id: uniqueId,
+        uri: pickedImage.uri,
+        type: pickedImage.type ?? 'image/jpeg',
+        name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+        text: '',
+      };
+  
+      // Simplified state update without duplicate check
+      setimageTextArray(prev => [...prev, newImageItem]);
+      
+      console.log('Image added successfully with ID:', uniqueId);
+    });
+  }, []);
+  const removeImageFromArray = (id) => {
+  setimageTextArray(prev => prev.filter(item => item.id !== id));
+  console.log('Image removed with ID:', id);
+};
 
   const toggleSelection = (id: string): void => {
     setSelectedItems(prev =>
@@ -919,21 +971,157 @@ const handleChangeText = useCallback((text) => {
         {/* Form Fields */}
         <View style={styles.formSection}>
           {/* Image Upload Section with Error */}
-          <ImageUploadComponent 
-            pickedFile={pickedFile2} 
-            onPickImage={pickImage2} 
-            styles={styles} 
-          />
+           <View style={{ backgroundColor: '#F3F4F6', borderRadius: 15, paddingTop: 10, marginTop: 20 }}>
+                <Text style={[ { marginLeft: 22, fontFamily: 'LineSeedSansTH_A_Bd', color: "#374151" ,fontSize:13,marginBottom:15}]}>
+                  รูปภาพหน้าปกทริป
+                </Text>
+                {/* Image Grid */}
+              <View 
+            style={{ 
+              paddingHorizontal: 22, 
+              paddingBottom: 20,
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              justifyContent: 'space-between',
+            }}
+          >
+            {imageTextArray.map((item) => (
+              <View key={item.id} style={{ 
+                marginBottom: 15, 
+                width: 90, // Takes roughly half the width with some spacing
+                height:60
+              }}>
+                <View style={{ position: 'relative' }}>
+                  <Image
+                    source={{ uri: item.uri }}
+                    style={{
+                      width: 90,
+                      height: 60,
+                      borderRadius: 10,
+                      backgroundColor: '#E5E7EB',
+                      paddingHorizontal:10
+                    }}
+                    resizeMode="cover"
+                  />
+                  
+                  {/* Remove button */}
+                  <TouchableOpacity
+                    onPress={() => removeImageFromArray(item.id)}
+                    style={{
+                      position: 'absolute',
+                      top: -8,
+                      right: -8,
+                      backgroundColor: 'red',
+                      borderRadius: 10,
+                      width: 20,
+                      height: 20,
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>×</Text>
+                  </TouchableOpacity>
+                </View>
+                
+               
+              </View>
+            ))}
+            
+            {/* Add new image button */}
+            <TouchableOpacity
+              onPress={pickImageWithText}
+              style={{
+                width: 90,
+                height: 60,
+                borderRadius: 10,
+                backgroundColor: '#FFFFFF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                marginBottom: 15,
+              }}
+            >
+              <Text style={{ fontSize: 50, color: '#D1D5DB' }}>+</Text>
+             
+            </TouchableOpacity>
+          </View>
+              </View>
 
           {/* Trip Name Field with Character Count */}
-        <TripNameInput
-         value={formData2.name}
-         onChangeText={handleChangeText}
-         error={errors.tripName}
-         clearError={clearError}
-          styles={styles}
-         showErrorMessage={true}
-/>
+          
+
+          
+
+
+<View style={[
+  {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 15
+  },
+  !errors.tripName && { marginBottom: 20 }
+]}>
+  <Text style={{
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    fontWeight: '700',
+    color: '#374151',
+    fontSize: 10
+  }}>
+    ชื่อทริป
+  </Text>
+  
+  <TextInput
+    value={formData2.name}
+    onChangeText={(text) => {
+      if (text.length <= 50) {
+        setFormData2({...formData2, name: text});
+        if (errors.tripName) {
+          clearError('tripName');
+        }
+      }
+    }}
+    placeholder="ตั้งชื่อทริปของคุณ"
+    style={{
+      backgroundColor: '#F3F4F6',
+      color: '#374151',
+      outlineWidth: 0,
+      paddingVertical: 2,
+      fontFamily: 'LineSeedSansTH_A_Bd',
+      fontSize: 13,
+      fontWeight: '700',
+      minHeight: 20 // Control the height
+    }}
+    placeholderTextColor="gray"
+    maxLength={50}
+  />
+  
+  {/* Character count - only show if no error */}
+  {!errors.tripName && (
+    <Text style={{
+      fontSize: 10,
+      color: formData2.name.length > 45 ? 'red' : '#6B7280',
+      textAlign: 'right',
+      marginTop: 5
+    }}>
+      {formData2.name.length}/50
+    </Text>
+  )}
+</View>
+
+{/* Error message - outside the input container */}
+{errors.tripName && (
+  <Text style={{
+    color: 'red',
+    fontSize: 12,
+    marginTop: 4,
+    marginLeft: 20,
+    marginBottom: 20,
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    fontWeight: '700'
+  }}>
+    {errors.tripName}
+  </Text>
+)}
 
           {/* Date Fields with Errors */}
           <DatePickerComponent 

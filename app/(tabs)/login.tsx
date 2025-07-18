@@ -68,7 +68,7 @@ const Login = () => {
     const profile = await getUserProfile(user.uid);
     console.log(profile);
     
-    if ( profile?.age !== -999) {
+    if (profile && profile?.age !== -999) {
       navigateToRoute(NAVIGATION_ROUTES.FIND_TRIPS);
     }
   }, [processUserAuth, navigateToRoute]);
@@ -83,8 +83,12 @@ const Login = () => {
       const provider = new GoogleAuthProvider();
       provider.addScope('email');
       provider.addScope('profile');
-
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
       const result = await signInWithPopup(auth, provider);
+
+      
       const user = result.user;
       const credential = GoogleAuthProvider.credentialFromResult(result);
 

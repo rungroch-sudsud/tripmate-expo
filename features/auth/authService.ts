@@ -134,6 +134,7 @@ export const createUserProfile = async (user: User) => {
     userId: user.uid,
     profileImageUrl: "N/A",
     idCardImageUrl: "N/A", 
+    occupation:'',
     portraitImageUrl: "N/A",
     travelStyles: ["N/A"],
     nickname: "N/A",
@@ -145,6 +146,8 @@ export const createUserProfile = async (user: User) => {
     age: -999, // Sentinel value for incomplete profile
     phoneNumber: "N/A",
     gender: "ชาย",
+    transportationStyles:[],
+    travelPersonalities:[]
   };
 
   try {

@@ -20,12 +20,12 @@ const styles = StyleSheet.create({
       padding:20
     },
     headerTitle: {
-      fontSize: 18,
-      color: '#1F2937',
+      fontSize: 16,
+      color: '#374151',
       flex: 1,
       textAlign: 'center',
-      fontWeight:500,
-      fontFamily:'InterTight-Regular',
+      fontWeight:700,
+      fontFamily:'LineSeedSansTH_A_Bd',
       marginLeft:-20,
      
     },

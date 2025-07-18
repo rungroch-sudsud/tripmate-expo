@@ -24,6 +24,7 @@ export const NAVIGATION_ROUTES = {
 
 // Validation utilities
 export const VALIDATION_ERRORS = {
+ 
   FULL_NAME_REQUIRED: 'กรุณากรอกชื่อ-นามสกุล',
   FULL_NAME_SPECIAL_CHARS: 'ชื่อ-namสกุลไม่สามารถมีอักขระพิเศษได้',
   FULL_NAME_MULTIPLE_SPACES: 'ชื่อ-นามสกุลไม่สามารถมีช่องว่างมากกว่า 1 ช่องได้',
@@ -40,6 +41,7 @@ export const VALIDATION_ERRORS = {
   GENDER_REQUIRED: 'กรุณาเลือกเพศ',
   FACEBOOK_INVALID: 'กรุณากรอก Facebook URL หรือ Username ที่ถูกต้อง',
   LINE_INVALID: 'กรุณากรอก LINE ID ที่ถูกต้อง',
+  OCCUPATION_INVALID:"Occupation cannot be null"
 };
 
 export const VALIDATION_REGEX = {
@@ -560,6 +562,13 @@ export const validateFullName = (name) => {
   return null;
 };
 
+export const validateOccupation = (occupation) => {
+  if (!occupation || !occupation.trim()) {
+    return VALIDATION_ERRORS.OCCUPATION_INVALID;
+  }
+
+  return null;
+};
 export const validateNickname = (nickname) => {
   if (!nickname || !nickname.trim()) {
     return VALIDATION_ERRORS.NICKNAME_REQUIRED;

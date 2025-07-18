@@ -54,6 +54,25 @@ export const validateNickname = (name: string): string | null => {
     return null;
   };
 
+
+  export const validateOccupation = (name: string): string | null => {
+    const trimmed = name.trim();
+    
+    if (!trimmed) {
+      return 'กรุณากรอกชื่อเล่น';
+    }
+    
+    if (name !== trimmed) {
+      return 'ชื่อเล่นห้ามมีช่องว่างก่อนและหลัง';
+    }
+    
+    if (trimmed.includes(' ')) {
+      return 'ชื่อเล่นต้องเป็นคำเดียวโดยไม่มีช่องว่าง';
+    }
+    
+    return null;
+  };
+
 export  const validateAge = (age: string): string | null => {
     if (!age.trim()) {
       return 'กรุณากรอกอายุ';

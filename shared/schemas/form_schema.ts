@@ -1,6 +1,7 @@
 export interface ProfileFormData {
   fullName: string;
   nickname: string;
+  occupation:string,
   age: string;
   gender: string;
   customGender: string;
