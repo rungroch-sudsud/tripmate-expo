@@ -453,6 +453,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   error,
   clearError,
   styles,
+  selection,
   isEditMode = false,
   title = "สไตล์การเที่ยว",
   subtitle,
@@ -502,7 +503,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   ]}
   onPress={() => handleToggleSelection(category.id)}
 >
-  {isSelected && (
+  {isSelected &&  (
 <LinearGradient
   colors={['#C7CAF4', '#FFD1C2']}  // Pale blue and pale peach
   locations={[0, 1]}
@@ -510,8 +511,6 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   end={{ x: 0.75, y: 0.5 }}
   style={[StyleSheet.absoluteFillObject, { borderRadius: 30 }]}
 />
-
-
   )}
   <Text style={[
     styles.categoryText,
@@ -567,8 +566,9 @@ export const DestinationsComponent = ({
       marginHorizontal: 20,
     }}>
       <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
-        <View>
+        <View >
           {dropdownOpen ? (
+            
             <TextInput
               style={isEditMode ? styles.BeforedropDownOpenTextInput : {
                 borderWidth: 1,
@@ -577,12 +577,13 @@ export const DestinationsComponent = ({
                 paddingHorizontal: 12,
                 paddingVertical: 12,
                 fontSize: 16,
-                fontFamily: 'InterTight-Regular',
+                fontFamily: 'LineSeedSansTH',
                 lineHeight: 24,
                 color: '#374151',
                 height: 50,
-                backgroundColor: '#FFFFFF',
+                backgroundColor: '#FFFF',
               }}
+              
               placeholder="ค้นหาสถานที่"
               value={searchText}
               onChangeText={setSearchText}
@@ -596,7 +597,7 @@ export const DestinationsComponent = ({
               paddingHorizontal: 12,
               paddingVertical: 12,
               fontSize: 16,
-              fontFamily: 'InterTight-Regular',
+              fontFamily: 'LineSeedSansTH',
               lineHeight: 24,
               color: '#374151',
               height: 50,
@@ -604,7 +605,7 @@ export const DestinationsComponent = ({
             }}>
               <Image
               source={require('../app/assets/images/images/images/image9.png')}
-                style={{ width: 16, height: 16 }}
+                style={{ width: 18, height: 18 }}
               />
               {' '} ค้นหาสถานที่
             </Text>
@@ -679,13 +680,13 @@ export const DestinationsComponent = ({
             <TouchableOpacity
               key={index}
               style={isEditMode ? styles.selectedDestinations : {
-                backgroundColor: 'rgba(41, 196, 175, 0.1)',
+                backgroundColor: '#FFFFFF',
                 borderWidth: 1,
-                paddingHorizontal: 8,
+                paddingHorizontal: 15,
                 paddingTop: 7,
                 borderRadius: 9999,
                 margin: 5,
-                borderColor: '#29C4AF',
+                borderColor: '#585DDB',
                 minWidth: 84.09,
                 height: 38,
                 alignItems: 'center',
@@ -693,8 +694,8 @@ export const DestinationsComponent = ({
               onPress={() => onRemoveDestination(dest)}
             >
               <Text style={isEditMode ? styles.selectedDestinationsText : {
-                color: '#29C4AF',
-                fontFamily: 'InterTight-Regular',
+                color: '#585DDB',
+                fontFamily: 'LineSeedSansTH',
                 fontSize: 14,
               }}>
                 {dest} <Text style={{ fontSize: 16 }}>×</Text>

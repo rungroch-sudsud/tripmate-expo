@@ -58,7 +58,7 @@ export interface TravelInterestComponentProps {
   onToggleSelection: (id: string) => void;
   loading: boolean;
   styles: any;
-  
+  selection?:string,
   // Optional props for different screens
   error?: string | null;
   clearError?: () => void;

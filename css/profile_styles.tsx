@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 12,
     marginBottom: 12,
-    backgroundColor: '#fff',
+    backgroundColor: '#F3F4F6',
     justifyContent: 'space-between',
   },
   socialInput: {
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingLeft: 12,
     fontSize: 16,
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH',
     color: '#374151',
     lineHeight: 24,
     marginLeft: 10,

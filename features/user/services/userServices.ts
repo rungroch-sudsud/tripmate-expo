@@ -271,19 +271,20 @@ export const travelPersonalities=async()=>{
    console.error("Failed to fetch travel interest: ",error); 
   }
 }
-export const transportationStyles=async()=>{
-  try{
-   const response=await axiosInstance.get('/transportation-styles');
-      const result=response.data
-      const mappedInterest=result.data.map(item=>({
-        id:item.id,
-        title:item.title
-      }))
-      return mappedInterest
-  }catch{
-   console.error("Failed to fetch travel interest: ",error); 
+export const transportationStyles = async () => {
+  try {
+    const response = await axiosInstance.get('/transportation-styles');
+    const result = response.data;
+    const mappedInterest = result.data.map(item => ({
+      id: item.id,
+      title: item.title
+    }));
+    return mappedInterest;
+  } catch (error) { // Add 'error' parameter here
+    console.error("Failed to fetch transportation styles: ", error);
+    return []; // Return empty array on error
   }
-}
+};
 
 export const fetTravelInterest=async()=>{
   try{

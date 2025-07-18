@@ -737,7 +737,7 @@ const uploadPastTripImages = async (): Promise<void> => {
           }}
           
           placeholder='กรอกชื่อจริงและนามสกุลของคุณ'
-          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          style={{backgroundColor:'#F3F4F6',color:'#374151',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
           />
          </View>
                   {errors.fullName && (
@@ -770,7 +770,7 @@ const uploadPastTripImages = async (): Promise<void> => {
           }}
           
           placeholder='กรอกชื่อสำหรับสแดงในแอป'
-          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          style={{backgroundColor:'#F3F4F6',color:'#374151',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
           />
          </View>
            {errors.nickname && (
@@ -802,7 +802,7 @@ const uploadPastTripImages = async (): Promise<void> => {
           }}
           
           placeholder='example@email.com'
-          style={{backgroundColor:'#F3F4F6',color:'#9CA3AF',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
+          style={{backgroundColor:'#F3F4F6',color:'#374151',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}
           />
          </View>
                 {errors.nickname && (
@@ -823,11 +823,11 @@ const uploadPastTripImages = async (): Promise<void> => {
           {/* Age and Gender Row */}
           <View style={[{ flexDirection: 'row', gap: 10 }, styles.inputGroup]}>
             {/* Age */}
-            <View style={[{ flex: 1 }]}>
-              <Text>อายุ</Text>
+            <View style={[{ flex: 1,backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:10 }]}>
+              <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',color:'#374151',fontSize:10}}>อายุ</Text>
               <TextInput
                 value={formData.age}
-                style={[errors.age && styles.inputError]}
+                style={[errors.age && styles.inputError,{backgroundColor:'#F3F4F6',color:'#374151',outlineWidth:0,paddingVertical:2,fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}]}
                 onChangeText={(text) => {
                   const numericText = text.replace(/[^0-9]/g, '');
                   let age=parseInt(numericText,10)
@@ -847,25 +847,26 @@ const uploadPastTripImages = async (): Promise<void> => {
   
             {/* Gender Dropdown */}
             <View style={{ flex: 1 }}>
-              <Text>เพศ</Text>
+         <TouchableOpacity style={[{ flex: 1,backgroundColor:'#F3F4F6',borderRadius:10,paddingHorizontal:20,paddingVertical:10}]}
+           onPress={() => setShowGenderDropdown(!showGenderDropdown)}
+         >
+                  <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'700'}}>เพศ</Text>
               
-              <View style={[styles.inputWithIcon, errors.gender && styles.inputError]}>
-                <View style={styles.textDisplayArea}>
-                  <Text style={styles.displayText}>
+              <View style={[errors.gender && styles.inputError,{flexDirection:'row',alignItems:'center',justifyContent:'space-between'}]}>
+                <View>
+                  <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:700}}>
                     {formData.gender || 'เลือกเพศ'}
                   </Text>
                 </View>
   
-                <TouchableOpacity
-                  onPress={() => setShowGenderDropdown(!showGenderDropdown)}
-                  style={styles.iconButton}
-                >
+                <View>
                   <Image
                     source={require('../assets/images/images/images/image10.png')}
-                    style={styles.dropdownIcon}
+                    style={{height:7.22,width:12.02}}
                   />
-                </TouchableOpacity>
+                </View>
               </View>
+         </TouchableOpacity>
   
               {showGenderDropdown && (
                 <View style={styles.dropdownList}>
@@ -886,7 +887,7 @@ const uploadPastTripImages = async (): Promise<void> => {
                         formData.gender === option && styles.dropdownItemSelected,
                       ]}
                     >
-                      <Text>{option}</Text>
+                      <Text style={{fontFamily:'LineSeedSansTH_A_Bd',fontSize:13,fontWeight:'700'}}>{option}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -897,11 +898,15 @@ const uploadPastTripImages = async (): Promise<void> => {
           </View>
   
           {/* Additional Contacts */}
-          <Text style={styles.label}>ช่องทางการติดต่อเพิ่มเติม (ไม่บังคับ)</Text>
+          <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:14,marginBottom:20}}>ช่องทางการติดต่อ</Text>
           
           {/* Facebook */}
-          <View style={styles.socialInputContainer}>
-            <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+         <View style={{flexDirection:'row',alignItems:'center',outlineWidth:0,backgroundColor:'#F3F4F6',borderRadius:10,marginBottom:15}}>
+             <Image
+              source={require('../assets/images/facebook.png')}
+              style={{height:20,width:20,marginLeft:15}}
+              resizeMode="contain"
+            />
             <TextInput
               style={[styles.socialInput, errors.facebookUrl && styles.inputError]}
               placeholder="Facebook URL หรือ Username"
@@ -912,22 +917,22 @@ const uploadPastTripImages = async (): Promise<void> => {
                   setErrors({...errors, facebookUrl: undefined});
                 }
               }}
-              placeholderTextColor="#999"
+              placeholderTextColor="#9CA3AF"
               autoCapitalize="none"
             />
           </View>
           {renderError(errors.facebookUrl)}
   
           {/* LINE */}
-          <View style={styles.socialInputContainer}>
+          <View style={{flexDirection:'row',alignItems:'center',outlineWidth:0,backgroundColor:'#F3F4F6',borderRadius:10}}>
             <Image
-              source={require('../assets/images/images/images/image7.png')}
-              style={{height:16,width:16}}
+              source={require('../assets/images/instagram.png')}
+              style={{height:20,width:20,marginLeft:15}}
               resizeMode="contain"
             />
             <TextInput
               style={[styles.socialInput, errors.lineId && styles.inputError]}
-              placeholder="LINE ID"
+              placeholder="Instagram URL หรือ Username"
               value={formData.lineId}
               onChangeText={(text: string) => {
                 setFormData({...formData, lineId: text});
@@ -956,23 +961,9 @@ const uploadPastTripImages = async (): Promise<void> => {
   isEditMode={false}
 />
 
-{/* Travel Personalities Section 
-<TravelStylesComponent
-  categories={selectedTravel}
-  selectedItems={selectedTravelIds}
-  onToggleSelection={handleTravelPersonalityToggle}
-  loading={loading}
-  styles={styles}
-  title="บุคลิกการเดินทาง"
-  subtitle="เลือกสไตล์การเดินทางที่เหมาะกับคุณ"
-  selectedColor="#6366f1"
-  unselectedColor="#000"
-  iconSize={{ width: 15.75, height: 14 }}
-  isEditMode={false}
-/>*/}
 
 
-<View style={{marginTop:20}}>
+<View style={{marginTop:15,marginBottom:-20}}>
   {/* Transportation Styles Section */}
 <TravelStylesComponent
   categories={selectedTransport}
@@ -980,8 +971,8 @@ const uploadPastTripImages = async (): Promise<void> => {
   onToggleSelection={handleTransportToggle}
   loading={loading}
   styles={styles}
-  title="รูปแบบการเดินทาง"
-  subtitle="เลือกวิธีการเดินทางที่คุณชอบ"
+  title="สไตล์การเดินทาง"
+  subtitle="เป้าหมายท่องเที่ยว (เลือกได้หลายข้อ)"
   selectedColor="#6366f1"
   unselectedColor="#000"
   iconSize={{ width: 15.75, height: 14 }}
@@ -989,8 +980,9 @@ const uploadPastTripImages = async (): Promise<void> => {
 />
 </View>
 
-{/* Travel Personalities Section 
-<TravelStylesComponent
+{/* Travel Personalities Section */}
+<View style={{marginTop:10}}>
+  <TravelStylesComponent
   categories={selectedTravel}
   selectedItems={selectedTravelIds}
   onToggleSelection={handleTravelPersonalityToggle}
@@ -1002,7 +994,8 @@ const uploadPastTripImages = async (): Promise<void> => {
   unselectedColor="#000"
   iconSize={{ width: 15.75, height: 14 }}
   isEditMode={false}
-/>*/}
+/>
+</View>
 
           {/* Destinations Section */}
        <View style={{backgroundColor:'#F3F4F6',borderRadius:15,paddingTop:10}}>
@@ -1027,92 +1020,97 @@ const uploadPastTripImages = async (): Promise<void> => {
 </View>
 
  <View style={{ backgroundColor: '#F3F4F6', borderRadius: 15, paddingTop: 10, marginTop: 20 }}>
-      <Text style={[styles.title, { marginLeft: 22, fontFamily: 'LineSeedSansTH_A_Bd', color: "#374151" }]}>
-        รูปภาพที่เกี่ยวข้อง
+      <Text style={[ { marginLeft: 22, fontFamily: 'LineSeedSansTH_A_Bd', color: "#374151" ,fontSize:13,marginBottom:15}]}>
+        รูปภาพทริปที่เคยไป
       </Text>
-      <Text style={[styles.subtitle, { margin: 22, marginTop: 10, fontFamily: 'LineSeedSansTH' }]}>
-        เพิ่มรูปภาพและข้อความ (ไม่บังคับ)
-      </Text>
-
       {/* Image Grid */}
-      <ScrollView 
-        showsHorizontalScrollIndicator={false}
-        style={{ paddingHorizontal: 22, paddingBottom: 20 }}
-      >
-        {imageTextArray.map((item) => (
-          <View key={item.id} style={{ marginRight: 15, width: 150 }}>
-            <View style={{ position: 'relative' }}>
-              <Image
-                source={{ uri: item.uri }}
-                style={{
-                  width: 150,
-                  height: 120,
-                  borderRadius: 10,
-                  backgroundColor: '#E5E7EB'
-                }}
-                resizeMode="cover"
-              />
-              
-              {/* Remove button */}
-              <TouchableOpacity
-                onPress={() => removeImageFromArray(item.id)}
-                style={{
-                  position: 'absolute',
-                  top: 5,
-                  right: 5,
-                  backgroundColor: 'red',
-                  borderRadius: 10,
-                  width: 20,
-                  height: 20,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                }}
-              >
-                <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>×</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Text input for each image */}
-            <TextInput
-              style={{
-                marginTop: 8,
-                backgroundColor: 'white',
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 8,
-                fontSize: 12,
-                fontFamily: 'LineSeedSansTH',
-                borderWidth: 1,
-                borderColor: '#E5E7EB'
-              }}
-              placeholder="Text PLcaeHOlder"
-              value={item.text}
-              onChangeText={(text) => updateImageText(item.id, text)}
-              multiline
-              numberOfLines={2}
-            />
-          </View>
-        ))}
-
-        {/* Add new image button */}
-        <TouchableOpacity
-          onPress={pickImageWithText}
+    <View 
+  style={{ 
+    paddingHorizontal: 22, 
+    paddingBottom: 20,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between'
+  }}
+>
+  {imageTextArray.map((item) => (
+    <View key={item.id} style={{ 
+      marginBottom: 15, 
+      width: '48%' // Takes roughly half the width with some spacing
+    }}>
+      <View style={{ position: 'relative' }}>
+        <Image
+          source={{ uri: item.uri }}
           style={{
-            width: 150,
+            width: '100%',
             height: 120,
             borderRadius: 10,
-            backgroundColor: '#E5E7EB',
+            backgroundColor: '#E5E7EB'
+          }}
+          resizeMode="cover"
+        />
+        
+        {/* Remove button */}
+        <TouchableOpacity
+          onPress={() => removeImageFromArray(item.id)}
+          style={{
+            position: 'absolute',
+            top: -8,
+            right: -8,
+            backgroundColor: 'red',
+            borderRadius: 10,
+            width: 20,
+            height: 20,
             justifyContent: 'center',
             alignItems: 'center',
-            borderWidth: 2,
-            borderColor: '#9CA3AF',
-            borderStyle: 'dashed',
           }}
         >
-          <Text style={{ fontSize: 40, color: '#9CA3AF' }}>+</Text>
-          <Text style={{ fontSize: 12, color: '#9CA3AF', marginTop: 5 }}>เพิ่มรูปภาพ</Text>
+          <Text style={{ color: 'white', fontSize: 12, fontWeight: 'bold' }}>×</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </View>
+      
+      {/* Text input for each image */}
+      <TextInput
+        style={{
+          position:'absolute',
+          top:70,
+          outlineWidth:0,
+          marginTop: 8,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 8,
+          paddingHorizontal: 10,
+          paddingTop:10,
+          fontSize: 12,
+          height:35,
+          fontFamily: 'LineSeedSansTH',
+       
+        }}
+        placeholder="เพิ่มคำอธิบายรูปภาพ"
+        value={item.text}
+        onChangeText={(text) => updateImageText(item.id, text)}
+        multiline
+        numberOfLines={2}
+      />
+    </View>
+  ))}
+  
+  {/* Add new image button */}
+  <TouchableOpacity
+    onPress={pickImageWithText}
+    style={{
+      width: '48%',
+      height: 120,
+      borderRadius: 10,
+      backgroundColor: '#FFFFFF',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginBottom: 15,
+    }}
+  >
+    <Text style={{ fontSize: 50, color: '#D1D5DB' }}>+</Text>
+   
+  </TouchableOpacity>
+</View>
     </View>
         </View>
       </ScrollView>

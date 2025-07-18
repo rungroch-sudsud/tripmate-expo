@@ -1,413 +1,426 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  TouchableOpacity,
-  SafeAreaView,
-  ActivityIndicator,
-  Alert,
-  Dimensions,
-  StatusBar,
-} from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
-import { fetchUserProfile } from '../../features/user/services/userServices';
-import { router,Stack } from 'expo-router';
+import { getUserProfile, fetchTravelStyles, transportationStyles } from '../../features/user/services/userServices'
+import { View, Image, SafeAreaView, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import BottomNavigation from '../../components/customNavigation'
+import { Stack, useRouter, useLocalSearchParams, router } from 'expo-router'
+import React, { useEffect, useState } from 'react'
 
-const { width, height } = Dimensions.get('window');
-
-const UserProfileScreen = ({ navigation }) => {
-  const [userProfile, setUserProfile] = useState(null);
+const UserProfile = () => {
+  const params = useLocalSearchParams();
+  const userId = params.userId;
+  
+  // State based on your API response structure
+  const [profileData, setProfileData] = useState(null);
+  const [travelStylesData, setTravelStylesData] = useState([]);
+  const [transportationStylesData, setTransportationStylesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    loadUserProfile();
-  }, []);
-
-  const loadUserProfile = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const profile = await fetchUserProfile();
-      
-      if (profile) {
-        setUserProfile(profile);
-      } else {
-        setError('ไม่สามารถโหลดข้อมูลโปรไฟล์ได้');
+    const fetchProfile = async () => {
+      if (!userId) {
+        setError('No user ID provided');
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
-      console.error('Profile loading error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  const handleSocialMedia = (url, platform) => {
-    if (url) {
-      // Handle social media link opening
-      console.log(`Opening ${platform}:`, url);
-    } else {
-      Alert.alert('แจ้งเตือน', `ไม่พบลิงค์ ${platform}`);
-    }
-  };
+      try {
+        setLoading(true);
+        
+        // Fetch all data in parallel
+        const [profileResult, travelStylesResult, transportationStylesResult] = await Promise.all([
+          getUserProfile(userId),
+          fetchTravelStyles(),
+          transportationStyles()
+        ]);
+        
+        if (profileResult) {
+          setProfileData(profileResult);
+        } else {
+          setError('User profile not found');
+        }
+        
+        setTravelStylesData(travelStylesResult || []);
+        setTransportationStylesData(transportationStylesResult || []);
+        
+      } catch (err) {
+        setError('Failed to fetch profile');
+        console.error('Error in fetchProfile:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const renderDestinationTags = () => {
-    if (!userProfile?.destinations || userProfile.destinations.length === 0) {
-      return null;
-    }
+    fetchProfile();
+  }, [userId]);
 
-    return (
-      <View style={styles.tagsContainer}>
-        {userProfile.destinations.map((destination, index) => (
-          <View key={index} style={styles.destinationTag}>
-            <Text style={styles.destinationTagText}>{destination}</Text>
-          </View>
-        ))}
-      </View>
-    );
-  };
-
-  const renderPastTrips = () => {
-    if (!userProfile?.pastTrips || userProfile.pastTrips.length === 0) {
-      return null;
-    }
-
-    return (
-      <View style={styles.pastTripsContainer}>
-        {userProfile.pastTrips.slice(0, 3).map((trip, index) => (
-          <TouchableOpacity 
-            key={index} 
-            style={styles.tripImageContainer}
-            onPress={() => console.log('Open trip:', trip.fileUrl)}
-          >
-            <Image
-              source={{ uri: 'https://via.placeholder.com/100x80/4A90E2/FFFFFF?text=Trip' }}
-              style={styles.tripImage}
-            />
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const renderProfileContent = () => {
-    if (!userProfile) return null;
-
-    return (
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-         <Stack.Screen options={{ headerShown: false }} />
-        {/* Header with Profile Image */}
-        <View style={styles.headerContainer}>
-          <LinearGradient
-            colors={['rgba(0,0,0,0.3)', 'transparent']}
-            style={styles.headerGradient}
-          >
-            <TouchableOpacity 
-              style={styles.backButton}
-              onPress={() => router.push('/findTrips')}
-            >
-              <Ionicons name="chevron-back" size={24} color="white" />
-            </TouchableOpacity>
-            
-            <View style={styles.socialButtons}>
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.facebookButton]}
-                onPress={() => handleSocialMedia(userProfile.facebookUrl, 'Facebook')}
-              >
-                <Ionicons name="logo-facebook" size={20} color="white" />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.socialButton, styles.instagramButton]}
-                onPress={() => handleSocialMedia(null, 'Instagram')}
-              >
-                <Ionicons name="logo-instagram" size={20} color="white" />
-              </TouchableOpacity>
-            </View>
-          </LinearGradient>
-          
-          <Image
-            source={{ 
-              uri: userProfile.profileImageUrl || 'https://via.placeholder.com/300x400/CCCCCC/FFFFFF?text=Profile'
-            }}
-            style={styles.profileImage}
-          />
-          
-          <View style={styles.profileInfo}>
-            <Text style={styles.nickname}>{userProfile.nickname || 'ไม่ระบุชื่อ'}</Text>
-            <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={16} color="#FFD700" />
-              <Text style={styles.rating}>4.8</Text>
-            </View>
-            <Text style={styles.description}>
-              🌍 {userProfile.occupation || 'ไม่ระบุอาชีพ'} • {userProfile.age || 'ไม่ระบุอายุ'} ปี • {userProfile.gender || 'ไม่ระบุเพศ'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Profile Details */}
-        <View style={styles.detailsContainer}>
-          <Text style={styles.sectionTitle}>ความสนใจ</Text>
-          
-          <View style={styles.interestSection}>
-            <View style={styles.interestItem}>
-              <Ionicons name="location" size={16} color="#FF6B6B" />
-              <Text style={styles.interestText}>สายผจญภัย</Text>
-            </View>
-            <View style={styles.interestItem}>
-              <Ionicons name="camera" size={16} color="#4ECDC4" />
-              <Text style={styles.interestText}>แนวเพลยมาเนนต์ / ซอฟต์แรม</Text>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>สไตล์การเดินทาง</Text>
-          
-          {renderDestinationTags()}
-
-          <Text style={styles.sectionTitle}>รูปภาพประกอบจากเที่ยว</Text>
-          
-          {renderPastTrips()}
-
-          <TouchableOpacity style={styles.reviewButton}>
-            <Text style={styles.reviewButtonText}>รีวิวผู้ใช้นี้</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+  // Helper function to get travel style details from IDs
+  const getTravelStyleDetails = (styleIds) => {
+    if (!styleIds || !Array.isArray(styleIds)) return [];
+    
+    // Debug logging
+    console.log('User selected travel style IDs:', styleIds);
+    console.log('Available travel styles:', travelStylesData);
+    
+    return styleIds.map(userSelectedId => {
+      // Try to find matching style with flexible comparison
+      const style = travelStylesData.find(item => {
+        // Convert both to strings for comparison
+        const itemId = String(item.id);
+        const selectedId = String(userSelectedId);
+        return itemId === selectedId;
+      });
       
-    );
+      console.log(`Looking for ID: ${userSelectedId}, Found:`, style);
+      return style ? style : { id: userSelectedId, title: `${userSelectedId}` };
+    });
   };
 
-  if (loading) {
+  // Helper function to get transportation style details from IDs
+  const getTransportationStyleDetails = (styleIds) => {
+    if (!styleIds || !Array.isArray(styleIds)) return [];
+    
+    // Debug logging
+    console.log('User selected transportation style IDs:', styleIds);
+    console.log('Available transportation styles:', transportationStylesData);
+    
+    return styleIds.map(userSelectedId => {
+      // Try to find matching style with flexible comparison
+      const style = transportationStylesData.find(item => {
+        // Convert both to strings for comparison
+        const itemId = String(item.id);
+        const selectedId = String(userSelectedId);
+        return itemId === selectedId;
+      });
+      
+      console.log(`Looking for transportation ID: ${userSelectedId}, Found:`, style);
+      return style ? style : { id: userSelectedId, title: `Unknown Transportation (${userSelectedId})` };
+    });
+  };
+
+  if (loading || !travelStylesData.length || !transportationStylesData.length) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#6C5CE7" />
-        <Text style={styles.loadingText}>กำลังโหลดข้อมูลโปรไฟล์...</Text>
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centered}>
+          <Text>Loading...</Text>
+        </View>
+        <BottomNavigation currentScreen="profile" userId={userId} />
       </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Ionicons name="alert-circle-outline" size={60} color="#FF6B6B" />
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={loadUserProfile}>
-          <Text style={styles.retryButtonText}>ลองใหม่</Text>
-        </TouchableOpacity>
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centered}>
+          <Text>Error: {error}</Text>
+        </View>
+        <BottomNavigation currentScreen="profile" userId={userId} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centered}>
+          <Text>No profile data available</Text>
+        </View>
+        <BottomNavigation currentScreen="profile" userId={userId} />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-      {renderProfileContent()}
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <ScrollView style={styles.scrollView}>
+        {/* Profile Image */}
+    {profileData.profileImageUrl && (
+  <View style={styles.imageWrapper}>
+    <Image 
+      source={{ uri: profileData.profileImageUrl }} 
+      style={styles.profileImage}
+    />
+    <TouchableOpacity style={styles.editProfile} onPress={()=>router.push(`/profile?userId=${userId}`)}>
+ <Image source={require('../assets/images/edit-profile.png')} style={{height:20,width:20}}/>
+    </TouchableOpacity>
+    <TouchableOpacity style={styles.threedots}>
+ <Image source={require('../assets/images/3-dots.png')} style={{height:24,width:24}}/>
+    </TouchableOpacity>
+     <TouchableOpacity style={styles.facebook}>
+ <Image source={require('../assets/images/facebook.png')} style={{height:24,width:24}}/>
+    </TouchableOpacity>
+        <TouchableOpacity style={styles.instagram}>
+ <Image source={require('../assets/images/instagram.png')} style={{height:24,width:24}}/>
+    </TouchableOpacity>
+    <Text style={styles.nameOnImage}>{profileData.fullname}</Text>
+   
+  </View>
+)}
+
+
+        {/* Basic Info 
+        <View style={styles.section}>
+          <Text style={styles.name}>{profileData.fullname}</Text>
+          <Text style={styles.nickname}>"{profileData.nickname}"</Text>
+          <Text style={styles.info}>Age: {profileData.age}</Text>
+          <Text style={styles.info}>Gender: {profileData.gender}</Text>
+          <Text style={styles.info}>Phone: {profileData.phoneNumber}</Text>
+          <Text style={styles.info}>Email: {profileData.email}</Text>
+        </View>*/}
+
+        {/* Destinations 
+        {profileData.destinations && profileData.destinations.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Destinations</Text>
+            {profileData.destinations.map((destination, index) => (
+              <Text key={index} style={styles.listItem}>• {destination}</Text>
+            ))}
+          </View>
+        )}*/}
+
+        {/* Travel Styles */}
+     {profileData.travelStyles && profileData.travelStyles.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>ความสนใจ</Text>
+
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {getTravelStyleDetails(profileData.travelStyles).map((style, index) => (
+        <View key={index} style={styles.travelStyleCard}>
+          {style.iconImageUrl && (
+            <Image source={{ uri: style.iconImageUrl }} style={styles.styleIcon} />
+          )}
+          <Text style={styles.styleTitle}>{style.title}</Text>
+        </View>
+      ))}
+    </ScrollView>
+  </View>
+)}
+
+
+        {/* Transportation Styles */}
+    {profileData.transportationStyles && profileData.transportationStyles.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>สไตล์การเดินทาง</Text>
+
+    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+      {getTransportationStyleDetails(profileData.transportationStyles).map((transport, index) => (
+        <View key={index} style={styles.transportTag}>
+          <Text style={styles.transportTagText}>{transport.title}</Text>
+        </View>
+      ))}
+    </ScrollView>
+  </View>
+)}
+
+
+      {/* Past Trips */}
+{profileData.pastTrips && profileData.pastTrips.length > 0 && (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>ทริปที่เคยไป</Text>
+
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+    >
+      {profileData.pastTrips.map((trip, index) => (
+        <View key={index} style={styles.tripItem}>
+          <Image source={{ uri: trip.fileUrl }} style={styles.tripImage} />
+          {/*<Text style={styles.tripDescription}>{trip.description}</Text>*/}
+        </View>
+      ))}
+    </ScrollView>
+  </View>
+)}
+
+      </ScrollView>
+      <BottomNavigation currentScreen="profile" userId={userId} />
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
   container: {
     flex: 1,
+    backgroundColor: '#fff',
+    paddingTop:40,
+    borderRadius:5
   },
-  loadingContainer: {
+  scrollView: {
+    flex: 1,
+    padding: 16,
+  },
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-  },
-  loadingText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#666',
-    fontFamily: 'System',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    padding: 20,
-  },
-  errorText: {
-    marginTop: 16,
-    fontSize: 16,
-    color: '#FF6B6B',
-    textAlign: 'center',
-    fontFamily: 'System',
-  },
-  retryButton: {
-    marginTop: 20,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: '#6C5CE7',
-    borderRadius: 8,
-  },
-  retryButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
-  },
-  headerContainer: {
-    marginTop:60,
-    height: 350,
-    width:350,
-    alignSelf:'center',
-    borderRadius:20
-  },
-  headerGradient: {
-    position: 'absolute',
-
-    height: 100,
-
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    borderRadius:20
-  },
-  backButton: {
-    padding: 118,
-  },
-  socialButtons: {
-    flexDirection: 'column',
-    gap: 8,
-  },
-  socialButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  facebookButton: {
-    backgroundColor: '#1877F2',
-  },
-  instagramButton: {
-    backgroundColor: '#E4405F',
   },
   profileImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-    borderRadius:20
+    width: 350,
+    height: 350,
+    borderRadius: 20,
+    alignSelf: 'center',
+    marginBottom: 16,
   },
-  profileInfo: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+section: {
+  marginBottom: 24,
+},
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 4,
   },
   nickname: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: 'white',
-    marginBottom: 8,
-    fontFamily: 'System',
+    fontSize: 18,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 16,
+    color: '#666',
   },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  rating: {
+  info: {
     fontSize: 16,
-    color: 'white',
-    marginLeft: 4,
-    fontFamily: 'System',
-  },
-  description: {
-    fontSize: 14,
-    color: 'white',
-    opacity: 0.9,
-    fontFamily: 'System',
-  },
-  detailsContainer: {
-    padding: 20,
-    backgroundColor: 'red',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    marginTop:50
+    marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-    marginTop: 20,
-    fontFamily: 'System',
-  },
-  interestSection: {
-    marginBottom: 16,
-  },
-  interestItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: 8,
-  },
-  interestText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 8,
-    fontFamily: 'System',
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
-  },
-  destinationTag: {
-    backgroundColor: '#F1F3F4',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  destinationTagText: {
-    fontSize: 14,
     color: '#333',
-    fontFamily: 'System',
   },
-  pastTripsContainer: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 24,
-  },
-  tripImageContainer: {
-    flex: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  tripImage: {
-    width: '100%',
-    height: 80,
-    resizeMode: 'cover',
-  },
-  reviewButton: {
-    backgroundColor: '#6C5CE7',
-    paddingVertical: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  reviewButtonText: {
-    color: 'white',
+  listItem: {
     fontSize: 16,
-    fontWeight: '600',
-    fontFamily: 'System',
+    marginBottom: 4,
+    marginLeft: 8,
+  },
+tripItem: {
+  width: 90, // set a fixed width for horizontal layout
+  marginRight: 16, // space between items
+  borderBottomWidth: 0, // remove vertical-style border
+},
+tripImage: {
+  width: 90,
+  height: 60,
+  borderRadius: 8,
+  marginBottom: 8,
+},
+transportTag: {
+  backgroundColor: '#eee',
+  borderRadius: 20,
+  paddingVertical: 6,
+  paddingHorizontal: 12,
+  marginRight: 10,
+  marginBottom: 8,
+  alignSelf: 'flex-start',
+},
+travelStyleCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#f2f2f2',
+  borderRadius: 16,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  marginRight: 10,
+  marginBottom: 8,
+},
+
+transportTagText: {
+  fontSize: 14,
+  color: '#333',
+},
+
+  tripDescription: {
+    fontSize: 16,
+    color: '#666',
+  },
+  styleItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingHorizontal: 8,
+  },
+  styleIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 12,
+  },
+  imageWrapper: {
+  position: 'relative',
+  width: 350,
+  height: 350,
+  alignSelf: 'center',
+  marginBottom: 24,
+},
+
+nameOnImage: {
+  position: 'absolute',
+  bottom: 16,
+  left: 16,    // add some padding from the left edge
+  right: 'auto', // let it size naturally, no right constraint
+  textAlign: 'left',
+  color: 'white',
+  fontSize: 24,
+  fontWeight: 'bold',
+  textShadowColor: 'rgba(0, 0, 0, 0.7)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 3,
+},
+editProfile:{
+  position: 'absolute',
+  top:20,
+  bottom: 'auto',
+  left: 16,    // add some padding from the left edge
+  right: 'auto', // let it size naturally, no right constraint
+  padding:8,
+  backgroundColor:'#9CA3AF',
+  borderRadius:9999,
+  height:35,
+  width:35
+},
+threedots:{
+  position: 'absolute',
+  top:20,
+  bottom: 'auto',
+  right:16,
+  left:'auto',
+  padding:5,
+  backgroundColor:'#9CA3AF',
+  borderRadius:9999,
+  height:35,
+  width:35
+},
+facebook:{
+ position: 'absolute',
+  top:60,
+  bottom: 'auto',
+  right:16,
+  left:'auto',
+  padding:5,
+  backgroundColor:'#FFFFFF',
+  borderRadius:9999,
+  height:35,
+  width:35
+},
+instagram:{
+ position: 'absolute',
+  top:100,
+  bottom: 'auto',
+  right:16,
+  left:'auto',
+  padding:5,
+  backgroundColor:'#FFFFFF',
+  borderRadius:9999,
+  height:35,
+  width:35
+},
+
+  styleTitle: {
+    fontSize: 16,
+    flex: 1,
   },
 });
 
-export default UserProfileScreen;
+export default UserProfile;
