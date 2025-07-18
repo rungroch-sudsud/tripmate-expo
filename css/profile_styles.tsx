@@ -391,8 +391,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     height: 38,
     minWidth: 87.61,
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)'
   },
   emptyText: {
     padding: 10,

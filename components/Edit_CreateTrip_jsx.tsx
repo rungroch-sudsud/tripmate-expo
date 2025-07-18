@@ -459,6 +459,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   subtitle,
   selectedColor = "#29C4AF",
   unselectedColor = "#000",
+  highlightType
 }) => {
   
   const handleToggleSelection = (id: string) => {
@@ -503,7 +504,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   ]}
   onPress={() => handleToggleSelection(category.id)}
 >
-  {isSelected &&  (
+  {isSelected && highlightType === 'gradientcolor' &&(
 <LinearGradient
   colors={['#C7CAF4', '#FFD1C2']}  // Pale blue and pale peach
   locations={[0, 1]}
@@ -512,6 +513,24 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   style={[StyleSheet.absoluteFillObject, { borderRadius: 30 }]}
 />
   )}
+    {isSelected && highlightType === 'solidcolor1' && (
+    <View
+      style={[
+        StyleSheet.absoluteFillObject,
+        { backgroundColor: '#C5C7FF', borderRadius: 30 ,  boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',borderWidth:0}
+      ]}
+    />
+  )}
+    {isSelected && highlightType === 'solidcolor2' && (
+    <View
+      style={[
+        StyleSheet.absoluteFillObject,
+        { backgroundColor: '#FFD2C1', borderRadius: 30,  boxShadow: '0 0 10px rgba(0, 0, 0, 0.15)',borderBlockColor:'red' }
+      ]}
+    />
+  )}
+
+
   <Text style={[
     styles.categoryText,
     isSelected && styles.selectedText

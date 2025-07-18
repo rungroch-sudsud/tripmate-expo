@@ -69,5 +69,6 @@ export interface TravelInterestComponentProps {
   subtitle?: string;
   selectedColor?: string;
   unselectedColor?: string;
+  highlightType?: 'gradientcolor' | 'solidcolor1' | 'solidcolor2';
   // Removed iconSize since we're not using icons anymore
 }

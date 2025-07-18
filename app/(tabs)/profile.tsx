@@ -352,11 +352,13 @@ const handleTransportToggle = (id) => {
   };
 
 
-const pickImageWithText = () => {
+// Optimized version with better performance
+const pickImageWithText = useCallback(() => {
   const options = {
     mediaType: 'photo',
     maxWidth: 1024,
     maxHeight: 1024,
+    quality: 0.8, // Add compression
     storageOptions: {
       skipBackup: true,
       path: 'images'
@@ -365,47 +367,36 @@ const pickImageWithText = () => {
   };
   
   launchImageLibrary(options, (response) => {
-    if (response.didCancel) {
-      console.log("User Canceled Image Picker");
-      return;
-    }
-    if (response.errorMessage) {
-      console.log('ImagePicker Error: ', response.errorMessage);
-      return;
-    }
-    if (response.assets && response.assets.length > 0) {
-      const pickedImage = response.assets[0];
-      if (!pickedImage.uri) {
-        console.log("No Image uri received, Please Try Again");
-        return;
+    if (response.didCancel || response.errorMessage) {
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
       }
-
-      // Generate a more unique ID
-      const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      const newImageItem = {
-        id: uniqueId,
-        uri: pickedImage.uri,
-        type: pickedImage.type ?? 'image/jpeg',
-        name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
-        text: '',
-      };
-
-      // Add with duplicate check (extra safety)
-      setimageTextArray(prev => {
-        const exists = prev.find(item => item.id === uniqueId);
-        if (exists) {
-          console.log('Duplicate ID detected, regenerating...');
-          const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${Math.random().toString(36).substr(2, 5)}`;
-          return [...prev, { ...newImageItem, id: newId }];
-        }
-        return [...prev, newImageItem];
-      });
-      
-      console.log('Image added to array successfully with ID:', uniqueId);
+      return;
     }
+
+    const pickedImage = response.assets?.[0];
+    if (!pickedImage?.uri) {
+      console.log("No Image uri received, Please Try Again");
+      return;
+    }
+
+    // More efficient ID generation
+    const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+    
+    const newImageItem = {
+      id: uniqueId,
+      uri: pickedImage.uri,
+      type: pickedImage.type ?? 'image/jpeg',
+      name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+      text: '',
+    };
+
+    // Simplified state update without duplicate check
+    setimageTextArray(prev => [...prev, newImageItem]);
+    
+    console.log('Image added successfully with ID:', uniqueId);
   });
-};
+}, []);
 
 const removeImageFromArray = (id) => {
   setimageTextArray(prev => prev.filter(item => item.id !== id));
@@ -959,6 +950,7 @@ const uploadPastTripImages = async (): Promise<void> => {
   unselectedColor="#000"
   iconSize={{ width: 15.75, height: 14 }}
   isEditMode={false}
+  highlightType="gradientcolor" 
 />
 
 
@@ -977,6 +969,7 @@ const uploadPastTripImages = async (): Promise<void> => {
   unselectedColor="#000"
   iconSize={{ width: 15.75, height: 14 }}
   isEditMode={false}
+  highlightType="solidcolor1" 
 />
 </View>
 
@@ -994,6 +987,7 @@ const uploadPastTripImages = async (): Promise<void> => {
   unselectedColor="#000"
   iconSize={{ width: 15.75, height: 14 }}
   isEditMode={false}
+    highlightType="solidcolor2" 
 />
 </View>
 
@@ -1045,7 +1039,8 @@ const uploadPastTripImages = async (): Promise<void> => {
             width: '100%',
             height: 120,
             borderRadius: 10,
-            backgroundColor: '#E5E7EB'
+            backgroundColor: '#E5E7EB',
+            paddingHorizontal:10
           }}
           resizeMode="cover"
         />
@@ -1086,6 +1081,7 @@ const uploadPastTripImages = async (): Promise<void> => {
        
         }}
         placeholder="เพิ่มคำอธิบายรูปภาพ"
+        placeholderTextColor='#9CA3AF'
         value={item.text}
         onChangeText={(text) => updateImageText(item.id, text)}
         multiline

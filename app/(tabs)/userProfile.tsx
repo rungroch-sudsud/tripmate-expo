@@ -267,6 +267,7 @@ const styles = StyleSheet.create({
   },
 section: {
   marginBottom: 24,
+  marginLeft:20,
 },
   name: {
     fontSize: 24,
@@ -286,10 +287,11 @@ section: {
     marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 10,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: '#333',
+    color: '#374151',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   listItem: {
     fontSize: 16,
@@ -308,28 +310,33 @@ tripImage: {
   marginBottom: 8,
 },
 transportTag: {
-  backgroundColor: '#eee',
-  borderRadius: 20,
-  paddingVertical: 6,
-  paddingHorizontal: 12,
-  marginRight: 10,
-  marginBottom: 8,
-  alignSelf: 'flex-start',
-},
-travelStyleCard: {
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: '#f2f2f2',
-  borderRadius: 16,
+  backgroundColor: '#FFFFFF',
+  borderRadius: 9999,
   paddingVertical: 8,
   paddingHorizontal: 12,
   marginRight: 10,
   marginBottom: 8,
+  boxShadow: '0 0 2px rgba(0, 0, 0, 0.15)',
+},
+travelStyleCard: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#FFFFFF',
+  borderRadius: 9999,
+  paddingVertical: 8,
+  paddingHorizontal: 12,
+  marginRight: 10,
+  marginBottom: 8,
+  boxShadow: '0 0 2px rgba(0, 0, 0, 0.15)',
 },
 
 transportTagText: {
-  fontSize: 14,
-  color: '#333',
+  fontSize: 12,
+  fontFamily:'LineSeedSansTH_A_Bd',
+
+  color: '#374151',
 },
 
   tripDescription: {
@@ -418,8 +425,10 @@ instagram:{
 },
 
   styleTitle: {
-    fontSize: 16,
+    fontSize: 12,
     flex: 1,
+    color:'#374151',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
 });
 
