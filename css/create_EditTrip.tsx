@@ -66,11 +66,10 @@ const styles = StyleSheet.create({
       marginBottom: 20,
     },
     label: {
-      fontWeight: '500',
-      color: '#333',
-      marginBottom:4,
-      fontFamily:'InterTight-Regular',
-      fontSize:16
+      fontWeight: '700',
+      color: '#374151',
+      fontFamily:'LineSeedSansTH_A_Bd',
+      fontSize:14
     },
     requiredText: {
       fontSize: 12,
@@ -162,7 +161,7 @@ const styles = StyleSheet.create({
       minHeight: 80,
       textAlignVertical: 'top',
       outlineColor:'#e0e0e0',
-      fontFamily:'InterTight-Regular'
+      fontFamily:'LineSeedSansTH'
     },
     attachmentSection: {
       flexDirection: 'row',
@@ -188,23 +187,23 @@ const styles = StyleSheet.create({
     },
     checkboxContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
+      justifyContent: 'flex-start',
       marginTop: 1,
-      
+      flexWrap:'wrap'
     },
     checkboxRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      flex: 0.48,
-      borderRadius:5,
-      height:30,
-      paddingHorizontal:4,
-      backgroundColor:"#F9FAFBFF",
-      marginHorizontal:5
       
+      borderRadius:10,
+      height:30,
+      paddingHorizontal:14,
+      backgroundColor:"#F3F4F6",
+      marginHorizontal:5,
+      marginTop:5
     },
     checkbox: {
-      width: 20,
+      width: 'auto',
       height: 20,
       borderWidth: 2,
       borderColor: '#ddd',
@@ -213,14 +212,29 @@ const styles = StyleSheet.create({
       justifyContent: 'center',
       alignItems: 'center',
     },
-    checkboxInner: {
-      width: 12,
-      height: 12,
-      borderRadius: 2,
-    },
-    checked: {
-      backgroundColor: '#4285f4',
-    },
+   checkboxInner: {
+  width: 15,
+  height: 15,
+  borderRadius: 3,
+  backgroundColor:'#FFFFFF',
+  borderWidth: 1,
+  borderColor: '#D1D5DB', 
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+  checked: {
+      width: 15,
+  height: 15,
+
+  backgroundColor: '#FFFFFF', 
+  borderColor: '#4285f4', 
+},
+checkmark: {
+  color: '#22C55E',
+  fontSize: 20,
+  fontWeight: 'bold',
+  lineHeight: 12,
+},
     checkboxText: {
       fontSize: 14,
       color: '#333',
@@ -367,7 +381,8 @@ const styles = StyleSheet.create({
       gap: 12,
       alignItems: 'center',
       marginTop: 5,
-      marginBottom: 10, // Add space after categories
+      marginBottom: 10, 
+      
     },
     categoryItem: {
       flexDirection: 'row',
@@ -376,24 +391,22 @@ const styles = StyleSheet.create({
       paddingVertical: 14,
       height: 38,
       borderRadius: 30,
+       boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
       // Remove marginBottom: 20
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
     },
     selectedItem: {
       backgroundColor: 'rgba(41, 196, 175, 0.1)', // 10% opacity of #6366f1
-      borderColor: '#29C4AF',
     },
     selectedText: {
-      color: '#29C4AF',
-      fontFamily:'InterTight-Regular'
+      color: '#374151',
+      fontSize:12,
+      fontFamily:'LineSeedSansTH_A_Bd'
     },
     categoryText: {
       marginLeft: 8,
-      fontSize: 14,
-      color: '#666',
-      fontWeight: '500',
-      fontFamily:'InterTight-Regular'
+      fontSize: 12,
+      color: '#374151',
+      fontFamily:'LineSeedSansTH_A_Bd'
     },
     toolbarButton: {
       paddingHorizontal: 8,
@@ -623,8 +636,7 @@ const styles = StyleSheet.create({
       fontSize: 14,
     },
     container3: {
-      flex: 4,
-      backgroundColor: 'white',        
+      flex: 4,      
       marginHorizontal: 20,
       marginBottom: 20,       // Add consistent bottom margin
     },

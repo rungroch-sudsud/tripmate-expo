@@ -41,7 +41,7 @@ export const VALIDATION_ERRORS = {
   GENDER_REQUIRED: 'กรุณาเลือกเพศ',
   FACEBOOK_INVALID: 'กรุณากรอก Facebook URL หรือ Username ที่ถูกต้อง',
   LINE_INVALID: 'กรุณากรอก LINE ID ที่ถูกต้อง',
-  OCCUPATION_INVALID:"Occupation cannot be null"
+  OCCUPATION_INVALID:"กรุณาระบุอาชีพของคุณ"
 };
 
 export const VALIDATION_REGEX = {

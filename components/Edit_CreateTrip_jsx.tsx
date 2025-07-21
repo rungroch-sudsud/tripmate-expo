@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, Acti
 import { Calendar } from 'react-native-calendars';
 import {Category,TravelStylesComponentProps,TravelInterestComponentProps} from '../shared/schemas/api.schema'
 import { LinearGradient } from 'expo-linear-gradient';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
  const ErrorMessage = ({ error }: { error: string }) => {
     if (!error) return null;
@@ -393,59 +394,54 @@ export const PricePerPersonComponent = ({
 };
 
 // 5. Services Checkbox Component
-export const ServicesCheckboxComponent = ({ 
-  services, 
-  selectedServices, 
-  onToggleService, 
-  error, 
-  clearError,
-  styles,
-  isEditMode = false
-}) => {
-  return (
-    <>
-      <View style={[
-        styles.checkboxSection,
-        !isEditMode && error && {marginBottom: 0}
-      ]}>
-        <Text style={styles.label}>สิ่งที่รวมในราคา</Text>
-        <View style={styles.checkboxContainer}>
-          {services.map(service => (
-            <TouchableOpacity
-              key={service.id}
-              style={styles.checkboxRow}
-              onPress={() => {
-                onToggleService(service.id);
-                if (error) clearError('services');
-              }}
-            >
-              <TouchableOpacity
-                style={styles.checkbox}
-                onPress={() => {
-                  onToggleService(service.id);
-                  if (error) clearError('services');
-                }}
+export const ServicesCheckboxComponent = ({    
+  services,    
+  selectedServices,    
+  onToggleService,    
+  error,    
+  clearError,   
+  styles,   
+  isEditMode = false 
+}) => {   
+  return (     
+    <>       
+      <View style={[         
+        styles.checkboxSection,         
+        !isEditMode && error && {marginBottom: 0}       
+      ]}>         
+        <Text style={{fontFamily:'LineSeedSansTH_A_Bd',color:'#374151',fontSize:13}}>สิ่งที่รวมในราคา</Text>         
+        <View style={styles.checkboxContainer}>           
+          {services.map(service => (             
+            <TouchableOpacity               
+              key={service.id}               
+              style={styles.checkboxRow}               
+              onPress={() => {                 
+                onToggleService(service.id);                 
+                if (error) clearError('services');               
+              }}             
+            >                 
+              <View                   
+                style={[                     
+                  styles.checkboxInner,                     
+                  selectedServices.includes(service.id) && styles.checked,                     
+                  {marginHorizontal:5}                   
+                ]}                 
               >
-                <View
-                  style={[
-                    styles.checkboxInner,
-                    selectedServices.includes(service.id) && styles.checked,
-                  ]}
-                />
-              </TouchableOpacity>
-              <Text style={styles.checkboxText}>{service.title}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
-      
-      {!isEditMode && (
-        <View style={{paddingLeft: 20,marginBottom:25}}>
-          <ErrorMessage error={error} />
-        </View>
-      )}
-    </>
-  );
+                {selectedServices.includes(service.id) && (
+                  <Text style={styles.checkmark}>✓</Text>
+                )}
+              </View>               
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontSize:12,}}>{service.title}</Text>             
+            </TouchableOpacity>           
+          ))}         
+        </View>       
+      </View>              
+      {!isEditMode && (         
+        <View style={{paddingLeft: 20,marginBottom:25}}>           
+          <ErrorMessage error={error} />         
+        </View>       )}     
+    </>   
+  ); 
 };
 
 // 6. Travel Styles Component
@@ -483,8 +479,8 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
       <View style={styles.content}>
       <Text
     style={[
-      styles.title || styles.label, // base style
-      error && { color: 'red' }      // conditionally apply red color
+      styles.title,styles.label, 
+      error && { color: 'red' }      
     ]}
   >
     {title}
@@ -598,6 +594,7 @@ export const DestinationsComponent = ({
       zIndex: 1000,
       marginBottom: dropdownOpen ? 220 : 30,
       marginTop: 10,
+
       marginHorizontal: 20,
     }}>
       <TouchableOpacity onPress={() => setDropdownOpen(!dropdownOpen)}>
@@ -616,7 +613,7 @@ export const DestinationsComponent = ({
                 lineHeight: 24,
                 color: '#374151',
                 height: 50,
-                textAlign:'center',
+               
                 backgroundColor: '#FFFF',
               }}
               
@@ -638,11 +635,11 @@ export const DestinationsComponent = ({
               color: '#374151',
               height: 50,
               backgroundColor: '#FFFFFF',
-              textAlign:'center',
+        
             }}>
               <Image
               source={require('../app/assets/images/images/images/image9.png')}
-                style={{ width: 18, height: 18,marginBottom:-2 }}
+                style={{ width: 18, height: 18,marginBottom:-4 }}
               />
               {' '} <Text style={{marginBottom:20}}>ค้นหาสถานที่</Text>
             </Text>
@@ -711,8 +708,8 @@ export const DestinationsComponent = ({
       )}
 
       {/* Selected destinations */}
-     <View style={{ marginTop: 20, marginBottom: 10, alignItems: 'center' }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap',justifyContent: 'center',maxWidth: '100%'}}>
+     <View style={{ marginTop: 20, marginBottom: 10,  }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap',maxWidth: '100%'}}>
           {selectedDestinations.map((dest, index) => (
             <TouchableOpacity
               key={index}
@@ -726,7 +723,6 @@ export const DestinationsComponent = ({
                 borderColor: '#585DDB',
                 minWidth: 84.09,
                 height: 38,
-                alignItems: 'center',
               }}
               onPress={() => onRemoveDestination(dest)}
             >
@@ -734,6 +730,7 @@ export const DestinationsComponent = ({
                 color: '#585DDB',
                 fontFamily: 'LineSeedSansTH',
                 fontSize: 14,
+                marginBottom:5
               }}>
                 {dest} <Text style={{ fontSize: 16 }}>×</Text>
               </Text>
@@ -787,7 +784,7 @@ export const AtmosphereInputComponent = ({
   };
 
   return (
-    <View style={{ marginBottom: 30, marginTop: -20, marginHorizontal: 20 }}>
+    <View style={{ marginBottom: 30, marginHorizontal: 20 }}>
       <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
       <View style={{ position: 'relative' }}>
         <TextInput
@@ -796,11 +793,11 @@ export const AtmosphereInputComponent = ({
             error && styles.inputError
           ]}
           multiline
-          numberOfLines={4}
+          numberOfLines={6}
           value={localValue} // Use local state for immediate updates
           onChangeText={handleTextChange}
-          placeholder="อธิบายบรรยากาศหรือโทนของกลุ่มที่ต้องการ...."
-          placeholderTextColor="#888"
+          placeholder="อธิบายบรยากาศหรือโทนของกลุ่มที่ต้องการ..."
+          placeholderTextColor="#9CA3AF"
           maxLength={100}
         />
         

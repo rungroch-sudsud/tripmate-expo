@@ -1,0 +1,28 @@
+      console.log("📷 Adding image to request...", {
+            name: pickedFile2.name,
+            type: pickedFile2.type,
+            size: pickedFile2.size || 'unknown'
+          });
+          
+          try {
+            if (pickedFile2.isBase64 && pickedFile2.base64Data) {
+              const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
+              const blob = await response.blob();
+              requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
+            } else if (pickedFile2.uri) {
+              const fileObj = {
+                uri: pickedFile2.uri,
+                type: pickedFile2.type || 'image/jpeg',
+                name: pickedFile2.name || 'image.jpg',
+              } as any;
+              
+              requestFormData.append('tripCoverImageFile', fileObj);
+            } else {
+              console.warn('⚠️ No valid image data found');
+            }
+          } catch (imageError) {
+            console.error('Image processing error:', imageError);
+            Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
+          }
+        }
+    

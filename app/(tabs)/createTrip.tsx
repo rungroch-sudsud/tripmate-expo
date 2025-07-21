@@ -156,75 +156,7 @@ const ThaiFormScreen = () => {
     };
   };
 
-  const pickImage2 = () => {
-    const options: any = {
-      mediaType: 'photo',
-      includeBase64: false,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      storageOptions: {
-        skipBackup: true,
-        path: 'images',
-      },
-      presentationStyle: 'overFullScreen',
-    };
 
-    launchImageLibrary(options, (response: any) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-        return;
-      }
-
-      if (response.errorMessage) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-        Alert.alert('Error', response.errorMessage);
-        return;
-      }
-
-      if (response.assets && response.assets.length > 0) {
-        const pickedImage = response.assets[0];
-        
-        if (pickedImage.uri && pickedImage.uri.startsWith('data:')) {
-          console.log('🟡 Base64 data detected, converting...');
-          const convertedFile = convertBase64ToFile(
-            pickedImage.uri,
-            pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
-            pickedImage.type ?? 'image/jpeg'
-          );
-          
-          setPickedFile2({
-            uri: convertedFile.uri,
-            type: convertedFile.type,
-            name: convertedFile.name,
-            base64Data: convertedFile.base64Data,
-            isBase64: true,
-          } as PickedFile);
-
-          console.log('🟢 Base64 image processed successfully');
-          return;
-        }
-
-        if (!pickedImage.uri) {
-          Alert.alert('Error', 'No image URI received. Please try again.');
-          return;
-        }
-
-        setPickedFile2({
-          uri: pickedImage.uri,
-          type: pickedImage.type ?? 'image/jpeg',
-          name: pickedImage.fileName ?? `id-card-${Date.now()}.jpg`,
-          size: pickedImage.fileSize,
-        });
-
-        console.log('🟢 Image 2 picked successfully:', {
-          uri: pickedImage.uri.substring(0, 50) + '...',
-          type: pickedImage.type,
-          name: pickedImage.fileName,
-          size: pickedImage.fileSize,
-        });
-      }
-    });
-  };
   
 
 const pickImageWithText = useCallback(() => {
@@ -464,7 +396,7 @@ const pickImageWithText = useCallback(() => {
       pricePerPerson: validatePricePerPerson(),
       services: validateServices(),
       travelStyles: validateTravelStyles(),
-      destinations: validateDestinations(),
+      destinations: validateTravelStyles(),
       atmosphere: validateAtmosphere(),
       details: validateDetails(),
       terms: validateTerms()
@@ -613,6 +545,8 @@ const handlePricePerPerson = (text: string) => {
   type StatusType = 'published' | 'draft';
 
 const create = async (status: StatusType): Promise<void> => {
+  console.log(imageTextArray);
+  
   setIsValidating(true);
 
   const isValid = validateForm();
@@ -620,19 +554,20 @@ const create = async (status: StatusType): Promise<void> => {
   if (!isValid) {
     setIsValidating(false);
     const firstError = Object.values(errors).find(error => error !== '');
-    Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+    console.log('Error');
+    
     return;
   }
 
   try {
     console.log("🚀 Starting trip creation...");
     
-    if (!formData2.name || !formData.startDate || !formData.endDate || 
-        selected.length === 0 || !maxParticipant || !pricePerPerson || 
-        selectedItems.length === 0 || imageTextArray.length === 0) { // Updated validation
-      Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วนและเพิ่มรูปภาพอย่างน้อย 1 รูป');
-      return;
-    }
+   // if (!formData2.name || !formData.startDate || !formData.endDate || 
+     //   selected.length === 0 || !maxParticipant || !pricePerPerson || 
+       // selectedItems.length === 0 || imageTextArray.length === 0) { // Updated validation
+     // Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วนและเพิ่มรูปภาพอย่างน้อย 1 รูป');
+   //   return;
+//    }
 
     setUploading(true);
     setResponseMessage(null);
@@ -677,9 +612,9 @@ const create = async (status: StatusType): Promise<void> => {
       return;
     }
     
-    if (selected.length > 0) {
-      requestFormData.append('destinations', selected);
-    }
+    
+      requestFormData.append('destinations', []);
+    
     
     requestFormData.append('maxParticipants', maxParticipant.toString());
     requestFormData.append('pricePerPerson', pricePerPerson.toString());
@@ -703,41 +638,54 @@ const create = async (status: StatusType): Promise<void> => {
     }
 
     // Handle multiple cover images from imageTextArray
-    if (imageTextArray.length > 0) {
-      console.log(`📷 Adding ${imageTextArray.length} cover images to request...`);
-      
-      for (let i = 0; i < imageTextArray.length; i++) {
-        const image = imageTextArray[i];
+// Handle multiple cover images from imageTextArray - React Native version
+if (imageTextArray.length > 0) {
+  console.log(`📷 Adding ${imageTextArray.length} cover images to request...`);
+  
+  for (let i = 0; i < imageTextArray.length; i++) {
+    const pickedFile = imageTextArray[i];
+    
+    console.log(`📷 Adding image ${i + 1}/${imageTextArray.length} to request...`, {
+      name: pickedFile.name,
+      type: pickedFile.type,
+      size: pickedFile.size || 'unknown',
+      hasBase64: !!pickedFile.base64Data,
+      hasUri: !!pickedFile.uri
+    });
+    
+    try {
+      if (pickedFile.isBase64 && pickedFile.base64Data) {
+        // For React Native: Create file object with base64 data
+        const fileObj = {
+          uri: `data:${pickedFile.type || 'image/jpeg'};base64,${pickedFile.base64Data}`,
+          type: pickedFile.type || 'image/jpeg',
+          name: pickedFile.name || `image-${i + 1}.jpg`,
+        };
+        requestFormData.append('tripCoverImageFiles', fileObj as any);
         
-        try {
-          console.log(`Processing image ${i + 1}/${imageTextArray.length}:`, {
-            name: image.name,
-            type: image.type,
-            uri: image.uri ? 'present' : 'missing'
-          });
-
-          if (image.uri) {
-            const fileObj = {
-              uri: image.uri,
-              type: image.type || 'image/jpeg',
-              name: image.name || `cover-image-${i + 1}.jpg`,
-            } as any;
-            
-            // Append each image as tripCoverImageFiles (API expects array)
-            requestFormData.append('tripCoverImageFiles', fileObj);
-          } else {
-            console.warn(`⚠️ Image ${i + 1} missing URI, skipping`);
-          }
-        } catch (imageError) {
-          console.error(`Error processing image ${i + 1}:`, imageError);
-          // Continue with other images even if one fails
-        }
+      } else if (pickedFile.uri) {
+        // For React Native: Use URI directly
+        const fileObj = {
+          uri: pickedFile.uri,
+          type: pickedFile.type || 'image/jpeg',
+          name: pickedFile.name || `image-${i + 1}.jpg`,
+        };
+        requestFormData.append('tripCoverImageFiles', fileObj as any);
+        
+      } else {
+        console.warn(`⚠️ No valid image data found for image ${i + 1}`);
       }
-    } else {
-      console.warn('⚠️ No images in imageTextArray');
-      Alert.alert('ข้อผิดพลาด', 'กรุณาเพิ่มรูปภาพอย่างน้อย 1 รูป');
-      return;
+    } catch (imageError) {
+      console.error(`Image processing error for image ${i + 1}:`, imageError);
+      // Continue with other images even if one fails
     }
+  }
+  
+} else {
+  console.warn('⚠️ No images in imageTextArray');
+  Alert.alert('ข้อผิดพลาด', 'กรุณาเพิ่มรูปภาพอย่างน้อย 1 รูป');
+  return;
+}
 
     console.log("📤 Sending trip creation request...");
     
@@ -745,7 +693,6 @@ const create = async (status: StatusType): Promise<void> => {
       name: formData2.name,
       startDate: formData.startDate,
       endDate: formData.endDate,
-      destinations: selected.length,
       maxParticipants: maxParticipant,
       pricePerPerson: pricePerPerson,
       services: selectedServices.length,
@@ -1147,10 +1094,83 @@ const handleChangeText = useCallback((text) => {
           />
         </View>
 
-<View style={{flexDirection:'row',justifyContent:'space-around'}}>
+<View style={{flexDirection:'row',justifyContent:'space-between',paddingHorizontal:15}}>
 
-  <View style={{flex:0.5,backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+  <View style={{flex:0.3,backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>จำนวนคน</Text>
+     <View style={{flexDirection:'row',marginTop:10,justifyContent:'space-between'}}>
+         <Image
+                source={require('../assets/images/images/images/image11.png')}
+                style={{ height: 16, width: 16,tintColor:'#FF956E'}}
+                resizeMode="contain"
+              />
+          <TextInput
+             style={{
+            height: '100%',
+            borderWidth:0,
+            outlineColor: '#F3F4F6',
+            backgroundColor: '#F3F4F6',
+            width: '45%',
+            textAlign:'center',
+            fontFamily:'LineSeedSansTH_A_Bd',
+            fontSize:12,
+            color:'#374151'
+            
+          }}
+          placeholder='1'
+          placeholderTextColor="#9CA3AF"
+          value={maxParticipant}
+            onChangeText={(text) => {
+    if (text && parseInt(text) <= 15) {
+      handleMaxParticipant(text);
+    } else if (text === '') {
+      handleMaxParticipant(text); 
+    }
+    if (errors.maxParticipants) clearError('maxParticipants');
+  }}
+          keyboardType='numeric'
+      
+      />
 
+      <Text style={{ fontFamily:'LineSeedSansTH_A_Bd',fontSize:12,color:'#9CA3AF'}}>คน</Text>
+      <View style={{flexDirection:'row',marginTop:10,justifyContent:'space-between'}}>
+         
+      </View>
+     </View>
+    
+  </View>
+  <View style={{flex:0.65,backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+         <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ราคาต่อคน (รวม 20%)</Text>
+            <View style={{flexDirection:'row',marginTop:10,justifyContent:'space-around'}}>
+                <Image
+                         source={require('../assets/images/images/images/image12.png')}
+                         style={{ height: 16, width: 16, marginHorizontal: 3 }}
+                         resizeMode="contain"
+                       />
+                            <TextInput
+             style={{
+            height: '100%',
+            borderWidth:0,
+            outlineColor: '#F3F4F6',
+            backgroundColor: '#F3F4F6',
+            width: '100%',
+            textAlign:'left',
+            fontFamily:'LineSeedSansTH_A_Bd',
+            fontSize:12,
+            color:'#374151',
+            paddingHorizontal:10
+          }}
+          placeholder='ราคาต่อคน'
+          placeholderTextColor="#9CA3AF"
+          value={pricePerPerson}
+         onChangeText={(text) => {
+    handlePricePerPerson(text);
+    if (errors.pricePerPerson) clearError('pricePerPerson');
+  }}
+      />
+
+  <Text style={{ fontFamily:'LineSeedSansTH_A_Bd',fontSize:12,color:'#9CA3AF'}}>บาท</Text>
+             </View>
   </View>
           {/* Max Participants with Error
         <MaxParticipantsComponent 
@@ -1197,38 +1217,29 @@ const handleChangeText = useCallback((text) => {
 />
 
 
-        {/* Travel Styles with Error */}
+ <View>
+         {/* Travel Styles with Error */}
   <TravelStylesComponent
+  title='สไตล์เที่ยว'
+  subtitle='เลือกกิจกรรมที่คุณสนใจ (เลือกได้หลายข้อ)'
   categories={categories}
   selectedItems={selectedItems}
   onToggleSelection={toggleSelection}
   loading={loading}
+   highlightType="gradientcolor" 
   error={errors.travelStyles}
   clearError={() => clearError('travelStyles')}
   styles={styles}
   isEditMode={false}
 />
+ </View>
 
 
-        {/* Destination */}
- <DestinationsComponent 
-  dropdownOpen={dropdownOpen}
-  setDropdownOpen={setDropdownOpen}
-  searchText={searchText}
-  setSearchText={setSearchText}
-  filteredDestinations={filteredDestinations}
-  selectedDestinations={selected}
-  onAddDestination={addDestination}
-  onRemoveDestination={removeDestination}
-  loading={loading}
-  error={errors.destinations}
-  clearError={() => clearError('destinations')}
-  styles={styles}
-  isEditMode={false}
-/>
 
 
-  <AtmosphereInputComponent
+
+<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <AtmosphereInputComponent
   value={formData.description}
   onChangeText={(text) => {
     if (text.length <= 100) {
@@ -1241,10 +1252,12 @@ const handleChangeText = useCallback((text) => {
   styles={styles}
   isEditMode={false}
 />
+</View>
 
         
         {/* General Details with Error */}
-  <DetailsInputComponent
+<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <DetailsInputComponent
   value={formData.details}
   onChangeText={(text) => {
     setFormData(prev => ({ ...prev, details: text }));
@@ -1255,6 +1268,7 @@ const handleChangeText = useCallback((text) => {
   styles={styles}
   isEditMode={false}
 />
+</View>
 
     
         <Text style={{fontWeight:600,fontFamily:'InterTight-Regular',marginHorizontal:20,marginBottom:5}}>
