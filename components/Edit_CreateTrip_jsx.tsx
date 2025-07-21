@@ -496,11 +496,14 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
     </Text>
   )}
 
- /** {error && (
+{/*
+  {error && (
     <View style={{ paddingLeft: 20, marginBottom: 20 }}>
       <ErrorMessage error={error} />
     </View>
-  )}*/
+  )}
+*/}
+
         
         {loading ? (
           <View style={styles.loadingContainer}>
