@@ -24,10 +24,13 @@ import TripNameInput from '../../components/tripNameInput'
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../../lib/axios'
-import '@expo-google-fonts/inter'
+import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
+
+
+
 const MAX_WORDS = 40;
 interface Service {
   id: string;
@@ -224,50 +227,49 @@ const ThaiFormScreen = () => {
   };
   
 
-  const pickImageWithText = useCallback(() => {
-    const options = {
-      mediaType: 'photo',
-      maxWidth: 1024,
-      maxHeight: 1024,
-      quality: 0.8, // Add compression
-      storageOptions: {
-        skipBackup: true,
-        path: 'images'
-      },
-      presentationStyle: 'overFullScreen',
+const pickImageWithText = useCallback(() => {
+  const options = {
+    mediaType: 'photo',
+    maxWidth: 1024,
+    maxHeight: 1024,
+    quality: 0.8,
+    storageOptions: {
+      skipBackup: true,
+      path: 'images'
+    },
+    presentationStyle: 'overFullScreen',
+  };
+
+  launchImageLibrary(options, (response) => {
+    if (response.didCancel || response.errorMessage) {
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+      }
+      return;
+    }
+
+    const pickedImage = response.assets?.[0];
+    if (!pickedImage?.uri) {
+      console.log("No Image uri received, Please Try Again");
+      return;
+    }
+
+    const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+    const newImageItem = {
+      id: uniqueId,
+      uri: pickedImage.uri,
+      type: pickedImage.type ?? 'image/jpeg',
+      name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+      text: '',
     };
-    
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.errorMessage) {
-        if (response.errorMessage) {
-          console.log('ImagePicker Error: ', response.errorMessage);
-        }
-        return;
-      }
-  
-      const pickedImage = response.assets?.[0];
-      if (!pickedImage?.uri) {
-        console.log("No Image uri received, Please Try Again");
-        return;
-      }
-  
-      // More efficient ID generation
-      const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-      
-      const newImageItem = {
-        id: uniqueId,
-        uri: pickedImage.uri,
-        type: pickedImage.type ?? 'image/jpeg',
-        name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
-        text: '',
-      };
-  
-      // Simplified state update without duplicate check
-      setimageTextArray(prev => [...prev, newImageItem]);
-      
-      console.log('Image added successfully with ID:', uniqueId);
-    });
-  }, []);
+
+    setimageTextArray(prev => [...prev, newImageItem]);
+
+    console.log('Image added successfully with ID:', uniqueId);
+  });
+}, []);
+
   const removeImageFromArray = (id) => {
   setimageTextArray(prev => prev.filter(item => item.id !== id));
   console.log('Image removed with ID:', id);
@@ -610,173 +612,173 @@ const handlePricePerPerson = (text: string) => {
   // Main create function
   type StatusType = 'published' | 'draft';
 
-  const create = async (status: StatusType): Promise<void> => {
-    setIsValidating(true);
+const create = async (status: StatusType): Promise<void> => {
+  setIsValidating(true);
 
-    const isValid = validateForm();
+  const isValid = validateForm();
 
-    if (!isValid) {
-      setIsValidating(false);
-      const firstError = Object.values(errors).find(error => error !== '');
-      Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+  if (!isValid) {
+    setIsValidating(false);
+    const firstError = Object.values(errors).find(error => error !== '');
+    Alert.alert('ข้อมูลไม่ถูกต้อง', firstError);
+    return;
+  }
+
+  try {
+    console.log("🚀 Starting trip creation...");
+    
+    if (!formData2.name || !formData.startDate || !formData.endDate || 
+        selected.length === 0 || !maxParticipant || !pricePerPerson || 
+        selectedItems.length === 0 || imageTextArray.length === 0) { // Updated validation
+      Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วนและเพิ่มรูปภาพอย่างน้อย 1 รูป');
       return;
     }
 
-    try {
-      console.log("🚀 Starting trip creation...");
-      
-      if (!formData2.name || !formData.startDate || !formData.endDate || 
-          selected.length === 0 || !maxParticipant || !pricePerPerson || 
-          selectedItems.length === 0) { // Fixed: check selectedItems instead of categories
-        return;
-      }
+    setUploading(true);
+    setResponseMessage(null);
 
-      setUploading(true);
-      setResponseMessage(null);
-
-      const formatDate = (dateStr: string): string => {
-        try {
-          let date: Date;
-      
-          if (dateStr.includes('/')) {
-            const [day, month, year] = dateStr.split('/');
-            date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-          } else {
-            date = new Date(dateStr);
-          }
-      
-          if (isNaN(date.getTime())) {
-            throw new Error(`Invalid date: ${dateStr}`);
-          }
-      
-          const year = date.getFullYear();
-          const month = String(date.getMonth() + 1).padStart(2, '0');
-          const day = String(date.getDate()).padStart(2, '0');
-      
-          return `${year}-${month}-${day}`;
-        } catch (error) {
-          console.error('Date formatting error:', error);
-          throw new Error(`Invalid date format: ${dateStr}`);
-        }
-      };
-
-      // Fixed: Get travel style IDs from selectedItems, not categories
-      const travelStyleIds: string[] = selectedItems;
-      const requestFormData = new FormData();
-
-      requestFormData.append('name', formData2.name.trim());
-      
+    const formatDate = (dateStr: string): string => {
       try {
-        requestFormData.append('startDate', formatDate(formData.startDate));
-        requestFormData.append('endDate', formatDate(formData.endDate));
-      } catch (dateError) {
-        Alert.alert('Error', 'Invalid date format. Please check your dates.');
-        return;
-      }
-      
-      if (selected.length > 0) {
-        // Fixed: Append each destination separately
-          requestFormData.append('destinations',selected);
-      }
-      
-      requestFormData.append('maxParticipants', maxParticipant.toString());
-      requestFormData.append('pricePerPerson', pricePerPerson.toString());
-      
-      if (selectedServices.length > 0) {
-        // Fixed: Append each service separately
-      
-          requestFormData.append('includedServices', selectedServices);
+        let date: Date;
     
+        if (dateStr.includes('/')) {
+          const [day, month, year] = dateStr.split('/');
+          date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else {
+          date = new Date(dateStr);
+        }
+    
+        if (isNaN(date.getTime())) {
+          throw new Error(`Invalid date: ${dateStr}`);
+        }
+    
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+    
+        return `${year}-${month}-${day}`;
+      } catch (error) {
+        console.error('Date formatting error:', error);
+        throw new Error(`Invalid date format: ${dateStr}`);
       }
-      
-      requestFormData.append('detail', formData.details || '');
+    };
 
-      if (travelStyleIds.length > 0) {
-        // Fixed: Append each travel style separately
-          requestFormData.append('travelStyles', travelStyleIds);
-       
-      }
-      
-      requestFormData.append('groupAtmosphere', formData.description || '');
-      requestFormData.append('status', status);
-      
-      const userId = await AsyncStorage.getItem('userId');
-      if (userId) {
-        requestFormData.append('tripOwnerId', userId);
-      }
+    const travelStyleIds: string[] = selectedItems;
+    const requestFormData = new FormData();
 
-      if (pickedFile2) {
-        console.log("📷 Adding image to request...", {
-          name: pickedFile2.name,
-          type: pickedFile2.type,
-          size: pickedFile2.size || 'unknown'
-        });
+    // Basic trip information
+    requestFormData.append('name', formData2.name.trim());
+    
+    try {
+      requestFormData.append('startDate', formatDate(formData.startDate));
+      requestFormData.append('endDate', formatDate(formData.endDate));
+    } catch (dateError) {
+      Alert.alert('Error', 'Invalid date format. Please check your dates.');
+      return;
+    }
+    
+    if (selected.length > 0) {
+      requestFormData.append('destinations', selected);
+    }
+    
+    requestFormData.append('maxParticipants', maxParticipant.toString());
+    requestFormData.append('pricePerPerson', pricePerPerson.toString());
+    
+    if (selectedServices.length > 0) {
+      requestFormData.append('includedServices', selectedServices);
+    }
+    
+    requestFormData.append('detail', formData.details || '');
+
+    if (travelStyleIds.length > 0) {
+      requestFormData.append('travelStyles', travelStyleIds);
+    }
+    
+    requestFormData.append('groupAtmosphere', formData.description || '');
+    requestFormData.append('status', status);
+    
+    const userId = await AsyncStorage.getItem('userId');
+    if (userId) {
+      requestFormData.append('tripOwnerId', userId);
+    }
+
+    // Handle multiple cover images from imageTextArray
+    if (imageTextArray.length > 0) {
+      console.log(`📷 Adding ${imageTextArray.length} cover images to request...`);
+      
+      for (let i = 0; i < imageTextArray.length; i++) {
+        const image = imageTextArray[i];
         
         try {
-          if (pickedFile2.isBase64 && pickedFile2.base64Data) {
-            const response = await fetch(`data:${pickedFile2.type};base64,${pickedFile2.base64Data}`);
-            const blob = await response.blob();
-            requestFormData.append('tripCoverImageFile', blob, pickedFile2.name);
-          } else if (pickedFile2.uri) {
+          console.log(`Processing image ${i + 1}/${imageTextArray.length}:`, {
+            name: image.name,
+            type: image.type,
+            uri: image.uri ? 'present' : 'missing'
+          });
+
+          if (image.uri) {
             const fileObj = {
-              uri: pickedFile2.uri,
-              type: pickedFile2.type || 'image/jpeg',
-              name: pickedFile2.name || 'image.jpg',
+              uri: image.uri,
+              type: image.type || 'image/jpeg',
+              name: image.name || `cover-image-${i + 1}.jpg`,
             } as any;
             
-            requestFormData.append('tripCoverImageFile', fileObj);
+            // Append each image as tripCoverImageFiles (API expects array)
+            requestFormData.append('tripCoverImageFiles', fileObj);
           } else {
-            console.warn('⚠️ No valid image data found');
+            console.warn(`⚠️ Image ${i + 1} missing URI, skipping`);
           }
         } catch (imageError) {
-          console.error('Image processing error:', imageError);
-          Alert.alert('Warning', 'Image upload may have failed, but trip creation will continue.');
+          console.error(`Error processing image ${i + 1}:`, imageError);
+          // Continue with other images even if one fails
         }
       }
+    } else {
+      console.warn('⚠️ No images in imageTextArray');
+      Alert.alert('ข้อผิดพลาด', 'กรุณาเพิ่มรูปภาพอย่างน้อย 1 รูป');
+      return;
+    }
 
-      console.log("📤 Sending trip creation request...");
-      
-      console.log("📋 Request data summary:", {
-        name: formData2.name,
-        startDate: formData.startDate,
-        endDate: formData.endDate,
-        destinations: selected.length,
-        maxParticipants: maxParticipant,
-        pricePerPerson: pricePerPerson,
-        services: selectedServices.length,
-        travelStyles: selectedItems.length, // Fixed
-        hasImage: !!pickedFile2
-      });
+    console.log("📤 Sending trip creation request...");
+    
+    console.log("📋 Request data summary:", {
+      name: formData2.name,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      destinations: selected.length,
+      maxParticipants: maxParticipant,
+      pricePerPerson: pricePerPerson,
+      services: selectedServices.length,
+      travelStyles: selectedItems.length,
+      coverImages: imageTextArray.length // Updated
+    });
 
-      const accessToken = await AsyncStorage.getItem('googleAccessToken');
-      const idToken = await AsyncStorage.getItem('googleIdToken');
+    const accessToken = await AsyncStorage.getItem('googleAccessToken');
+    const idToken = await AsyncStorage.getItem('googleIdToken');
 
-      const response = await axiosInstance.post('/trips', requestFormData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${idToken}`
-        },
-        timeout: 60000,
-        maxContentLength: Infinity,
-        maxBodyLength: Infinity,
-      });
+    const response = await axiosInstance.post('/trips', requestFormData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${idToken}`
+      },
+      timeout: 60000,
+      maxContentLength: Infinity,
+      maxBodyLength: Infinity,
+    });
 
-      console.log("✅ Trip created successfully:", response.data);
-      
-      resetForm();
+    console.log("✅ Trip created successfully:", response.data);
+    
+    resetForm();
 
-       const createdTrip = response.data.data; 
+    const createdTrip = response.data.data; 
     const tripId = createdTrip.id;
     
     if (tripId && userId) {
       try {
         console.log("Creating Stream Chat channel for trip...");
         
-        // Get or create Stream Chat client
-       
         const streamClient = StreamChat.getInstance(requirements.stream_api_key);
         
-        // Get current user profile for Stream Chat
         const userProfileResponse = await axiosInstance.get(`/users/profile/${userId}`);
         const userProfile = userProfileResponse.data.data;
         
@@ -791,14 +793,12 @@ const handlePricePerPerson = (text: string) => {
           nickname: userProfile.nickname
         };
         
-        // Connect as trip owner
         await streamClient.connectUser(streamUser, streamClient.devToken(userId));
         
-        // Create channel
         const channelId = `trip-${tripId}`;
         const channel = streamClient.channel('messaging', channelId, {
           name: `${formData2.name} - Group Chat`,
-          members: [userId], // Start with just the owner
+          members: [userId],
           created_by_id: userId,
           trip_id: tripId,
           trip_name: formData2.name,
@@ -808,52 +808,49 @@ const handlePricePerPerson = (text: string) => {
         
         console.log("✅ Stream Chat channel created successfully:", channelId);
         
-        // Disconnect after creation (optional - depends on your app flow)
         await streamClient.disconnectUser();
         
       } catch (chatError) {
         console.error('Stream Chat channel creation failed:', chatError);
-        // Don't throw error here - trip creation was successful
-        // You might want to show a warning to the user
         console.warn('Trip created successfully, but chat channel creation failed. Users can still join the chat later.');
       }
     }       
       
-       router.push('/findTrips');
+    router.push('/findTrips');
 
-    } catch (error: unknown) {
-      console.error('🔴 Trip creation error:', error);
+  } catch (error: unknown) {
+    console.error('🔴 Trip creation error:', error);
+    
+    let errorMessage = 'Failed to create trip';
+    
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as any;
+      console.error('Server Error Response:', axiosError.response?.data);
+      console.error('Server Error Status:', axiosError.response?.status);
       
-      let errorMessage = 'Failed to create trip';
+      const serverMessage = axiosError.response?.data?.message;
+      const statusCode = axiosError.response?.status;
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as any;
-        console.error('Server Error Response:', axiosError.response?.data);
-        console.error('Server Error Status:', axiosError.response?.status);
-        
-        const serverMessage = axiosError.response?.data?.message;
-        const statusCode = axiosError.response?.status;
-        
-        if (serverMessage) {
-          errorMessage = serverMessage;
-        } else {
-          errorMessage = `Server Error (${statusCode})`;
-        }
-      } else if (error && typeof error === 'object' && 'request' in error) {
-        console.error('Network Error:', (error as any).request);
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (error instanceof Error) {
-        console.error('General Error:', error.message);
-        errorMessage = error.message || 'Unknown error occurred';
+      if (serverMessage) {
+        errorMessage = serverMessage;
+      } else {
+        errorMessage = `Server Error (${statusCode})`;
       }
-      
-      setResponseMessage(`Error: ${errorMessage}`);
-      
-    } finally {
-      setIsValidating(false);
-      setUploading(false);
+    } else if (error && typeof error === 'object' && 'request' in error) {
+      console.error('Network Error:', (error as any).request);
+      errorMessage = 'Network error. Please check your connection.';
+    } else if (error instanceof Error) {
+      console.error('General Error:', error.message);
+      errorMessage = error.message || 'Unknown error occurred';
     }
-  };
+    
+    setResponseMessage(`Error: ${errorMessage}`);
+    
+  } finally {
+    setIsValidating(false);
+    setUploading(false);
+  }
+};
 
 
   const getUserInfo = async () => {
@@ -962,7 +959,8 @@ const handleChangeText = useCallback((text) => {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-          <Text style={styles.backButtonText}>←</Text>
+       <FontAwesome name="angle-left" size={30} color="#333" style={{marginLeft:10}}/>
+
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
@@ -982,16 +980,18 @@ const handleChangeText = useCallback((text) => {
               paddingBottom: 20,
               flexDirection: 'row',
               flexWrap: 'wrap',
-              justifyContent: 'space-between',
+
+            
             }}
           >
             {imageTextArray.map((item) => (
               <View key={item.id} style={{ 
                 marginBottom: 15, 
                 width: 90, // Takes roughly half the width with some spacing
-                height:60
+                height:60,
+                marginRight:10
               }}>
-                <View style={{ position: 'relative' }}>
+                <View style={{ position: 'relative', }}>
                   <Image
                     source={{ uri: item.uri }}
                     style={{
@@ -1057,7 +1057,8 @@ const handleChangeText = useCallback((text) => {
     backgroundColor: '#F3F4F6',
     borderRadius: 10,
     paddingHorizontal: 20,
-    paddingVertical: 15
+    paddingVertical: 15,
+    marginTop:20
   },
   !errors.tripName && { marginBottom: 20 }
 ]}>
@@ -1073,7 +1074,7 @@ const handleChangeText = useCallback((text) => {
   <TextInput
     value={formData2.name}
     onChangeText={(text) => {
-      if (text.length <= 50) {
+      if (text.length <= 40) {
         setFormData2({...formData2, name: text});
         if (errors.tripName) {
           clearError('tripName');
@@ -1091,19 +1092,21 @@ const handleChangeText = useCallback((text) => {
       fontWeight: '700',
       minHeight: 20 // Control the height
     }}
-    placeholderTextColor="gray"
-    maxLength={50}
+    placeholderTextColor="#9CA3AF"
+    maxLength={40}
   />
   
   {/* Character count - only show if no error */}
   {!errors.tripName && (
     <Text style={{
       fontSize: 10,
-      color: formData2.name.length > 45 ? 'red' : '#6B7280',
+      color: formData2.name.length > 35 ? 'red' : '#9CA3AF',
       textAlign: 'right',
-      marginTop: 5
+      marginTop:-10,
+      fontFamily:'LineSeedSansTH'
+   
     }}>
-      {formData2.name.length}/50
+      {formData2.name.length}/40
     </Text>
   )}
 </View>
@@ -1144,7 +1147,12 @@ const handleChangeText = useCallback((text) => {
           />
         </View>
 
-        {/* Max Participants with Error */}
+<View style={{flexDirection:'row',justifyContent:'space-around'}}>
+
+  <View style={{flex:0.5,backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+
+  </View>
+          {/* Max Participants with Error
         <MaxParticipantsComponent 
   value={maxParticipant}
   onChangeText={(text) => {
@@ -1159,10 +1167,10 @@ const handleChangeText = useCallback((text) => {
   clearError={() => clearError('maxParticipants')}
   styles={styles}
   isEditMode={false}
-/>
+/> */}
 
 
-        {/* Price Per Person with Error */}
+        {/* Price Per Person with Error
       <PricePerPersonComponent 
   value={pricePerPerson}
   onChangeText={(text) => {
@@ -1173,7 +1181,8 @@ const handleChangeText = useCallback((text) => {
   clearError={() => clearError('pricePerPerson')}
   styles={styles}
   isEditMode={false}
-/>
+/>*/}
+</View> 
 
 
         {/* Services with Error */}

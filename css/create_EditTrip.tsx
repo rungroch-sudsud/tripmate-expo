@@ -11,8 +11,10 @@ const styles = StyleSheet.create({
       alignItems: 'center',
       backgroundColor: '#fff',
       borderBottomWidth:1,
-      paddingVertical: 12,
+      paddingTop:35,
+      paddingBottom:25,
       borderBottomColor: '#e0e0e0',
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     },
     backButton: {
       marginRight:-30,
@@ -98,12 +100,7 @@ const styles = StyleSheet.create({
     },
     dateContainer: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginBottom: 5,      
-      borderWidth: 1,
-      borderColor: '#e0e0e0',
       borderRadius: 8,
-      height: 40,
       alignItems: 'center'
     },
     dateField: {

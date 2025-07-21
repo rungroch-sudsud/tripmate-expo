@@ -7,4 +7,5 @@ export interface ValidationErrors {
   email?: string;
   facebookUrl?: string;
   lineId?: string;
+  travelStyles?:string
 }

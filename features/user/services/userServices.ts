@@ -30,7 +30,7 @@ export const VALIDATION_ERRORS = {
   FULL_NAME_MULTIPLE_SPACES: 'ชื่อ-นามสกุลไม่สามารถมีช่องว่างมากกว่า 1 ช่องได้',
   FULL_NAME_FORMAT: 'กรุณากรอกชื่อและนามสกุล คั่นด้วยช่องว่าง 1 ช่อง',
   FULL_NAME_INCOMPLETE: 'กรุณากรอกชื่อและนามสกุลให้ครบถ้วน',
-  EMAIL_INVALID: 'กรุณากรอกอีเมลที่ถูกต้อง',
+  EMAIL_INVALID: 'กรุณากรอกอีเมล',
   PHONE_INVALID: 'กรุณากรอกหมายเลขโทรศัพท์ที่ถูกต้อง (10 หลัก)',
   ID_CARD_REQUIRED: 'กรุณาอัพโหลดรูปบัตรประชาชน',
   SELFIE_REQUIRED: 'กรุณาอัพโหลดภาพถ่ายยืนยันตัวตน',

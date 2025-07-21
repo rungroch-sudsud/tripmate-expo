@@ -93,27 +93,27 @@ export const DatePickerComponent = ({
 
   return (
     <>
-      <Text style={isEditMode ? styles.dateFieldHeader : {
-        marginBottom: 10,
-        fontWeight: '500',
-        color: '#333',
-        fontFamily: 'InterTight-Regular',
-        fontSize: 16
-      }}>วันที่เริ่มต้น</Text>
-
+   
+  <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
+    <Text style={isEditMode ? styles.dateFieldHeader : {
+        fontWeight: '700',
+        color: '#374151',
+        fontFamily: 'LineSeedSansTH_A_Bd',
+        fontSize: 10
+      }}>วันที่เดินทาง</Text>
       <View style={[
         styles.dateContainer,
         (errors.startDate || errors.endDate) && styles.inputError
       ]}>
         <Image 
            source={require('../app/assets/images/images/images/image25.png')}
-          style={{ width: 14, height: 16, marginHorizontal: 10 }} 
+          style={{ width: 14, height: 16, marginHorizontal: 10,tintColor:'blue' ,marginLeft:0}} 
         />
         
         <TouchableOpacity onPress={handleStartDatePress}>
           <TextInput
             style={[
-              formData.startDate && !validateDate(formData.startDate) && styles.dateInputError
+              formData.startDate && !validateDate(formData.startDate) && styles.dateInputError,{fontSize:12,fontFamily:'LineSeedSansTH_A_Bd',marginRight:-90}
             ]}
             value={formData.startDate}
             onChangeText={(text) => {
@@ -130,7 +130,7 @@ export const DatePickerComponent = ({
           />
         </TouchableOpacity>
         
-        <Text style={{ marginRight: 40, marginLeft: -20, fontSize: 20, fontWeight: '500' }}>-</Text>
+        <Text style={{ fontSize: 20, fontWeight: '500',marginHorizontal:5 }}>-</Text>
         
         <TouchableOpacity 
           onPress={handleEndDatePress}
@@ -138,7 +138,7 @@ export const DatePickerComponent = ({
         >
           <TextInput
             style={[
-              formData.endDate && !validateDate(formData.endDate) && styles.dateInputError
+              formData.endDate && !validateDate(formData.endDate) && styles.dateInputError,{fontSize:12,fontFamily:'LineSeedSansTH_A_Bd'}
             ]}
             value={formData.endDate}
             onChangeText={(text) => {
@@ -156,12 +156,13 @@ export const DatePickerComponent = ({
           />
         </TouchableOpacity>
       </View>
-     {(errors.startDate || errors.endDate) && (
+ </View>
+      {/*   {(errors.startDate || errors.endDate) && (
   <View style={styles.dateErrorContainer}>
     <Text style={styles.dateErrorText}>{errors.startDate}</Text>
     <Text style={styles.dateErrorText}>{errors.endDate}</Text>
   </View>
-)}
+)}*/}
 
       {/* Start Date Modal */}
       <Modal
@@ -251,6 +252,9 @@ export const MaxParticipantsComponent = ({
 }) => {
   return (
     <>
+    
+
+  <View style={{backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15,width:'40%'}}>
       <Text style={isEditMode ? styles.maxPHeader : {
         marginHorizontal: 20,
         marginBottom: 6,
@@ -259,8 +263,7 @@ export const MaxParticipantsComponent = ({
         fontFamily: 'InterTight-Regular',
         fontSize: 16
       }}>จำนวนคน</Text>
-
-      <View style={[
+        <View style={[
         isEditMode ? styles.maxPContainer : {
           width: '40%',
           flexDirection: 'row',
@@ -297,6 +300,7 @@ export const MaxParticipantsComponent = ({
           <Text style={{ fontFamily: 'InterTight-Regular', textAlign: 'center' }}>คน</Text>
         </View>
       </View>
+  </View>
 
       {!isEditMode && (
         <View style={{paddingLeft: 20,marginBottom:20}}>
@@ -477,13 +481,26 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   return (
     <>
       <View style={styles.content}>
-        <Text style={styles.title || styles.label}>{title}</Text>
-        
-        {subtitle && (
-          <Text style={styles.subtitle}>
-            {subtitle}
-          </Text>
-        )}
+      <Text
+    style={[
+      styles.title || styles.label, // base style
+      error && { color: 'red' }      // conditionally apply red color
+    ]}
+  >
+    {title}
+  </Text>
+
+  {subtitle && (
+    <Text style={[styles.subtitle, error && { color: 'red' }   ]}>
+      {subtitle}
+    </Text>
+  )}
+
+ /** {error && (
+    <View style={{ paddingLeft: 20, marginBottom: 20 }}>
+      <ErrorMessage error={error} />
+    </View>
+  )}*/
         
         {loading ? (
           <View style={styles.loadingContainer}>
@@ -550,11 +567,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
       )}
       
       {/* Error handling - only show if not in edit mode or if explicitly requested */}
-      {(error) && (
-        <View style={{ paddingLeft: 20, marginBottom: 20 }}>
-          <ErrorMessage error={error} />
-        </View>
-      )}
+   
     </>
   );
 };
@@ -600,6 +613,7 @@ export const DestinationsComponent = ({
                 lineHeight: 24,
                 color: '#374151',
                 height: 50,
+                textAlign:'center',
                 backgroundColor: '#FFFF',
               }}
               
@@ -621,18 +635,19 @@ export const DestinationsComponent = ({
               color: '#374151',
               height: 50,
               backgroundColor: '#FFFFFF',
+              textAlign:'center',
             }}>
               <Image
               source={require('../app/assets/images/images/images/image9.png')}
-                style={{ width: 18, height: 18 }}
+                style={{ width: 18, height: 18,marginBottom:-2 }}
               />
-              {' '} ค้นหาสถานที่
+              {' '} <Text style={{marginBottom:20}}>ค้นหาสถานที่</Text>
             </Text>
           )}
         </View>
       </TouchableOpacity>
 
-      {!isEditMode && error && selectedDestinations.length === 0 && (
+      {selectedDestinations.length === 0 && (
         <ErrorMessage error={error} />
       )}
 
@@ -659,7 +674,7 @@ export const DestinationsComponent = ({
               <ActivityIndicator size="small" />
             </View>
           ) : (
-            <ScrollView style={{ maxHeight: 200 }}>
+            <ScrollView style={{ maxHeight: 200, }}>
               {filteredDestinations.length > 0 ? (
                 filteredDestinations.map((item, index) => (
                   <TouchableOpacity
@@ -693,8 +708,8 @@ export const DestinationsComponent = ({
       )}
 
       {/* Selected destinations */}
-      <View style={{ marginTop: 20, marginBottom: 10 }}>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+     <View style={{ marginTop: 20, marginBottom: 10, alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap',justifyContent: 'center',maxWidth: '100%'}}>
           {selectedDestinations.map((dest, index) => (
             <TouchableOpacity
               key={index}

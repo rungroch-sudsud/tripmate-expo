@@ -112,8 +112,11 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: '#ef4444',
-    fontSize: 14,
+    fontSize: 12,
     marginTop: 4,
+    fontWeight:'700',
+    fontFamily:'LineSeedSansTH_A_Bd',
+    marginLeft:20
   },
   textArea: {
     height: 80,
@@ -400,19 +403,19 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   categoryText: {
-    marginLeft: 8,
+   
     fontSize: 12,
     color: '#374151',
     textAlign: 'center',
-    verticalAlign: 'middle',
+
     fontFamily: 'LineSeedSansTH_A_Bd',
   },
   selectedText: {
-     marginLeft: 8,
+   
     fontSize: 12,
     color: '#374151',
     textAlign: 'center',
-    verticalAlign: 'middle',
+   
     fontFamily: 'LineSeedSansTH_A_Bd',
   },
   // Updated styles to match your existing input style
