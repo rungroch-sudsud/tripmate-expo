@@ -19,6 +19,7 @@ const { width } = Dimensions.get('window');
 interface TripOwner {
   id: string;
   name: string;
+  fullname: string;
   // Add other trip owner properties as needed
 }
 
@@ -35,30 +36,28 @@ interface Trip {
   groupAtmosphere?: string;
   includedServices: string[];
   travelStyles?: string[];
-  tripCoverImageUrl?: string;
+  tripCoverImageUrls?: string[];
   tripOwner: TripOwner;
   fullname: string;
   tripOwnerId: string;
 }
 
-
 const TripDetails: React.FC = () => {
-      const params = useLocalSearchParams();
-      const tripId = params.tripId as string;
+  const params = useLocalSearchParams();
+  const tripId = params.tripId as string;
 
   const [trip, setTrip] = useState<Trip | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  // Mock sub-images for the gallery
-  const mockSubImages = [
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1571501679680-de32f1e7aad4?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1587474260584-136574528ed5?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1540979388789-6cee28a1cdc9?w=400&h=300&fit=crop',
-  ];
+  // Helper function to get sub images safely
+  const getSubImages = () => {
+    if (trip?.tripCoverImageUrls && trip.tripCoverImageUrls.length > 0) {
+      return trip.tripCoverImageUrls;
+    }
+    return [];
+  };
 
   useEffect(() => {
     fetchTripDetails();
@@ -69,7 +68,9 @@ const TripDetails: React.FC = () => {
       setLoading(true);
       setError(null);
       const response = await axiosInstance.get(`/trips/${tripId}`);
-      setTrip(response.data);
+      setTrip(response.data.data);
+      console.log(trip);
+      
     } catch (err) {
       setError('Failed to load trip details');
       console.error('Error fetching trip:', err);
@@ -93,23 +94,6 @@ const TripDetails: React.FC = () => {
     });
   };
 
-  const calculateDuration = (startDate: string, endDate: string) => {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const diffTime = Math.abs(end.getTime() - start.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return `${diffDays + 1} วัน ${diffDays} คืน`;
-  };
-
-const getRemainingParticipants = () => {
-  if (!trip || !trip.participants) return 0;
-  return trip.maxParticipants - trip.participants.length;
-};
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('th-TH').format(price);
-  };
-
   const getStyleColor = (style: string) => {
     const colors: { [key: string]: string } = {
       'ธรรมชาติ': '#4CAF50',
@@ -118,8 +102,17 @@ const getRemainingParticipants = () => {
       'ผ่อนคลาย': '#2196F3',
       'ชายหาด': '#00BCD4',
       'ภูเขา': '#795548',
+      '🗺️ แนวแพลนเนอร์ / ชอบจัดทริป': '#6366F1',
     };
     return colors[style] || '#666666';
+  };
+
+  // Helper function to get main image URL safely
+  const getMainImageUrl = () => {
+    if (trip?.tripCoverImageUrls && trip.tripCoverImageUrls.length > 0 && trip.tripCoverImageUrls[0]) {
+      return trip.tripCoverImageUrls[0];
+    }
+   // return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop';
   };
 
   if (loading) {
@@ -146,7 +139,7 @@ const getRemainingParticipants = () => {
 
   return (
     <ScrollView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
+      <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.card}>
         {/* Header Icons */}
         <View style={styles.headerIcons}>
@@ -165,25 +158,25 @@ const getRemainingParticipants = () => {
 
         {/* Main Image */}
         <Image
-          source={{
-            uri: trip.tripCoverImageUrl || 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'
-          }}
+          source={{ uri: getMainImageUrl() }}
           style={styles.mainImage}
           resizeMode="cover"
         />
 
         {/* Sub Images Gallery */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subImagesContainer}>
-          {mockSubImages.map((imageUrl, index) => (
-            <TouchableOpacity key={index} style={styles.subImageWrapper}>
-              <Image
-                source={{ uri: imageUrl }}
-                style={styles.subImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        {getSubImages().length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.subImagesContainer}>
+            {getSubImages().map((imageUrl, index) => (
+              <TouchableOpacity key={index} style={styles.subImageWrapper}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={styles.subImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
 
         {/* Trip Info */}
         <View style={styles.tripInfo}>
@@ -191,7 +184,7 @@ const getRemainingParticipants = () => {
             <Text style={styles.tripTitle}>{trip.name}</Text>
             <View style={styles.participantsInfo}>
               <Text style={styles.participantsCount}>
-                Ramining Participants
+                {trip.maxParticipants} ที่เหลือ
               </Text>
             </View>
           </View>
@@ -199,16 +192,16 @@ const getRemainingParticipants = () => {
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color="#EF4444" />
             <Text style={styles.locationText}>
-            Destinations
+             Destinations
             </Text>
           </View>
 
           <Text style={styles.tripDescription}>
-           Trip Name
+            {trip.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}
           </Text>
 
           <Text style={styles.loremText}>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam lacus ligula, lobortis ut consequat dapibus, condimentum rhoncus metus.
+            บรรยากาศกลุ่ม: {trip.groupAtmosphere || 'ไม่ระบุ'}
           </Text>
 
           {/* Travel Styles Tags */}
@@ -234,9 +227,9 @@ const getRemainingParticipants = () => {
                   <Ionicons name="calendar-outline" size={20} color="#FF9800" />
                 </View>
                 <View>
-                  <Text style={styles.detailLabel}>Start Date-End Date</Text>
+                  <Text style={styles.detailLabel}>วันที่เดินทาง</Text>
                   <Text style={styles.detailValue}>
-                  Date
+                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
                   </Text>
                 </View>
               </View>
@@ -248,11 +241,21 @@ const getRemainingParticipants = () => {
                 <View>
                   <Text style={styles.detailLabel}>ราคาต่อคน</Text>
                   <Text style={styles.detailValue}>
-                  pPPerson
+                    ฿{trip.pricePerPerson}
                   </Text>
                 </View>
               </View>
             </View>
+
+            {/* Included Services */}
+            {trip.includedServices && trip.includedServices.length > 0 && (
+              <View style={styles.servicesContainer}>
+                <Text style={styles.servicesTitle}>บริการที่รวม:</Text>
+                {trip.includedServices.map((service, index) => (
+                  <Text key={index} style={styles.serviceItem}>• {service}</Text>
+                ))}
+              </View>
+            )}
           </View>
 
           {/* Book Button */}
@@ -459,6 +462,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1F2937',
+  },
+  servicesContainer: {
+    marginTop: 16,
+    padding: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+  },
+  servicesTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  serviceItem: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 4,
   },
   bookButton: {
     backgroundColor: '#6366F1',

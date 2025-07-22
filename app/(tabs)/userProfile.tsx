@@ -1,9 +1,11 @@
 import { getUserProfile, fetchTravelStyles, transportationStyles } from '../../features/user/services/userServices'
 import { View, Image, SafeAreaView, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native'
 import BottomNavigation from '../../components/customNavigation'
-import { Stack, useRouter, useLocalSearchParams, router } from 'expo-router'
-import React, { useEffect, useState } from 'react'
+import { Stack, useRouter, useLocalSearchParams, router ,useFocusEffect} from 'expo-router'
+import React, { useEffect, useState, } from 'react'
 import { Ionicons } from '@expo/vector-icons';
+
+
 const UserProfile = () => {
   const params = useLocalSearchParams();
   const userId = params.userId;
@@ -15,33 +17,22 @@ const UserProfile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
+useFocusEffect(
+  React.useCallback(() => {
     const fetchProfile = async () => {
-      if (!userId) {
-        setError('No user ID provided');
-        setLoading(false);
-        return;
-      }
-
+      if (!userId) return;
       try {
         setLoading(true);
-        
-        // Fetch all data in parallel
         const [profileResult, travelStylesResult, transportationStylesResult] = await Promise.all([
           getUserProfile(userId),
           fetchTravelStyles(),
           transportationStyles()
         ]);
-        
-        if (profileResult) {
-          setProfileData(profileResult);
-        } else {
-          setError('User profile not found');
-        }
-        
+
+        setProfileData(profileResult || null);
         setTravelStylesData(travelStylesResult || []);
         setTransportationStylesData(transportationStylesResult || []);
-        
+        setError(null);
       } catch (err) {
         setError('Failed to fetch profile');
         console.error('Error in fetchProfile:', err);
@@ -51,7 +42,8 @@ const UserProfile = () => {
     };
 
     fetchProfile();
-  }, [userId]);
+  }, [userId])
+);
 
   // Helper function to get travel style details from IDs
   const getTravelStyleDetails = (styleIds) => {
@@ -167,40 +159,33 @@ const UserProfile = () => {
         <TouchableOpacity style={styles.instagram}>
  <Image source={require('../assets/images/instagram.png')} style={{height:35,width:35}}/>
     </TouchableOpacity>
-    <Text style={styles.nameOnImage}>{profileData.fullname}</Text>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 8,   position: 'absolute',
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8,   position: 'absolute',
      bottom: 38,
-     left: 156,    
+     left: 16,    
      right: 'auto', }}>
-     <Ionicons name="star" size={20} color="#FFD700" />
+       <Text style={{  
+  color: '#FFFFFF',
+  fontSize: 24,
+  fontFamily:'LineSeedSansTH_A_Bd',
+  marginRight:10,
+  fontWeight: 'bold',
+  textShadowColor: 'rgba(0, 0, 0, 0.7)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 3,}}>{profileData.fullname}</Text>
+     <View style={{flexDirection:'row',alignItems:'baseline'}}>
+      <Ionicons name="star" size={20} color="#FFD700" />
      <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: '700', color: '#FFFFFF',fontFamily:'LineSeedSansTH_A_Bd' }}>
        {averageRating.toFixed(1)}
      </Text>
+     </View>
    </View>
    
         <Text style={styles.destinationIconImage}>📍ชอบเที่ยวในไทยไปได้หลายจังหวัด หรือชวนไปตปท.ก็ได้</Text>
   </View>
 
 
-        {/* Basic Info 
-        <View style={styles.section}>
-          <Text style={styles.name}>{profileData.fullname}</Text>
-          <Text style={styles.nickname}>"{profileData.nickname}"</Text>
-          <Text style={styles.info}>Age: {profileData.age}</Text>
-          <Text style={styles.info}>Gender: {profileData.gender}</Text>
-          <Text style={styles.info}>Phone: {profileData.phoneNumber}</Text>
-          <Text style={styles.info}>Email: {profileData.email}</Text>
-        </View>*/}
-
-        {/* Destinations 
-        {profileData.destinations && profileData.destinations.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Destinations</Text>
-            {profileData.destinations.map((destination, index) => (
-              <Text key={index} style={styles.listItem}>• {destination}</Text>
-            ))}
-          </View>
-        )}*/}
+    
 
         {/* Travel Styles */}
      {profileData.travelStyles && profileData.travelStyles.length > 0 && (
@@ -279,11 +264,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   profileImage: {
-    width: 350,
+    width: 400,
     height: 350,
     borderRadius: 20,
     alignSelf: 'center',
     marginBottom: 16,
+      boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.4)',
   },
 section: {
   marginBottom: 24,
@@ -322,6 +308,9 @@ tripItem: {
   width: 90, // set a fixed width for horizontal layout
   marginRight: 16, // space between items
   borderBottomWidth: 0, // remove vertical-style border
+  boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
+  height: 60,
+  borderRadius:8
 },
 tripImage: {
   width: 90,
@@ -329,6 +318,7 @@ tripImage: {
   borderRadius: 8,
   marginBottom: 8,
 },
+
 transportTag: {
   flexDirection: 'row',
   alignItems: 'center',
@@ -376,10 +366,12 @@ transportTagText: {
   },
   imageWrapper: {
   position: 'relative',
-  width: 350,
+  width: 400,
   height: 350,
+  borderRadius: 20,
   alignSelf: 'center',
   marginBottom: 24,
+   boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)', // stronger shadow
 },
 
 nameOnImage: {
