@@ -17,7 +17,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AxiosError } from 'axios';
 import styles from '../../css/account-verification_styles';
 import { PickedFile } from '../../shared/schemas/file_type';
-import {} from '../../shared/schemas/form_schema'
 import { convertBase64ToFile } from '../../shared/utils/file.util';
 import { validateEmail, validateFullName, validatePhoneNumber } from '../../shared/utils/profileForm_util';
 import { updateUserProfile } from '../../features/user/services/userServices';

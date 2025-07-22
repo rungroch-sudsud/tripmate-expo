@@ -3,7 +3,7 @@ import { View, Image, SafeAreaView, ScrollView, Text, StyleSheet, TouchableOpaci
 import BottomNavigation from '../../components/customNavigation'
 import { Stack, useRouter, useLocalSearchParams, router } from 'expo-router'
 import React, { useEffect, useState } from 'react'
-
+import { Ionicons } from '@expo/vector-icons';
 const UserProfile = () => {
   const params = useLocalSearchParams();
   const userId = params.userId;
@@ -97,6 +97,10 @@ const UserProfile = () => {
     });
   };
 
+ const averageRating = profileData?.reviews?.length
+  ? profileData.reviews.reduce((sum, r) => sum + r.rating, 0) / profileData.reviews.length
+  : 0;
+
   if (loading || !travelStylesData.length || !transportationStylesData.length) {
     return (
       <SafeAreaView style={styles.container}>
@@ -138,12 +142,19 @@ const UserProfile = () => {
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView style={styles.scrollView}>
         {/* Profile Image */}
-    {profileData.profileImageUrl && (
+ 
   <View style={styles.imageWrapper}>
-    <Image 
-      source={{ uri: profileData.profileImageUrl }} 
-      style={styles.profileImage}
-    />
+{profileData.profileImageUrl ? (
+  <Image 
+    source={{ uri: profileData.profileImageUrl }} 
+    style={styles.profileImage}
+  />
+) : (
+  <View style={styles.profileImage}>
+   
+  </View>
+)}
+
     <TouchableOpacity style={styles.editProfile} onPress={()=>router.push(`/profile?userId=${userId}`)}>
  <Image source={require('../assets/images/edit-profile.png')} style={{height:20,width:20}}/>
     </TouchableOpacity>
@@ -151,15 +162,24 @@ const UserProfile = () => {
  <Image source={require('../assets/images/3-dots.png')} style={{height:24,width:24}}/>
     </TouchableOpacity>
      <TouchableOpacity style={styles.facebook}>
- <Image source={require('../assets/images/facebook.png')} style={{height:24,width:24}}/>
+ <Image source={require('../assets/images/facebook.png')} style={{height:35,width:35}}/>
     </TouchableOpacity>
         <TouchableOpacity style={styles.instagram}>
- <Image source={require('../assets/images/instagram.png')} style={{height:24,width:24}}/>
+ <Image source={require('../assets/images/instagram.png')} style={{height:35,width:35}}/>
     </TouchableOpacity>
     <Text style={styles.nameOnImage}>{profileData.fullname}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 8,   position: 'absolute',
+     bottom: 38,
+     left: 156,    
+     right: 'auto', }}>
+     <Ionicons name="star" size={20} color="#FFD700" />
+     <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: '700', color: '#FFFFFF',fontFamily:'LineSeedSansTH_A_Bd' }}>
+       {averageRating.toFixed(1)}
+     </Text>
+   </View>
    
+        <Text style={styles.destinationIconImage}>📍ชอบเที่ยวในไทยไปได้หลายจังหวัด หรือชวนไปตปท.ก็ได้</Text>
   </View>
-)}
 
 
         {/* Basic Info 
@@ -364,7 +384,7 @@ transportTagText: {
 
 nameOnImage: {
   position: 'absolute',
-  bottom: 16,
+  bottom: 38,
   left: 16,    // add some padding from the left edge
   right: 'auto', // let it size naturally, no right constraint
   textAlign: 'left',
@@ -409,7 +429,9 @@ facebook:{
   backgroundColor:'#FFFFFF',
   borderRadius:9999,
   height:35,
-  width:35
+  width:35,
+  justifyContent:'center',
+  alignItems:'center'
 },
 instagram:{
  position: 'absolute',
@@ -421,7 +443,9 @@ instagram:{
   backgroundColor:'#FFFFFF',
   borderRadius:9999,
   height:35,
-  width:35
+  width:35,
+  justifyContent:'center',
+  alignItems:'center'
 },
 
   styleTitle: {
@@ -430,6 +454,19 @@ instagram:{
     color:'#374151',
     fontFamily:'LineSeedSansTH_A_Bd'
   },
+  destinationIconImage: {
+  position: 'absolute',
+  bottom: 20,
+  left: 16,    // add some padding from the left edge
+  right: 'auto', // let it size naturally, no right constraint
+  textAlign: 'left',
+  color: 'white',
+  fontSize: 12,
+  fontFamily:'LineSeedSansTH',
+  textShadowColor: 'rgba(0, 0, 0, 0.7)',
+  textShadowOffset: { width: 0, height: 1 },
+  textShadowRadius: 3,
+},
 });
 
 export default UserProfile;

@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, Image, Modal, ScrollView, Acti
 import { Calendar } from 'react-native-calendars';
 import {Category,TravelStylesComponentProps,TravelInterestComponentProps} from '../shared/schemas/api.schema'
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons';
 
  const ErrorMessage = ({ error }: { error: string }) => {
     if (!error) return null;
@@ -732,7 +731,7 @@ export const DestinationsComponent = ({
                 fontSize: 14,
                 marginBottom:5
               }}>
-                {dest} <Text style={{ fontSize: 16 }}>×</Text>
+                {dest} <Text style={{ fontSize: 16 ,textAlignVertical:'center'}}>×</Text>
               </Text>
             </TouchableOpacity>
           ))}

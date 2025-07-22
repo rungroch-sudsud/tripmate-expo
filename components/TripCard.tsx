@@ -7,9 +7,10 @@ import {
   StyleSheet,
   TextLayoutEventData,
   NativeSyntheticEvent,
+  ScrollView
 } from 'react-native';
 
-
+import PagerView from 'react-native-pager-view'
 // Types
 interface Trip {
   id: string;
@@ -24,7 +25,7 @@ interface Trip {
   groupAtmosphere?: string;
   includedServices: string[];
   travelStyles?: string[];
-  tripCoverImageUrl?: string;
+  tripCoverImageUrls?: string[];
   tripOwner: TripOwner;
   fullname: string;
   tripOwnerId: string; // Added this field that you're checking in handleTripPress
@@ -132,6 +133,8 @@ const TripCard: React.FC<TripCardProps> = ({
     onJoinTrip(trip);
   };
 
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   return (
     <TouchableOpacity
       style={styles.card}
@@ -139,43 +142,81 @@ const TripCard: React.FC<TripCardProps> = ({
       onPress={handleCardPress} // Added this line
     >
       {/* Header Image Container */}
-      <View style={styles.imageContainer}>
-        {trip.tripCoverImageUrl ? (
-          <Image
-            source={{ uri: trip.tripCoverImageUrl }}
-            style={styles.backgroundImage}
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Text style={styles.placeholderText}>📷</Text>
+    {/* Header Image Container */}
+<View style={styles.imageContainer}>
+  {trip.tripCoverImageUrls && trip.tripCoverImageUrls.length > 0 ? (
+    <>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(event) => {
+          const index = Math.round(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
+          setCurrentImageIndex(index);
+        }}
+        style={styles.imageSlider}
+        contentContainerStyle={{ width: `${trip.tripCoverImageUrls.length * 100}%` }}
+      >
+        {trip.tripCoverImageUrls.map((imageUrl, index) => (
+          <View key={index} style={styles.slideContainer}>
+            <Image
+              source={{ uri: imageUrl }}
+              style={styles.backgroundImage}
+              resizeMode="cover"
+            />
           </View>
-        )}
-        
-        {/* Date Badge */}
-        <View style={styles.dateBadge}>
-           <Image source={require('../app/assets/images/calendar.png')} style={{width:10.5,height:12,marginRight:5}}/>
-          <Text style={styles.dateText}>
-            {formatDateRange(trip.startDate, trip.endDate)}
-          </Text>
+        ))}
+      </ScrollView>
+      
+      {/* Page Indicators */}
+      {trip.tripCoverImageUrls.length > 1 && (
+        <View style={styles.indicatorContainer}>
+          {trip.tripCoverImageUrls.map((_, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.indicator,
+                index === currentImageIndex ? styles.activeIndicator : styles.inactiveIndicator
+              ]}
+              onPress={() => {
+                // Optional: Allow tapping indicators to jump to that image
+                setCurrentImageIndex(index);
+              }}
+            />
+          ))}
         </View>
-        
-        {/* Price Badge - New position below date */}
-        <View style={styles.priceBadge}>
-          <Image source={require('../app/assets/images/coin.png')} style={{width:10.5,height:12,marginRight:5}}/>
-          <Text style={styles.priceBadgeText}>
-            {trip.pricePerPerson.toLocaleString()} บาท/คน
-          </Text>
-        </View>
-        
-        {/* Max Participant Badge */}
-        <View style={styles.participantBadge}>
-         <Image source={require('../app/assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:5}}/>
-          <Text style={styles.participantText}>
-            {trip.participants.length}/{trip.maxParticipants} คน
-          </Text>
-        </View>
-      </View>
+      )}
+    </>
+  ) : (
+    <View style={styles.placeholderImage}>
+      <Text style={styles.placeholderText}>📷</Text>
+    </View>
+  )}
+  
+  {/* Your existing badges remain the same */}
+  <View style={styles.dateBadge}>
+    <Image source={require('../app/assets/images/calendar.png')} style={{width:10.5,height:12,marginRight:5}}/>
+    <Text style={styles.dateText}>
+      {formatDateRange(trip.startDate, trip.endDate)}
+    </Text>
+  </View>
+  
+      {/* Price Badge - New position below date */}
+                <View style={styles.priceBadge}>
+                  <Image source={require('../app/assets/images/coin.png')} style={{width:10.5,height:12,marginRight:5}}/>
+                  <Text style={styles.priceBadgeText}>
+                    {trip.pricePerPerson.toLocaleString()} บาท/คน
+                  </Text>
+                </View>
+                
+                {/* Max Participant Badge */}
+                <View style={styles.participantBadge}>
+                 <Image source={require('../app/assets/images/images/images/image26.png')} style={{width:15,height:12,marginRight:5}}/>
+                  <Text style={styles.participantText}>
+                    {trip.participants.length}/{trip.maxParticipants} คน
+                  </Text>
+                </View>
+</View>
 
       {/* Content */}
       <View style={styles.content}>
@@ -326,6 +367,7 @@ const styles = StyleSheet.create({
   backgroundImage: {
     width: '100%',
     height: '100%',
+    backgroundColor:'red'
   },
   placeholderImage: {
     width: '100%',
@@ -572,7 +614,39 @@ bookmarkButton: {
     textAlign: 'center',
     paddingVertical: 20,
     fontFamily:'InterTight-Regular'
-  }
+  },
+  imageSlider: {
+  width: '100%',
+  height: '100%',
+},
+slideContainer: {
+  width: '100%',
+  height: '100%',
+  flex: 1,
+},
+indicatorContainer: {
+  position: 'absolute',
+  bottom: 12,
+  alignSelf: 'center',
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  borderRadius: 12,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+},
+indicator: {
+  width: 6,
+  height: 6,
+  borderRadius: 3,
+  marginHorizontal: 2,
+},
+activeIndicator: {
+  backgroundColor: '#FFFFFF',
+},
+inactiveIndicator: {
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+},
 });
 
 export default TripCard;

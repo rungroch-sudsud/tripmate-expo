@@ -13,14 +13,11 @@ import {
 } from 'react-native';
 import {
   DatePickerComponent,
-  MaxParticipantsComponent,
-  PricePerPersonComponent,
   ServicesCheckboxComponent,
   TravelStylesComponent,
-  DestinationsComponent,
   AtmosphereInputComponent,
   DetailsInputComponent} from '../../components/Edit_CreateTrip_jsx'
-import TripNameInput from '../../components/tripNameInput'
+
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../../lib/axios'
@@ -357,12 +354,7 @@ const pickImageWithText = useCallback(() => {
     return '';
   };
   
-  const validateDestinations = () => {
-    if (selected.length === 0) {
-      return 'กรุณาเลือกสถานที่ท่องเที่ยวอย่างน้อย 1 แห่ง';
-    }
-    return '';
-  };
+
   
   const validateAtmosphere = () => {
     if (!formData.description.trim()) {
@@ -539,6 +531,33 @@ const handlePricePerPerson = (text: string) => {
     setSearchText('');
   };
 
+const UploadTripImages = async (tripId: string): Promise<void> => {
+  console.log("Starting Upload Image Url");
+  try {
+    const formData = new FormData();
+
+    for (const imageItem of imageTextArray) {
+      const response = await fetch(imageItem.uri);
+      const blob = await response.blob();
+
+      formData.append('files', blob, imageItem.name); // Correct key: 'files' (plural), and blob with filename
+    }
+
+    const uploadUrlResponse = await axiosInstance.put(
+      `/trips/${tripId}/cover-images`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+
+    console.log("Trip Image Urls Uploaded");
+  } catch (error) {
+    console.log("Error Uploading Images", error);
+  }
+};
 
   
   // Main create function
@@ -663,18 +682,7 @@ if (imageTextArray.length > 0) {
         };
         requestFormData.append('tripCoverImageFiles', fileObj as any);
         
-      } else if (pickedFile.uri) {
-        // For React Native: Use URI directly
-        const fileObj = {
-          uri: pickedFile.uri,
-          type: pickedFile.type || 'image/jpeg',
-          name: pickedFile.name || `image-${i + 1}.jpg`,
-        };
-        requestFormData.append('tripCoverImageFiles', fileObj as any);
-        
-      } else {
-        console.warn(`⚠️ No valid image data found for image ${i + 1}`);
-      }
+      } 
     } catch (imageError) {
       console.error(`Image processing error for image ${i + 1}:`, imageError);
       // Continue with other images even if one fails
@@ -683,24 +691,11 @@ if (imageTextArray.length > 0) {
   
 } else {
   console.warn('⚠️ No images in imageTextArray');
-  Alert.alert('ข้อผิดพลาด', 'กรุณาเพิ่มรูปภาพอย่างน้อย 1 รูป');
   return;
 }
 
     console.log("📤 Sending trip creation request...");
     
-    console.log("📋 Request data summary:", {
-      name: formData2.name,
-      startDate: formData.startDate,
-      endDate: formData.endDate,
-      maxParticipants: maxParticipant,
-      pricePerPerson: pricePerPerson,
-      services: selectedServices.length,
-      travelStyles: selectedItems.length,
-      coverImages: imageTextArray.length // Updated
-    });
-
-    const accessToken = await AsyncStorage.getItem('googleAccessToken');
     const idToken = await AsyncStorage.getItem('googleIdToken');
 
     const response = await axiosInstance.post('/trips', requestFormData, {
@@ -716,6 +711,7 @@ if (imageTextArray.length > 0) {
     console.log("✅ Trip created successfully:", response.data);
     
     resetForm();
+    UploadTripImages(response.data.data.id)
 
     const createdTrip = response.data.data; 
     const tripId = createdTrip.id;
@@ -752,14 +748,11 @@ if (imageTextArray.length > 0) {
         });
         
         await channel.create();
-        
         console.log("✅ Stream Chat channel created successfully:", channelId);
-        
         await streamClient.disconnectUser();
         
       } catch (chatError) {
         console.error('Stream Chat channel creation failed:', chatError);
-        console.warn('Trip created successfully, but chat channel creation failed. Users can still join the chat later.');
       }
     }       
       
