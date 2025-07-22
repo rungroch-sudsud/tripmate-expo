@@ -14,7 +14,6 @@ import {
   SafeAreaView,
   Alert,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { axiosInstance } from '../../lib/axios';
 import axios from 'axios';
@@ -33,7 +32,6 @@ import {
   validateFullName,
   validateNickname,
   validateLineId,
-  fetchTravelStyles,
   validateOccupation,
   travelPersonalities,
   transportationStyles
@@ -1141,11 +1139,6 @@ const validateForm = (): boolean => {
     {/* Submit Button */}
     <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
       <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
-      <Image
-        source={require('../assets/images/images/images/image8.png')}
-        style={{ height: 16, width: 16 }}
-        resizeMode="contain"
-      />
     </TouchableOpacity>
   </SafeAreaView>
 );

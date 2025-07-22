@@ -17,7 +17,6 @@ import {
   TravelStylesComponent,
   AtmosphereInputComponent,
   DetailsInputComponent} from '../../components/Edit_CreateTrip_jsx'
-
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../../lib/axios'
@@ -25,62 +24,20 @@ import { FontAwesome } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
-
+import {TravelSelectionDetails,PickedFile} from '../../features/trip/schemas/trip-form.schema'
 
 
 const MAX_WORDS = 40;
-interface Service {
-  id: string;
-  title: string;
-}
 
-
-interface Category {
-    id: string;
-    title: string;
-    iconImageUrl: string;
-    activeIconImageUrl?: string;
-  }
-type PickedFile = {
-    uri: string;
-    type: string;
-    name: string;
-    size?: number;
-    base64Data?: string;
-    isBase64?: boolean;
-  };
-  interface ApiResponse {
-    data: {
-      id: string;
-      title: string;
-      iconImageUrl: string;
-      activeIconImageUrl?: string;
-    }[];
-  }
  
-  
-  interface ServicesResponse {
-    data: {
-      id: string;
-      title: string;
-    }[];
-  }
-
-
-
 const ThaiFormScreen = () => {
- 
-      
 
 
-
-  // State declarations
-  const [pickedFile2, setPickedFile2] = useState<PickedFile | null>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<TravelSelectionDetails[]>([]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<TravelSelectionDetails[]>([]);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState(false);
@@ -157,17 +114,18 @@ const ThaiFormScreen = () => {
   
 
 const pickImageWithText = useCallback(() => {
-  const options = {
-    mediaType: 'photo',
-    maxWidth: 1024,
-    maxHeight: 1024,
-    quality: 0.8,
-    storageOptions: {
-      skipBackup: true,
-      path: 'images'
-    },
-    presentationStyle: 'overFullScreen',
-  };
+ const options = {
+      mediaType: 'photo' as const,
+      includeBase64: false,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      quality: 0.8,
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+      presentationStyle: 'overFullScreen' as const,
+    };
 
   launchImageLibrary(options, (response) => {
     if (response.didCancel || response.errorMessage) {
@@ -176,6 +134,7 @@ const pickImageWithText = useCallback(() => {
       }
       return;
     }
+    
 
     const pickedImage = response.assets?.[0];
     if (!pickedImage?.uri) {
@@ -189,12 +148,14 @@ const pickImageWithText = useCallback(() => {
       id: uniqueId,
       uri: pickedImage.uri,
       type: pickedImage.type ?? 'image/jpeg',
-      name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
-      text: '',
+      name: pickedImage.fileName ?? `image-${Date.now()}.jpg`
     };
 
-    setimageTextArray(prev => [...prev, newImageItem]);
-
+    setimageTextArray(prev => {
+  const updated = [...prev, newImageItem];
+  console.log('Updated imageTextArray:', updated); // Add this line
+  return updated;
+});
     console.log('Image added successfully with ID:', uniqueId);
   });
 }, []);
@@ -216,17 +177,10 @@ const pickImageWithText = useCallback(() => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/services');
-      const result: ServicesResponse = response.data;
-
-      const mappedServices: Service[] = result.data.map(item => ({
-        id: item.id,
-        title: item.title,
-      }));
-
-      setServices(mappedServices);
+      const result: TravelSelectionDetails = response.data.data;
+    setServices(result);
     } catch (error) {
       console.error('Failed to fetch services:', error);
-      Alert.alert('Error', 'ไม่สามารถโหลดบริการได้ กรุณาลองใหม่', [{ text: 'OK' }]);
       setServices([]);
     } finally {
       setLoading(false);
@@ -237,23 +191,11 @@ const pickImageWithText = useCallback(() => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/travel-styles');
-      const result: ApiResponse = response.data;
-      
-      const mappedCategories: Category[] = result.data.map(item => ({
-        id: item.id,
-        title: item.title,
-        iconImageUrl: item.iconImageUrl,
-        activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
-      }));
-
-      setCategories(mappedCategories);
+      const result: TravelSelectionDetails = response.data.data;
+      setCategories(result);
     } catch (error) {
       console.error('Failed to fetch travel styles:', error);
-      Alert.alert(
-        'Error',
-        'Failed to load travel styles. Please try again.',
-        [{ text: 'OK' }]
-      );
+
       setCategories([]);
     } finally {
       setLoading(false);
@@ -487,7 +429,6 @@ const handlePricePerPerson = (text: string) => {
   };
 
   const resetForm = () => {
-    setPickedFile2(null);
     setIsFocused(false);
     setSelectedItems([]);
     setSelectedServices([]);
@@ -541,6 +482,7 @@ const UploadTripImages = async (tripId: string): Promise<void> => {
       const blob = await response.blob();
 
       formData.append('files', blob, imageItem.name); // Correct key: 'files' (plural), and blob with filename
+      
     }
 
     const uploadUrlResponse = await axiosInstance.put(
@@ -554,6 +496,8 @@ const UploadTripImages = async (tripId: string): Promise<void> => {
     );
 
     console.log("Trip Image Urls Uploaded");
+    console.log("Upload response:", uploadUrlResponse.data);
+
   } catch (error) {
     console.log("Error Uploading Images", error);
   }
@@ -814,6 +758,9 @@ if (imageTextArray.length > 0) {
   };
 
   const createTripFromFormData = () => {
+      console.log('imageTextArray:', imageTextArray);
+  const mappedUris = imageTextArray.map(item => item.uri);
+  console.log('Mapped URIs:', mappedUris);
     const trip = {
       id: 'preview-trip', 
       name: formData2.name,
@@ -831,7 +778,7 @@ if (imageTextArray.length > 0) {
       travelStyles: categories
         .filter(category => selectedItems.includes(category.id))
         .map(category => category.title),
-      tripCoverImageUrl: pickedFile2?.uri,
+     tripCoverImageUrls: imageTextArray.map(item => item.uri),
       tripOwner: {
         id: userInfo?.userId,
         displayName: userInfo?.fullname,
@@ -1165,36 +1112,7 @@ const handleChangeText = useCallback((text) => {
   <Text style={{ fontFamily:'LineSeedSansTH_A_Bd',fontSize:12,color:'#9CA3AF'}}>บาท</Text>
              </View>
   </View>
-          {/* Max Participants with Error
-        <MaxParticipantsComponent 
-  value={maxParticipant}
-  onChangeText={(text) => {
-    if (text && parseInt(text) <= 15) {
-      handleMaxParticipant(text);
-    } else if (text === '') {
-      handleMaxParticipant(text); 
-    }
-    if (errors.maxParticipants) clearError('maxParticipants');
-  }}
-  error={errors.maxParticipants}
-  clearError={() => clearError('maxParticipants')}
-  styles={styles}
-  isEditMode={false}
-/> */}
 
-
-        {/* Price Per Person with Error
-      <PricePerPersonComponent 
-  value={pricePerPerson}
-  onChangeText={(text) => {
-    handlePricePerPerson(text);
-    if (errors.pricePerPerson) clearError('pricePerPerson');
-  }}
-  error={errors.pricePerPerson}
-  clearError={() => clearError('pricePerPerson')}
-  styles={styles}
-  isEditMode={false}
-/>*/}
 </View> 
 
 
@@ -1279,11 +1197,22 @@ const handleChangeText = useCallback((text) => {
 
         <View style={{marginLeft:20,marginRight:20}}>
           <View style={styles.checkboxContainer}>
-            <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
-              <View style={[styles.checkbox, isChecked && styles.checked]}>
-                {isChecked && <Text></Text>}
-              </View>
-            </TouchableOpacity>
+           <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
+       <View style={{
+         width: 15,
+         height: 15,
+         marginHorizontal:5,
+         borderWidth: 2,
+         borderColor: isChecked ? '#585DDB' : '#9CA3AF',
+         backgroundColor: isChecked ? '#585DDB' : 'transparent',
+         borderRadius: 4,
+         justifyContent: 'center',
+         alignItems: 'center',
+             }}>
+  
+  </View>
+</TouchableOpacity>
+
             <Text style={styles.text}>
               ฉันได้อ่านและยอมรับ{' '}
               <Text style={styles.linkText}>นโยบายและข้อตกลง</Text>
@@ -1302,7 +1231,8 @@ const handleChangeText = useCallback((text) => {
             disabled={isValidating}
           >
             <Text style={styles.draftText}>
-              {isValidating ? 'กำลังบันทึก...' : 'บันทึกแบบร่าง'}
+          
+            บันทึกแบบร่าง
             </Text>
           </TouchableOpacity>
         </View>
@@ -1316,8 +1246,9 @@ const handleChangeText = useCallback((text) => {
             onPress={isChecked && !isValidating ? () => create("published") : undefined} 
             disabled={!isChecked || isValidating}
           >
-            <Text style={styles.submitText}>
-              สร้างทริป
+            <Text style={[styles.submitText,{alignItems:'center'}]}>
+               <Image source={require('../assets/images/createTrip-icon.png')} style={{width:17.79,height:17.79,tintColor:'#FFFFFF',marginRight:10,marginBottom:-3}}/>
+              โพสต์ทริป
             </Text>
           </TouchableOpacity>
         </View>

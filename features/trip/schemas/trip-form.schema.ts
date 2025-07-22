@@ -3,6 +3,11 @@ export interface Service {
   title: string;
 }
 
+export interface TravelSelectionDetails{
+  id:string,
+  title:string
+}
+
 export interface Category {
   id: string;
   title: string;

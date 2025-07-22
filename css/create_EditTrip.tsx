@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     },
     disabledButton: {
       opacity: 0.5, 
-      backgroundColor: '#4285f4', 
+      backgroundColor: '#585DDB', 
     },
     textInput: {
       borderWidth:1,
@@ -274,7 +274,7 @@ checkmark: {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#29C4AF',
+      backgroundColor: '#585DDB',
       paddingVertical: 16,
       borderRadius: 8,
       marginBottom: 8,

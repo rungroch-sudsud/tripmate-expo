@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
-import { useRouter,useLocalSearchParams,Stack } from 'expo-router';
+import { useRouter,useLocalSearchParams,Stack,useFocusEffect } from 'expo-router';
 import { axiosInstance } from '../../lib/axios';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -59,9 +59,7 @@ const TripDetails: React.FC = () => {
     return [];
   };
 
-  useEffect(() => {
-    fetchTripDetails();
-  }, [tripId]);
+ 
 
   const fetchTripDetails = async () => {
     try {
@@ -78,6 +76,12 @@ const TripDetails: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useFocusEffect(
+  React.useCallback(() => {
+    fetchTripDetails();
+  }, [tripId])
+);
 
   const handleTripPress = () => {
     if (trip) {
@@ -111,6 +115,8 @@ const TripDetails: React.FC = () => {
   const getMainImageUrl = () => {
     if (trip?.tripCoverImageUrls && trip.tripCoverImageUrls.length > 0 && trip.tripCoverImageUrls[0]) {
       return trip.tripCoverImageUrls[0];
+    }else{
+      return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop';
     }
    // return 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop';
   };
@@ -139,7 +145,13 @@ const TripDetails: React.FC = () => {
 
   return (
     <ScrollView style={styles.container}>
+
       <Stack.Screen options={{ headerShown: false }} />
+         <Image
+          source={{ uri: getMainImageUrl() }}
+ 
+          resizeMode="cover"
+        />
       <View style={styles.card}>
         {/* Header Icons */}
         <View style={styles.headerIcons}>
@@ -192,16 +204,18 @@ const TripDetails: React.FC = () => {
           <View style={styles.locationRow}>
             <Ionicons name="location-outline" size={16} color="#EF4444" />
             <Text style={styles.locationText}>
-             Destinations
+             {trip.destinations}
             </Text>
           </View>
 
-          <Text style={styles.tripDescription}>
-            {trip.detail || 'ไม่มีรายละเอียดเพิ่มเติม'}
-          </Text>
 
           <Text style={styles.loremText}>
-            บรรยากาศกลุ่ม: {trip.groupAtmosphere || 'ไม่ระบุ'}
+            บรรยากาศกลุ่ม: {trip.groupAtmosphere}
+          </Text>
+
+
+          <Text style={styles.tripDescription}>
+            {trip.detail}
           </Text>
 
           {/* Travel Styles Tags */}
@@ -209,8 +223,8 @@ const TripDetails: React.FC = () => {
             <View style={styles.tagsContainer}>
               {trip.travelStyles.map((style, index) => (
                 <View key={index} style={[styles.tag, { backgroundColor: getStyleColor(style) + '20' }]}>
-                  <Text style={[styles.tagText, { color: getStyleColor(style) }]}>
-                    #{style}
+                  <Text style={[styles.tagText]}>
+                    {style}
                   </Text>
                 </View>
               ))}
@@ -224,7 +238,7 @@ const TripDetails: React.FC = () => {
             <View style={styles.detailRow}>
               <View style={styles.detailItem}>
                 <View style={styles.detailIcon}>
-                  <Ionicons name="calendar-outline" size={20} color="#FF9800" />
+                  <Ionicons name="calendar-outline" size={20} color="#585DDB26" />
                 </View>
                 <View>
                   <Text style={styles.detailLabel}>วันที่เดินทาง</Text>
@@ -247,7 +261,7 @@ const TripDetails: React.FC = () => {
               </View>
             </View>
 
-            {/* Included Services */}
+            {/* Included Services
             {trip.includedServices && trip.includedServices.length > 0 && (
               <View style={styles.servicesContainer}>
                 <Text style={styles.servicesTitle}>บริการที่รวม:</Text>
@@ -255,12 +269,76 @@ const TripDetails: React.FC = () => {
                   <Text key={index} style={styles.serviceItem}>• {service}</Text>
                 ))}
               </View>
-            )}
+            )} */}
+
+           
+
+
+
+          </View>
+          <View>
+ <View style={{borderRadius:16,borderWidth:1,borderColor:'#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>🗓 แผนการเดินทาง</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>07:00</Text>{'   '}นัดพบ BTS หมอชิต</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>12:00</Text>{'   '}แวะกินข้าวกลางวัน</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>14:00</Text>{'   '}เช็กอินที่พัก ปายแลนด์</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>17:00</Text>{'   '}ชมวิวหยุนไหล</Text>
+            </View>
+
+            <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>❌ สิ่งที่ไม่รวม</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าอาหารกลางวัน</Text>
+               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าทางเข้าอุทยาน</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าเครื่องดื่มส่วนตัว</Text>
+            </View>
+
+              <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>🎒 สิ่งที่ต้องเตรียมมาเอง</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- บัตรประชาชน/พาสปอร์ต/Visa</Text>
+               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- เสื้อกันหนาว</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ยาประจำตัว</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ของใช้ส่วนตัว</Text>
+              </View>
+
+
+
+              <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>✅ เงื่อนไข / กติกาทริป</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- เดินทางตรงเวลา</Text>
+               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- แชร์ห้องพัก 2 คน/ห้อง</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- งดใช้เสียงหลัง 22:00</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ทริปนี้หญิงล้วน</Text>
+              </View>
+
+              <View>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',fontSize:10}}>แนะนำตัวในฐานะหัวตี้</Text>
+                <View style={{borderRadius:16,borderWidth:1,borderBlockColor:'#E5E7EB',padding:20,marginVertical:20}}>
+                  <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>
+                    ชื่อเบียร์ครับ เป็นสายเที่ยวชิล ๆ ชอบถ่ายรูป เคยจัดทริปไปปาย 4 ครั้ง
+ดูแลเพื่อนๆ ตั้งแต่ต้นจนจบชอบวางแผนเน้นครบ จบ ไม่ต้องจ่ายเพิ่ม
+ขอแค่ตรงเวลา รับรองว่าทริปสนุกแน่นอน!
+                  </Text>
+                </View>
+              </View>
+
+
+              <View>
+                <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+                  <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>ธนาคารกสิกรไทย</Text>
+                  <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>ชื่อบัญชี</Text>{'    '}นายเบียร์</Text>
+                   <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>เลขที่บัญชี</Text>{'    '}123-4567-890</Text>
+                </View>
+              </View>
+
+
+              <View>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>*</Text> จำนวนผู้เข้าร่วมขั้นต่ำ 2 คน</Text>
+              </View>
           </View>
 
           {/* Book Button */}
           <TouchableOpacity style={styles.bookButton} onPress={handleTripPress}>
-            <Text style={styles.bookButtonText}>เข้าร่วมทริป</Text>
+            <Text style={styles.bookButtonText}>เข้าร่วมแชท</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -310,10 +388,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFF',
-    marginHorizontal: 16,
+ 
     marginVertical: 8,
     borderRadius: 16,
-    overflow: 'hidden',
+ 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -379,20 +457,21 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   participantsInfo: {
-    backgroundColor: '#FEF3C7',
+    backgroundColor: '#585DDB26',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
   },
   participantsCount: {
     fontSize: 12,
-    color: '#D97706',
+    color: '#585DDB',
     fontWeight: '600',
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+   // backgroundColor:'#FFF7ED'
   },
   locationText: {
     fontSize: 14,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useRef} from 'react';
 import {
   View,
   Text,
@@ -7,10 +7,9 @@ import {
   StyleSheet,
   TextLayoutEventData,
   NativeSyntheticEvent,
-  ScrollView
+  ScrollView,
 } from 'react-native';
 
-import PagerView from 'react-native-pager-view'
 // Types
 interface Trip {
   id: string;
@@ -90,6 +89,8 @@ const TripCard: React.FC<TripCardProps> = ({
       </View>
     );
   }
+const scrollViewRef = useRef(null);
+
 
   // Add null/undefined check for tripOwner
   const ownerInfo = trip.tripOwner ? getOwnerInfo(trip.tripOwner) : {
@@ -133,6 +134,7 @@ const TripCard: React.FC<TripCardProps> = ({
     onJoinTrip(trip);
   };
 
+   
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   return (
@@ -141,48 +143,56 @@ const TripCard: React.FC<TripCardProps> = ({
       activeOpacity={0.7}
       onPress={handleCardPress} // Added this line
     >
-      {/* Header Image Container */}
     {/* Header Image Container */}
 <View style={styles.imageContainer}>
   {trip.tripCoverImageUrls && trip.tripCoverImageUrls.length > 0 ? (
     <>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(event) => {
-          const index = Math.round(event.nativeEvent.contentOffset.x / event.nativeEvent.layoutMeasurement.width);
-          setCurrentImageIndex(index);
+     <ScrollView
+  ref={scrollViewRef}
+  horizontal
+  pagingEnabled
+  showsHorizontalScrollIndicator={false}
+  onMomentumScrollEnd={(event) => {
+    const { contentOffset, layoutMeasurement } = event.nativeEvent;
+    const index = Math.round(contentOffset.x / layoutMeasurement.width);
+    console.log('Scroll index calculated:', index); // Debug log
+    setCurrentImageIndex(index);
+  }}
+  style={styles.imageSlider}
+>
+  {trip.tripCoverImageUrls.map((imageUrl, index) => (
+    <View key={index} style={styles.slideContainer}>
+      <Image
+        source={{ uri: imageUrl }}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+        onError={(error) => {
+          console.warn(`Failed to load image at ${imageUrl}`);
         }}
-        style={styles.imageSlider}
-        contentContainerStyle={{ width: `${trip.tripCoverImageUrls.length * 100}%` }}
-      >
-        {trip.tripCoverImageUrls.map((imageUrl, index) => (
-          <View key={index} style={styles.slideContainer}>
-            <Image
-              source={{ uri: imageUrl }}
-              style={styles.backgroundImage}
-              resizeMode="cover"
-            />
-          </View>
-        ))}
-      </ScrollView>
+      />
+    </View>
+  ))}
+</ScrollView>
       
       {/* Page Indicators */}
       {trip.tripCoverImageUrls.length > 1 && (
         <View style={styles.indicatorContainer}>
           {trip.tripCoverImageUrls.map((_, index) => (
-            <TouchableOpacity
-              key={index}
-              style={[
-                styles.indicator,
-                index === currentImageIndex ? styles.activeIndicator : styles.inactiveIndicator
-              ]}
-              onPress={() => {
-                // Optional: Allow tapping indicators to jump to that image
-                setCurrentImageIndex(index);
-              }}
-            />
+         <TouchableOpacity
+  key={index}
+  style={[
+    styles.indicator,
+    index === currentImageIndex ? styles.activeIndicator : styles.inactiveIndicator
+  ]}
+  onPress={() => {
+    setCurrentImageIndex(index);
+    // Actually scroll to the selected image
+    scrollViewRef.current?.scrollTo({
+      x: index * 350, // Use your slide width here
+      animated: true
+    });
+  }}
+/>
           ))}
         </View>
       )}
@@ -324,21 +334,6 @@ const TripCard: React.FC<TripCardProps> = ({
             <Text style={styles.joinButtonText}>ดูรายละเอียด</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Participants Info 
-        <View style={styles.participantsInfo}>
-          <View style={styles.participantsProgressBar}>
-            <View 
-              style={[
-                styles.participantsProgress, 
-                { width: `${(trip.participants.length / trip.maxParticipants) * 100}%` }
-              ]} 
-            />
-          </View>
-          <Text style={styles.participantsText}>
-            ผู้เข้าร่วม: {trip.participants.length}/{trip.maxParticipants} คน
-          </Text>
-        </View> */}
       </View>
     </TouchableOpacity>
   );
@@ -367,7 +362,6 @@ const styles = StyleSheet.create({
   backgroundImage: {
     width: '100%',
     height: '100%',
-    backgroundColor:'red'
   },
   placeholderImage: {
     width: '100%',
@@ -620,32 +614,32 @@ bookmarkButton: {
   height: '100%',
 },
 slideContainer: {
-  width: '100%',
+  width: 400, // This should match your card width or use Dimensions
   height: '100%',
-  flex: 1,
 },
 indicatorContainer: {
   position: 'absolute',
-  bottom: 12,
+  bottom: 3,
   alignSelf: 'center',
   flexDirection: 'row',
   alignItems: 'center',
-  backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  backgroundColor: 'transparent',
   borderRadius: 12,
-  paddingHorizontal: 8,
+  paddingHorizontal: -16,
   paddingVertical: 4,
+  width:350
 },
 indicator: {
-  width: 6,
-  height: 6,
-  borderRadius: 3,
-  marginHorizontal: 2,
+  flex: 1, // This will make each indicator take equal space
+  height: 4,
+  borderRadius: 4,
+  marginHorizontal: 5, // Reduce margin for better fit
 },
 activeIndicator: {
   backgroundColor: '#FFFFFF',
 },
 inactiveIndicator: {
-  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  backgroundColor: '#D1D5DB',
 },
 });
 
