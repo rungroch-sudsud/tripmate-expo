@@ -245,10 +245,11 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   submitButtonText: {
-    color: '#fff',
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginRight: 8,
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   headerText: {
     fontSize: 16,

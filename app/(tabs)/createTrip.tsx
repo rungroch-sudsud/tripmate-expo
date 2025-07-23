@@ -16,7 +16,7 @@ import {
   ServicesCheckboxComponent,
   TravelStylesComponent,
   AtmosphereInputComponent,
-  DetailsInputComponent} from '../../components/Edit_CreateTrip_jsx'
+ } from '../../components/Edit_CreateTrip_jsx'
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {axiosInstance} from '../../lib/axios'
@@ -25,7 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
 import {TravelSelectionDetails,PickedFile} from '../../features/trip/schemas/trip-form.schema'
-
+import {DetailsInputComponent} from '../../components/richText_Editor'
 
 const MAX_WORDS = 40;
 
@@ -65,8 +65,23 @@ const ThaiFormScreen = () => {
     description: '',
     selectedOptions: [] as string[],
     attachments: 0,
-    details: ''
+    details: '',
+    detailsFormatting: null, 
   });
+
+  const [editorData, setEditorData] = useState({
+  text: '',
+  formatting: {
+    isBold: false,
+    isItalic: false,
+    isUnderline:false,
+    textAlign:'left',
+    selectedColor:'#000000',
+    selectedFont:'System',
+    isNumberList:false,
+    isBulletList:false
+  }
+});
 
  const [formData2, setFormData2] = useState({ name: '' });
   const [maxParticipant, setMaxParticipant] = useState<number | ''>('');
@@ -461,7 +476,8 @@ const handlePricePerPerson = (text: string) => {
       description: '',
       selectedOptions: [],
       attachments: 0,
-      details: ''
+      details: '',
+      detailFormatting: formData.detailsFormatting,
     });
     
     setFormData2({ name: '' });
@@ -771,6 +787,7 @@ if (imageTextArray.length > 0) {
       participants: [], 
       pricePerPerson: pricePerPerson, 
       detail: formData.details,
+      detailFormatting: formData.detailsFormatting,
       groupAtmosphere: formData.description, 
       includedServices: services
         .filter(service => isServiceChecked(service.id))
@@ -927,7 +944,7 @@ const handleChangeText = useCallback((text) => {
                 marginBottom: 15,
               }}
             >
-              <Text style={{ fontSize: 50, color: '#D1D5DB' }}>+</Text>
+             <Image source={require('../assets/images/plus.png')} style={{height:17.5,width:17.5,tintColor:'#D1D5DB'}} />
              
             </TouchableOpacity>
           </View>
@@ -1048,7 +1065,7 @@ const handleChangeText = useCallback((text) => {
              style={{
             height: '100%',
             borderWidth:0,
-            outlineColor: '#F3F4F6',
+            outlineWidth:0,
             backgroundColor: '#F3F4F6',
             width: '45%',
             textAlign:'center',
@@ -1091,7 +1108,7 @@ const handleChangeText = useCallback((text) => {
              style={{
             height: '100%',
             borderWidth:0,
-            outlineColor: '#F3F4F6',
+            outlineWidth:0,
             backgroundColor: '#F3F4F6',
             width: '100%',
             textAlign:'left',
@@ -1168,12 +1185,9 @@ const handleChangeText = useCallback((text) => {
         
         {/* General Details with Error */}
 <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
-    <DetailsInputComponent
-  value={formData.details}
-  onChangeText={(text) => {
-    setFormData(prev => ({ ...prev, details: text }));
-    if (errors.details) clearError('details');
-  }}
+<DetailsInputComponent 
+  value={editorData}
+  onChange={(newData) => setEditorData(newData)} // Single callback
   error={errors.details}
   clearError={() => clearError('details')}
   styles={styles}
@@ -1182,8 +1196,8 @@ const handleChangeText = useCallback((text) => {
 </View>
 
     
-        <Text style={{fontWeight:600,fontFamily:'InterTight-Regular',marginHorizontal:20,marginBottom:5}}>
-          ตัวอย่างโพสต์
+        <Text style={{fontWeight:'700',fontFamily:'LineSeedSansTH_A_Bd',margin:20,marginBottom:5,color:'#374151'}}>
+         ตัวอย่างโพสต์
         </Text>
         {userInfo && (
           <TripCard
@@ -1195,7 +1209,7 @@ const handleChangeText = useCallback((text) => {
           />
         )}
 
-        <View style={{marginLeft:20,marginRight:20}}>
+        <View style={{marginLeft:20,marginRight:20,marginTop:10}}>
           <View style={styles.checkboxContainer}>
            <TouchableOpacity onPress={() => setIsChecked(!isChecked)}>
        <View style={{
@@ -1213,7 +1227,7 @@ const handleChangeText = useCallback((text) => {
   </View>
 </TouchableOpacity>
 
-            <Text style={styles.text}>
+            <Text style={{fontFamily:'LineSeedSansTH',fontSize:12,color:'#374151',marginBottom:5}}>
               ฉันได้อ่านและยอมรับ{' '}
               <Text style={styles.linkText}>นโยบายและข้อตกลง</Text>
               {' '}ของแอปพลิเคชัน
@@ -1253,7 +1267,7 @@ const handleChangeText = useCallback((text) => {
           </TouchableOpacity>
         </View>
       </View>
-      <Text style={styles.submitNote}>กรุณาตรวจสอบข้อมูลให้ถูกต้องก่อนส่ง</Text>
+     
     </SafeAreaView>
   );
 };

@@ -408,7 +408,7 @@ export const ServicesCheckboxComponent = ({
         styles.checkboxSection,         
         !isEditMode && error && {marginBottom: 0}       
       ]}>         
-        <Text style={{fontFamily:'LineSeedSansTH_A_Bd',color:'#374151',fontSize:13}}>สิ่งที่รวมในราคา</Text>         
+        <Text style={{fontFamily:'LineSeedSansTH_A_Bd',color:'#374151',fontSize:13,marginLeft:10}}>สิ่งที่รวมในราคา</Text>         
         <View style={styles.checkboxContainer}>           
           {services.map(service => (             
             <TouchableOpacity               
@@ -784,7 +784,7 @@ export const AtmosphereInputComponent = ({
 
   return (
     <View style={{ marginBottom: 30, marginHorizontal: 20 }}>
-      <Text style={styles.label}>บรรยากาศ/โทนกลุ่ม</Text>
+      <Text style={[styles.label,{margin:10}]}>บรรยากาศ/โทนกลุ่ม</Text>
       <View style={{ position: 'relative' }}>
         <TextInput
           style={[

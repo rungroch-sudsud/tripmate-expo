@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
     },
     checkboxSection: {
       marginBottom: 20,
-      marginHorizontal:20
+      marginHorizontal:10
     },
     checkboxContainer: {
       flexDirection: 'row',
@@ -291,14 +291,17 @@ checkmark: {
     },
     draftText:{
       marginLeft: 8,
-      fontSize: 16,
-      fontWeight: '600',
-    },
+      fontSize: 15,
+       fontWeight: '700',
+       fontFamily:"LineSeedSansTH_A_Bd",
+       color:'#4B5563'
+          },
     submitText: {
       marginLeft: 8,
-      fontSize: 16,
-      fontWeight: '600',
-      color: '#fff',
+      fontSize: 15,
+      fontWeight: '700',
+      color: '#FFFFFF',
+      fontFamily:"LineSeedSansTH_A_Bd"
     },
     submitNote: {
       fontSize: 12,
@@ -358,12 +361,20 @@ checkmark: {
       fontFamily:'InterTight-Regular',
     },
     title: {
-      fontSize: 16,
-      color: '#333',
-      fontWeight: '800',
-      marginBottom: 14,
+      fontSize: 14,
+      color: '#374151',
+      fontWeight: '700',
+      marginBottom: 10,
       lineHeight: 24,
-      fontFamily:'Inter_900Black'
+      fontFamily:'LineSeedSansTH_A_Bd'
+    },
+     subtitle: {
+      fontSize: 12,
+      color: '#6B7280',
+      fontWeight: '400',
+      marginBottom: 7,
+      lineHeight: 24,
+      fontFamily:'LineSeedSansTH'
     },
     loadingContainer: {
       flex: 1,
@@ -382,13 +393,13 @@ checkmark: {
       alignItems: 'center',
       marginTop: 5,
       marginBottom: 10, 
-      
+      marginLeft:-5
     },
     categoryItem: {
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: 16,
-      paddingVertical: 14,
+      paddingVertical: 10,
       height: 38,
       borderRadius: 30,
        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',

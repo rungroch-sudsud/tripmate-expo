@@ -9,7 +9,7 @@ import {
   NativeSyntheticEvent,
   ScrollView,
 } from 'react-native';
-
+import {RichTextRenderer} from  './richText_Editor'
 // Types
 interface Trip {
   id: string;
@@ -287,9 +287,11 @@ const scrollViewRef = useRef(null);
 
         {/* Trip Detail */}
         {trip.detail && (
-          <Text style={styles.description} numberOfLines={2}>
-            {trip.detail}
-          </Text>
+        <RichTextRenderer 
+  text={trip.detail} 
+  formatting={trip.detailFormatting}
+  style={styles.description}
+/>
         )}
 
         {/* Included Services Tags */}
