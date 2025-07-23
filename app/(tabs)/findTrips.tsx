@@ -210,6 +210,7 @@ const FindTripScreen: React.FC = () => {
               onBookmarkToggle={handleBookmarkToggle}
               onTripPress={handleTripPress}
               onJoinTrip={handleJoinTrip}
+              iscreateTrip={false}
             />
           ))
         )}

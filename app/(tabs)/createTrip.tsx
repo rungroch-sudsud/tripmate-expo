@@ -16,6 +16,7 @@ import {
   ServicesCheckboxComponent,
   TravelStylesComponent,
   AtmosphereInputComponent,
+  DetailsInputComponent
  } from '../../components/Edit_CreateTrip_jsx'
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -25,7 +26,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
 import {TravelSelectionDetails,PickedFile} from '../../features/trip/schemas/trip-form.schema'
-import {DetailsInputComponent} from '../../components/richText_Editor'
+
 
 const MAX_WORDS = 40;
 
@@ -69,19 +70,8 @@ const ThaiFormScreen = () => {
     detailsFormatting: null, 
   });
 
-  const [editorData, setEditorData] = useState({
-  text: '',
-  formatting: {
-    isBold: false,
-    isItalic: false,
-    isUnderline:false,
-    textAlign:'left',
-    selectedColor:'#000000',
-    selectedFont:'System',
-    isNumberList:false,
-    isBulletList:false
-  }
-});
+
+
 
  const [formData2, setFormData2] = useState({ name: '' });
   const [maxParticipant, setMaxParticipant] = useState<number | ''>('');
@@ -1185,14 +1175,15 @@ const handleChangeText = useCallback((text) => {
         
         {/* General Details with Error */}
 <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
-<DetailsInputComponent 
-  value={editorData}
-  onChange={(newData) => setEditorData(newData)} // Single callback
+<DetailsInputComponent    
+  value={formData.details}
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}
   error={errors.details}
   clearError={() => clearError('details')}
   styles={styles}
   isEditMode={false}
 />
+
 </View>
 
     
@@ -1206,6 +1197,8 @@ const handleChangeText = useCallback((text) => {
             onBookmarkToggle={handleBookmarkToggle}
             onTripPress={handleTripPress}
             onJoinTrip={handleJoinTrip}
+            isCreateTrip={true}
+            iscreateTrip={true}
           />
         )}
 

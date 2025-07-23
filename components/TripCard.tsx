@@ -9,7 +9,7 @@ import {
   NativeSyntheticEvent,
   ScrollView,
 } from 'react-native';
-import {RichTextRenderer} from  './richText_Editor'
+
 // Types
 interface Trip {
   id: string;
@@ -44,6 +44,7 @@ interface TripOwner {
 interface TripCardProps {
   trip: Trip;
   isBookmarked: boolean;
+  iscreateTrip:boolean
   onBookmarkToggle: (trip: Trip) => void;
   onTripPress: (trip: Trip) => void;
   onJoinTrip: (trip: Trip) => void;
@@ -77,6 +78,7 @@ const formatDateRange = (startDate: string, endDate: string): string => {
 const TripCard: React.FC<TripCardProps> = ({ 
   trip, 
   isBookmarked, 
+ iscreateTrip,
   onBookmarkToggle, 
   onTripPress, 
   onJoinTrip 
@@ -245,16 +247,37 @@ const scrollViewRef = useRef(null);
               </View>
             )}
           </View>
+       {iscreateTrip ? (
+  <View>
+    <Image 
+      source={require('../app/assets/images/createTripSave.png')} 
+      style={{ width: 16, height: 24,  }} 
+    />
+  </View>
+) : (
+  <TouchableOpacity
+    style={styles.bookmarkButton}
+    onPress={handleBookmarkPress}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <View style={styles.bookmarkIcon}>
+      {isBookmarked ? (
+        <Image 
+          source={require('../app/assets/images/images/images/image22.png')} 
+          style={{ width: 12, height: 20, tintColor: '#FACC15' }} 
+        />
+      ) : (
+        <Image 
+          source={require('../app/assets/images/saved.png')} 
+          style={{ width: 12, height: 20 }} 
+        />
+      )}
+    </View>
+  </TouchableOpacity>
+)}
 
-          <TouchableOpacity
-            style={styles.bookmarkButton}
-            onPress={handleBookmarkPress} // Updated to use the new handler
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <View style={styles.bookmarkIcon}>
-              {isBookmarked ? <Image source={require('../app/assets/images/images/images/image22.png')} style={{width:12,height:20,tintColor:'#FACC15'}}/> : <Image source={require('../app/assets/images/saved.png')} style={{width:12,height:20}}  />}
-            </View>
-          </TouchableOpacity>
+
+        
         </View>
 
         {/* Group Atmosphere with expand/collapse */}
@@ -287,11 +310,9 @@ const scrollViewRef = useRef(null);
 
         {/* Trip Detail */}
         {trip.detail && (
-        <RichTextRenderer 
-  text={trip.detail} 
-  formatting={trip.detailFormatting}
-  style={styles.description}
-/>
+          <Text style={styles.description} numberOfLines={2}>
+            {trip.detail}
+          </Text>
         )}
 
         {/* Included Services Tags */}

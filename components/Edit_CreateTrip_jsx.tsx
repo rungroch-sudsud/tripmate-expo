@@ -856,7 +856,7 @@ export const DetailsInputComponent = ({
 
   return (
     <View style={styles.container3}>
-      <Text style={styles.label}>รายละเอียดทั่วไป</Text>
+      <Text style={[styles.label,{margin:10}]}>รายละเอียดทั่วไป</Text>
       <TextInput
         style={[
           styles.textArea,

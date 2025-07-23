@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,119 @@ import {
   Alert,
 } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
+
+// JSX String Parser
+const parseJSXString = (jsxString) => {
+  if (!jsxString || typeof jsxString !== 'string') {
+    return { text: '', formatting: {} };
+  }
+
+  // Check if it's a JSX-like string
+  const jsxRegex = /<Text\s+style=\{\{([^}]+)\}\}>([^<]+)<\/Text>/;
+  const match = jsxString.match(jsxRegex);
+  
+  if (match) {
+    const styleString = match[1];
+    const textContent = match[2];
+    
+    // Parse the style object
+    const formatting = {
+      isBold: false,
+      isItalic: false,
+      isUnderline: false,
+      textAlign: 'left',
+      selectedColor: '#000000',
+      selectedFont: 'System',
+      isNumberList: false,
+      isBulletList: false
+    };
+    
+    // Extract fontWeight
+    const fontWeightMatch = styleString.match(/fontWeight:\s*['"]([^'"]+)['"]/);
+    if (fontWeightMatch && fontWeightMatch[1] === 'bold') {
+      formatting.isBold = true;
+    }
+    
+    // Extract fontStyle
+    const fontStyleMatch = styleString.match(/fontStyle:\s*['"]([^'"]+)['"]/);
+    if (fontStyleMatch && fontStyleMatch[1] === 'italic') {
+      formatting.isItalic = true;
+    }
+    
+    // Extract textDecorationLine
+    const textDecorationMatch = styleString.match(/textDecorationLine:\s*['"]([^'"]+)['"]/);
+    if (textDecorationMatch && textDecorationMatch[1] === 'underline') {
+      formatting.isUnderline = true;
+    }
+    
+    // Extract color
+    const colorMatch = styleString.match(/color:\s*['"]([^'"]+)['"]/);
+    if (colorMatch) {
+      formatting.selectedColor = colorMatch[1];
+    }
+    
+    // Extract fontFamily
+    const fontFamilyMatch = styleString.match(/fontFamily:\s*['"]([^'"]+)['"]/);
+    if (fontFamilyMatch) {
+      formatting.selectedFont = fontFamilyMatch[1];
+    }
+    
+    // Extract textAlign
+    const textAlignMatch = styleString.match(/textAlign:\s*['"]([^'"]+)['"]/);
+    if (textAlignMatch) {
+      formatting.textAlign = textAlignMatch[1];
+    }
+    
+    return { text: textContent, formatting };
+  }
+  
+  // If not JSX format, treat as plain string
+  return { 
+    text: jsxString, 
+    formatting: {
+      isBold: false,
+      isItalic: false,
+      isUnderline: false,
+      textAlign: 'left',
+      selectedColor: '#000000',
+      selectedFont: 'System',
+      isNumberList: false,
+      isBulletList: false
+    }
+  };
+};
+
+// Convert formatting back to JSX string
+const formatToJSXString = (text, formatting) => {
+  if (!text) return '';
+  
+  // If no special formatting, return plain text
+  if (!formatting || Object.values(formatting).every(val => 
+    val === false || val === 'left' || val === '#000000' || val === 'System'
+  )) {
+    return text;
+  }
+  
+  // Build style object
+  const styles = [];
+  
+  if (formatting.isBold) styles.push("fontWeight: 'bold'");
+  if (formatting.isItalic) styles.push("fontStyle: 'italic'");
+  if (formatting.isUnderline) styles.push("textDecorationLine: 'underline'");
+  if (formatting.selectedColor && formatting.selectedColor !== '#000000') {
+    styles.push(`color: '${formatting.selectedColor}'`);
+  }
+  if (formatting.selectedFont && formatting.selectedFont !== 'System') {
+    styles.push(`fontFamily: '${formatting.selectedFont}'`);
+  }
+  if (formatting.textAlign && formatting.textAlign !== 'left') {
+    styles.push(`textAlign: '${formatting.textAlign}'`);
+  }
+  
+  if (styles.length === 0) return text;
+  
+  return `<Text style={{${styles.join(', ')}}}>${text}</Text>`;
+};
 
 // Error Message Component
 const ErrorMessage = ({ error }) => {
@@ -62,40 +175,36 @@ export const RichTextRenderer = ({ text, formatting, style }) => {
 // Main Rich Text Editor Component
 export const DetailsInputComponent = ({
   value,
-  onChangeText = () => {}, // Default fallback function
+  onChange = () => {},
   onFormattingChange,
   error,
   clearError,
   styles: parentStyles,
   isEditMode = false
 }) => {
-  // Parse initial value
-  const parseInitialValue = (val) => {
-    if (typeof val === 'string') {
-      return { text: val, formatting: {} };
+  // Memoize the parsed initial value to avoid recalculating on every render
+  const parsedInitialValue = useMemo(() => {
+    if (typeof value === 'string') {
+      return parseJSXString(value);
     }
-    if (val && typeof val === 'object') {
-      return val;
+    if (value && typeof value === 'object') {
+      return value;
     }
     return { text: '', formatting: {} };
-  };
+  }, []); // Empty dependency - only run once on mount
 
-  const initialData = parseInitialValue(value);
-  const [localValue, setLocalValue] = useState(initialData.text);
+  // Initialize state with parsed values
+  const [localValue, setLocalValue] = useState(parsedInitialValue.text);
+  const [isBold, setIsBold] = useState(parsedInitialValue.formatting?.isBold || false);
+  const [isItalic, setIsItalic] = useState(parsedInitialValue.formatting?.isItalic || false);
+  const [isUnderline, setIsUnderline] = useState(parsedInitialValue.formatting?.isUnderline || false);
+  const [textAlign, setTextAlign] = useState(parsedInitialValue.formatting?.textAlign || 'left');
+  const [selectedColor, setSelectedColor] = useState(parsedInitialValue.formatting?.selectedColor || '#000000');
+  const [selectedFont, setSelectedFont] = useState(parsedInitialValue.formatting?.selectedFont || 'System');
+  const [isNumberList, setIsNumberList] = useState(parsedInitialValue.formatting?.isNumberList || false);
+  const [isBulletList, setIsBulletList] = useState(parsedInitialValue.formatting?.isBulletList || false);
   
-  // Formatting states
-  const [isBold, setIsBold] = useState(initialData.formatting?.isBold || false);
-  const [isItalic, setIsItalic] = useState(initialData.formatting?.isItalic || false);
-  const [isUnderline, setIsUnderline] = useState(initialData.formatting?.isUnderline || false);
-  const [textAlign, setTextAlign] = useState(initialData.formatting?.textAlign || 'left');
-  const [selectedColor, setSelectedColor] = useState(initialData.formatting?.selectedColor || '#000000');
-  const [selectedFont, setSelectedFont] = useState(initialData.formatting?.selectedFont || 'System');
-  const [isNumberList, setIsNumberList] = useState(initialData.formatting?.isNumberList || false);
-  const [isBulletList, setIsBulletList] = useState(initialData.formatting?.isBulletList || false);
-  
-  // Add a ref to track if we're updating from parent to prevent loops
-  const isUpdatingFromParent = useRef(false);
-  
+  const [isInitialized, setIsInitialized] = useState(false);
   const textInputRef = useRef(null);
 
   // Font family options
@@ -152,82 +261,60 @@ export const DetailsInputComponent = ({
     };
   }, [isBold, isItalic, isUnderline, textAlign, selectedColor, selectedFont, isNumberList, isBulletList]);
 
-  // Debounced version of onChangeText
-  const debouncedOnChangeText = useCallback(
-    debounce((text) => {
-      if (typeof onChangeText === 'function') {
-        onChangeText(text);
+  // Create complete data object with text and formatting
+  const createCompleteData = useCallback(() => {
+    return {
+      text: localValue,
+      formatting: createFormattingData()
+    };
+  }, [localValue, createFormattingData]);
+
+  // Debounced version of onChange
+  const debouncedOnChange = useCallback(
+    debounce((data) => {
+      if (typeof onChange === 'function') {
+        onChange(data);
       }
     }, 150),
-    [onChangeText]
+    [onChange]
   );
 
-  // Debounced version of onFormattingChange
-  const debouncedOnFormattingChange = useCallback(
-    debounce((formattingData) => {
-      if (onFormattingChange && !isUpdatingFromParent.current) {
-        onFormattingChange(formattingData);
-      }
-    }, 150),
-    [onFormattingChange]
-  );
-
-  // FIXED: Only update local state when text actually changes from parent
+  // Initialize formatting from the initial parsed value - only run once
   useEffect(() => {
-    const newData = parseInitialValue(value);
-    
-    // Only update text if it's different from our local value
-    if (newData.text !== localValue && !isUpdatingFromParent.current) {
-      setLocalValue(newData.text);
+    // Set all formatting state from the initially parsed value
+    const formatting = parsedInitialValue.formatting;
+    if (formatting && Object.keys(formatting).length > 0) {
+      setIsBold(formatting.isBold || false);
+      setIsItalic(formatting.isItalic || false);
+      setIsUnderline(formatting.isUnderline || false);
+      setTextAlign(formatting.textAlign || 'left');
+      setSelectedColor(formatting.selectedColor || '#000000');
+      setSelectedFont(formatting.selectedFont || 'System');
+      setIsNumberList(formatting.isNumberList || false);
+      setIsBulletList(formatting.isBulletList || false);
     }
     
-    // REMOVED: Don't reset formatting states here - they should only be controlled by toolbar
-  }, [value]); // Remove localValue from dependency to prevent loops
+    // Mark as initialized after a brief delay to avoid conflicts
+    setTimeout(() => {
+      setIsInitialized(true);
+    }, 50);
+  }, []); // Empty dependency - only run once
 
-  // Handle formatting changes and notify parent
+  // Only send updates to parent after initialization is complete
   useEffect(() => {
-    if (!isUpdatingFromParent.current) {
-      const formattingData = createFormattingData();
-      debouncedOnFormattingChange(formattingData);
+    if (isInitialized) {
+      const completeData = createCompleteData();
+      debouncedOnChange(completeData);
     }
-  }, [isBold, isItalic, isUnderline, textAlign, selectedColor, selectedFont, isNumberList, isBulletList, createFormattingData, debouncedOnFormattingChange]);
+  }, [isInitialized, localValue, isBold, isItalic, isUnderline, textAlign, selectedColor, selectedFont, isNumberList, isBulletList, createCompleteData, debouncedOnChange]);
 
-  // FIXED: Handle text changes without resetting formatting
+  // Handle text changes
   const handleTextChange = (text) => {
     setLocalValue(text);
-    debouncedOnChangeText(text);
     if (clearError) {
       clearError();
     }
   };
-
-  // FIXED: Initialize formatting from parent only once or when explicitly needed
-  useEffect(() => {
-    const newData = parseInitialValue(value);
-    if (newData.formatting && Object.keys(newData.formatting).length > 0) {
-      isUpdatingFromParent.current = true;
-      
-      // Only update if formatting is actually different
-      const currentFormatting = createFormattingData();
-      const newFormatting = newData.formatting;
-      
-      if (JSON.stringify(currentFormatting) !== JSON.stringify(newFormatting)) {
-        setIsBold(newFormatting.isBold || false);
-        setIsItalic(newFormatting.isItalic || false);
-        setIsUnderline(newFormatting.isUnderline || false);
-        setTextAlign(newFormatting.textAlign || 'left');
-        setSelectedColor(newFormatting.selectedColor || '#000000');
-        setSelectedFont(newFormatting.selectedFont || 'System');
-        setIsNumberList(newFormatting.isNumberList || false);
-        setIsBulletList(newFormatting.isBulletList || false);
-      }
-      
-      // Reset the flag after a small delay
-      setTimeout(() => {
-        isUpdatingFromParent.current = false;
-      }, 100);
-    }
-  }, []); // Only run once on mount
 
   const toggleBold = () => setIsBold(!isBold);
   const toggleItalic = () => setIsItalic(!isItalic);
@@ -257,7 +344,6 @@ export const DetailsInputComponent = ({
             const linkText = `[Link](${url})`;
             const newText = localValue + linkText;
             setLocalValue(newText);
-            debouncedOnChangeText(newText);
           }
         }
       );
@@ -270,7 +356,6 @@ export const DetailsInputComponent = ({
             const linkText = `[${email}](mailto:${email})`;
             const newText = localValue + linkText;
             setLocalValue(newText);
-            debouncedOnChangeText(newText);
           }
         }
       );
@@ -283,7 +368,6 @@ export const DetailsInputComponent = ({
             const linkText = `[${phone}](tel:${phone})`;
             const newText = localValue + linkText;
             setLocalValue(newText);
-            debouncedOnChangeText(newText);
           }
         }
       );
@@ -433,7 +517,7 @@ export const DetailsInputComponent = ({
   );
 };
 
-// Default styles (you should define these)
+// Add default styles
 const styles = StyleSheet.create({
   container: {
     marginVertical: 10,
@@ -441,50 +525,45 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   toolbar: {
     backgroundColor: '#f5f5f5',
-    padding: 8,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 10,
   },
   toolbarRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    flexWrap: 'wrap',
+    marginBottom: 5,
   },
   dropdownContainer: {
     flex: 1,
-    marginRight: 8,
-    minWidth: 100,
+    marginRight: 5,
   },
   dropdown: {
     height: 40,
-    borderColor: '#ddd',
+    borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 8,
+    borderRadius: 5,
+    paddingHorizontal: 10,
     backgroundColor: 'white',
   },
   colorPreview: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    marginRight: 5,
   },
   toolButton: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
+    borderColor: '#ccc',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    paddingHorizontal: 12,
+    borderRadius: 5,
+    paddingHorizontal: 15,
     paddingVertical: 8,
-    marginRight: 8,
-    marginBottom: 4,
+    marginRight: 5,
   },
   activeButton: {
     backgroundColor: '#007AFF',
@@ -496,23 +575,22 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   activeButtonText: {
-    color: 'white',
+    color: '#fff',
   },
   textInput: {
+    borderColor: '#ccc',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
+    borderRadius: 5,
+    padding: 10,
     minHeight: 100,
-    backgroundColor: 'white',
+    fontSize: 16,
   },
   inputError: {
-    borderColor: '#FF3B30',
+    borderColor: '#ff0000',
   },
   errorText: {
-    color: '#FF3B30',
-    fontSize: 14,
-    marginTop: 4,
+    color: '#ff0000',
+    fontSize: 12,
+    marginTop: 5,
   },
 });
