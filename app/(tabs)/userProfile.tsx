@@ -1,19 +1,158 @@
 import { getUserProfile } from '../../features/user/services/userServices'
-import { View, Image, SafeAreaView, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
+import { View, Image, SafeAreaView, Text, StyleSheet, TouchableOpacity, Animated ,StyleProp,ViewStyle, Dimensions} from 'react-native'
 import BottomNavigation from '../../components/customNavigation'
-import { Stack, useRouter, useLocalSearchParams, router, useFocusEffect } from 'expo-router'
-import React, { useEffect, useState, useRef } from 'react'
+import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router'
+import React, { useState, useRef, useEffect } from 'react'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+type Dimension = number | `${number}%` | 'auto';
+
+interface SkeletonBoxProps {
+  width: Dimension;
+  height: Dimension;
+  style?: StyleProp<ViewStyle>;
+}
+interface Review {
+  rating: number;
+}
+
+interface ProfileData {
+  reviews: Review[];
+  profileImageUrl:string;
+  occupation:string;
+  fullname:string
+}
+
+const SkeletonBox: React.FC<SkeletonBoxProps> = ({ width, height, style }) => {
+  const animatedValue = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(animatedValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+        Animated.timing(animatedValue, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [animatedValue]);
+
+  const backgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e5e7eb', '#f3f4f6'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width,
+          height,
+          backgroundColor,
+          borderRadius: 8,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const SkeletonLoader = ( {userId}:{userId :string} ) => {
+  return (
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen options={{ headerShown: false }} />
+      
+      {/* Background Skeleton */}
+      <View style={styles.backgroundImageContainer}>
+        <SkeletonBox 
+          width="100%" 
+          height="100%" 
+          style={{ borderRadius: 0 }}
+        />
+        
+        {/* Action Buttons Skeleton */}
+      
+          <SkeletonBox width={20} height={20} style={{ borderRadius: 10 }} />
+    
+        
+      
+          <SkeletonBox width={24} height={24} style={{ borderRadius: 12 }} />
+        
+      </View>
+
+      {/* Draggable Sheet Skeleton */}
+      <View style={styles.draggableSheet}>
+        {/* Drag Handle */}
+        <View style={styles.dragHandle} />
+        
+        {/* User Info Content Skeleton */}
+        <View style={styles.userInfoContent}>
+          {/* Avatar Skeleton */}
+          <View style={styles.avatarContainer}>
+            <SkeletonBox 
+              width={80} 
+              height={80} 
+              style={{ borderRadius: 40 }}
+            />
+          </View>
+          
+          {/* Name Skeleton */}
+          <SkeletonBox 
+            width={180} 
+            height={28} 
+            style={{ marginBottom: 12, borderRadius: 14 }}
+          />
+          
+          {/* Occupation and Rating Row Skeleton */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+            <SkeletonBox 
+              width={100} 
+              height={20} 
+              style={{ marginRight: 8, borderRadius: 10 }}
+            />
+            <SkeletonBox 
+              width={8} 
+              height={20} 
+              style={{ marginRight: 8, borderRadius: 4 }}
+            />
+            <SkeletonBox 
+              width={18} 
+              height={18} 
+              style={{ marginRight: 4, borderRadius: 9 }}
+            />
+            <SkeletonBox 
+              width={30} 
+              height={20} 
+              style={{ borderRadius: 10 }}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNavContainer}>
+        <BottomNavigation currentScreen="profile" userId={userId} />
+      </View>
+    </SafeAreaView>
+  );
+};
 
 const UserProfile = () => {
   const params = useLocalSearchParams();
   const userId = params.userId;
   
   // State based on your API response structure
-  const [profileData, setProfileData] = useState(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Animation values for draggable bottom sheet
   const translateY = useRef(new Animated.Value(0)).current;
@@ -25,7 +164,7 @@ const UserProfile = () => {
         if (!userId) return;
         try {
           setLoading(true);
-          const profileResult = await getUserProfile(userId);
+          const profileResult = await getUserProfile(userId as string);
           setProfileData(profileResult || null);
           setError(null);
         } catch (err) {
@@ -75,19 +214,9 @@ const UserProfile = () => {
     }).start();
   });
 
-
+  // Show skeleton loading
   if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.centered}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-        <View style={styles.bottomNavContainer}>
-          <BottomNavigation currentScreen="profile" userId={userId} />
-        </View>
-      </SafeAreaView>
-    );
+    return <SkeletonLoader userId={Array.isArray(userId)?userId[0]:userId} />;
   }
 
   if (error) {
@@ -126,9 +255,13 @@ const UserProfile = () => {
       <View style={styles.backgroundImageContainer}>
         {profileData.profileImageUrl ? (
           <Image 
-            source={{ uri: profileData.profileImageUrl }} 
+            source={{ uri: profileData.profileImageUrl,
+               cache: 'default',
+
+             }} 
             style={styles.backgroundImage}
-            resizeMode="cover"
+            resizeMode='cover'
+            resizeMethod='auto'
           />
         ) : (
           <View style={[styles.backgroundImage, styles.placeholderBackground]} />

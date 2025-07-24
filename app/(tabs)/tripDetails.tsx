@@ -240,10 +240,10 @@ const TripDetails: React.FC = () => {
             
             <View style={styles.detailRow}>
               <View style={styles.detailItem}>
-                <View style={styles.detailIcon}>
-                  <Ionicons name="calendar-outline" size={20} color="#585DDB26" />
+                <View style={[styles.detailIcon,{backgroundColor:'#FF956E26'}]}>
+                  <Ionicons name="calendar-outline" size={20} color="#FF956E" />
                 </View>
-                <View>
+                <View style={{}}>
                   <Text style={styles.detailLabel}>วันที่เดินทาง</Text>
                   <Text style={styles.detailValue}>
                     {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
@@ -252,8 +252,8 @@ const TripDetails: React.FC = () => {
               </View>
 
               <View style={styles.detailItem}>
-                <View style={styles.detailIcon}>
-                  <Ionicons name="wallet-outline" size={20} color="#4CAF50" />
+                <View style={[styles.detailIcon,{backgroundColor:'#FACC1526'}]}>
+                <Image source={require('../assets/images/coin.png')} style={{width:20,height:20}}/>
                 </View>
                 <View>
                   <Text style={styles.detailLabel}>ราคาต่อคน</Text>
