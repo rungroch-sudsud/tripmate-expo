@@ -2696,6 +2696,14 @@
   dependencies:
     "@types/ms" "*"
 
+"@types/draft-js@*":
+  version "0.11.18"
+  resolved "https://registry.npmjs.org/@types/draft-js/-/draft-js-0.11.18.tgz"
+  integrity sha512-lP6yJ+EKv5tcG1dflWgDKeezdwBa8wJ7KkiNrrHqXuXhl/VGes1SKjEfKHDZqOz19KQbrAhFvNhDPWwnQXYZGQ==
+  dependencies:
+    "@types/react" "*"
+    immutable "~3.7.4"
+
 "@types/eslint-scope@^3.7.7":
   version "3.7.7"
   resolved "https://registry.npmjs.org/@types/eslint-scope/-/eslint-scope-3.7.7.tgz"
@@ -2842,6 +2850,14 @@
   integrity sha512-R4I/kzCYAdRLzfiCabn9hxWfbuHS573x+r0dJMkkzThEa7pbrcDWK+9zu3e7aBOouf+rQAciqPFMnxwr0aWgKg==
   dependencies:
     undici-types "~7.8.0"
+
+"@types/react-draft-wysiwyg@^1.13.8":
+  version "1.13.8"
+  resolved "https://registry.npmjs.org/@types/react-draft-wysiwyg/-/react-draft-wysiwyg-1.13.8.tgz"
+  integrity sha512-qo0vIHjqAYq3Hz93Td3ecNodgVjKsvrWkBJ6mZXJSUmQzrQ5Fu7NS9oV5PXnVbnuqPoJLALbCSiz8UCksLribg==
+  dependencies:
+    "@types/draft-js" "*"
+    "@types/react" "*"
 
 "@types/react@*", "@types/react@^19.0.0", "@types/react@>=16", "@types/react@>=18", "@types/react@~19.0.10":
   version "19.0.14"
@@ -4076,6 +4092,11 @@ core-js@^1.0.0:
   resolved "https://registry.npmjs.org/core-js/-/core-js-1.2.7.tgz"
   integrity sha512-ZiPp9pZlgxpWRu0M+YWbm6+aQ84XEfH1JRXvfOc/fILWI0VKhLC2LX13X1NYq4fULzLMq7Hfh43CSo2/aIaUPA==
 
+core-js@^3.6.4:
+  version "3.44.0"
+  resolved "https://registry.npmjs.org/core-js/-/core-js-3.44.0.tgz"
+  integrity sha512-aFCtd4l6GvAXwVEh3XbbVqJGHDJt0OZRa+5ePGx3LLwi12WfexqQxcsohb2wgsa/92xtl19Hd66G/L+TaAxDMw==
+
 cosmiconfig@^5.0.5:
   version "5.2.1"
   resolved "https://registry.npmjs.org/cosmiconfig/-/cosmiconfig-5.2.1.tgz"
@@ -4099,7 +4120,7 @@ create-jest@^29.7.0:
     jest-util "^29.7.0"
     prompts "^2.0.1"
 
-cross-fetch@^3.1.5:
+cross-fetch@^3.0.4, cross-fetch@^3.1.5:
   version "3.2.0"
   resolved "https://registry.npmjs.org/cross-fetch/-/cross-fetch-3.2.0.tgz"
   integrity sha512-Q+xVJLoGOeIMXZmbUK4HYk+69cQH6LudR0Vu/pRm2YlU/hDV9CiS0gKUMaWY5f2NeUH9C1nV3bsTlCo0FsTV1Q==
@@ -4547,6 +4568,15 @@ dotenv@^16.4.5, dotenv@~16.4.5:
   version "16.4.7"
   resolved "https://registry.npmjs.org/dotenv/-/dotenv-16.4.7.tgz"
   integrity sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==
+
+draft-js@^0.11.7:
+  version "0.11.7"
+  resolved "https://registry.npmjs.org/draft-js/-/draft-js-0.11.7.tgz"
+  integrity sha512-ne7yFfN4sEL82QPQEn80xnADR8/Q6ALVworbC5UOSzOvjffmYfFsr3xSZtxbIirti14R7Y33EZC5rivpLgIbsg==
+  dependencies:
+    fbjs "^2.0.0"
+    immutable "~3.7.4"
+    object-assign "^4.1.1"
 
 dunder-proto@^1.0.1:
   version "1.0.1"
@@ -5092,6 +5122,20 @@ fbjs@^0.8.4:
     promise "^7.1.1"
     setimmediate "^1.0.5"
     ua-parser-js "^0.7.30"
+
+fbjs@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.npmjs.org/fbjs/-/fbjs-2.0.0.tgz"
+  integrity sha512-8XA8ny9ifxrAWlyhAbexXcs3rRMtxWcs3M0lctLfB49jRDHiaxj+Mo0XxbwE7nKZYzgCFoq64FS+WFd4IycPPQ==
+  dependencies:
+    core-js "^3.6.4"
+    cross-fetch "^3.0.4"
+    fbjs-css-vars "^1.0.0"
+    loose-envify "^1.0.0"
+    object-assign "^4.1.0"
+    promise "^7.1.1"
+    setimmediate "^1.0.5"
+    ua-parser-js "^0.7.18"
 
 file-selector@^2.1.0:
   version "2.1.2"
@@ -5787,6 +5831,11 @@ image-size@^1.0.2:
   dependencies:
     queue "6.0.2"
 
+immutable@~3.7.4:
+  version "3.7.6"
+  resolved "https://registry.npmjs.org/immutable/-/immutable-3.7.6.tgz"
+  integrity sha512-AizQPcaofEtO11RZhPPHBOJRdo/20MKQF9mBLnVkBoyHi1/zXK8fzVdnEpSV9gxqtnh6Qomfp3F0xT5qP/vThw==
+
 import-fresh@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmjs.org/import-fresh/-/import-fresh-2.0.0.tgz"
@@ -5848,7 +5897,7 @@ interpret@^3.1.1:
   resolved "https://registry.npmjs.org/interpret/-/interpret-3.1.1.tgz"
   integrity sha512-6xwYfHbajpoF0xLW+iwLkhwgvLoZDfjYfoFNu8ftMoXINzwuymNLd9u/KmwtdT2GbR+/Cz66otEGEVVUHX9QLQ==
 
-invariant@^2.2.4:
+invariant@^2.2.4, invariant@2.2.4:
   version "2.2.4"
   resolved "https://registry.npmjs.org/invariant/-/invariant-2.2.4.tgz"
   integrity sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==
@@ -8913,7 +8962,7 @@ react-devtools-core@^6.1.1:
     shell-quote "^1.6.1"
     ws "^7"
 
-"react-dom@^16.8.0 || ^17 || ^18", "react-dom@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react-dom@^18.0.0 || ^17.0.0 || ^16.8.0", "react-dom@^18.0.0 || ^19.0.0", react-dom@^19.0.0, "react-dom@^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.14.0", "react-dom@>= 0.14.0", "react-dom@>=16 || >=17 || >= 18", react-dom@>=16.8.0, react-dom@>=17.0.0, react-dom@>=17.x, react-dom@19.0.0:
+"react-dom@^16.8.0 || ^17 || ^18", "react-dom@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react-dom@^18.0.0 || ^17.0.0 || ^16.8.0", "react-dom@^18.0.0 || ^19.0.0", react-dom@^19.0.0, "react-dom@^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.14.0", "react-dom@>= 0.14.0", react-dom@>=0.14.0, "react-dom@>=16 || >=17 || >= 18", react-dom@>=16.8.0, react-dom@>=17.0.0, react-dom@>=17.x, react-dom@19.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react-dom/-/react-dom-19.0.0.tgz"
   integrity sha512-4GV5sHFG0e/0AD4X+ySy6UJd3jVl1iNsNHdpad0qhABJ11twS3TTBnseqsKurKcsNqCEFeGL3uLpVChpIO3QfQ==
@@ -9085,6 +9134,11 @@ react-native-pager-view@^6.8.1:
   resolved "https://registry.npmjs.org/react-native-pager-view/-/react-native-pager-view-6.8.1.tgz"
   integrity sha512-XIyVEMhwq7sZqM7GobOJZXxFCfdFgVNq/CFB2rZIRNRSVPJqE1k1fsc8xfQKfdzsp6Rpt6I7VOIvhmP7/YHdVg==
 
+react-native-pell-rich-editor@^1.10.0:
+  version "1.10.0"
+  resolved "https://registry.npmjs.org/react-native-pell-rich-editor/-/react-native-pell-rich-editor-1.10.0.tgz"
+  integrity sha512-MRL7lokAQOIxcZ900FxHeVA0B3ZRcFlIhZ9FSQIrjHmutN2at+hax139xV0AQ1DwvJ3fYwlUuTr7Pf4hHpy/PA==
+
 react-native-reanimated@*, react-native-reanimated@~3.17.4:
   version "3.17.5"
   resolved "https://registry.npmjs.org/react-native-reanimated/-/react-native-reanimated-3.17.5.tgz"
@@ -9162,7 +9216,15 @@ react-native-web@^0.20.0:
     postcss-value-parser "^4.2.0"
     styleq "^0.1.3"
 
-react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", "react-native@^0.0.0-0 || >=0.65 <1.0", "react-native@>= 0.30.0", react-native@>=0.57, react-native@>=0.59, react-native@>=0.71, react-native@0.79.5:
+react-native-webview@*, react-native-webview@>=7.5.2:
+  version "13.15.0"
+  resolved "https://registry.npmjs.org/react-native-webview/-/react-native-webview-13.15.0.tgz"
+  integrity sha512-Vzjgy8mmxa/JO6l5KZrsTC7YemSdq+qB01diA0FqjUTaWGAGwuykpJ73MDj3+mzBSlaDxAEugHzTtkUQkQEQeQ==
+  dependencies:
+    escape-string-regexp "^4.0.0"
+    invariant "2.2.4"
+
+react-native@*, "react-native@^0.0.0-0 || >=0.60 <1.0", "react-native@^0.0.0-0 || >=0.65 <1.0", "react-native@>= 0.30.0", react-native@>=0.50.0, react-native@>=0.57, react-native@>=0.59, react-native@>=0.71, react-native@0.79.5:
   version "0.79.5"
   resolved "https://registry.npmjs.org/react-native/-/react-native-0.79.5.tgz"
   integrity sha512-jVihwsE4mWEHZ9HkO1J2eUZSwHyDByZOqthwnGrVZCh6kTQBCm4v8dicsyDa6p0fpWNE5KicTcpX/XXl0ASJFg==
@@ -9262,7 +9324,7 @@ react-virtuoso@^2.10.2, react-virtuoso@^2.16.5:
     "@virtuoso.dev/react-urx" "^0.2.12"
     "@virtuoso.dev/urx" "^0.2.12"
 
-react@*, "react@^0.13.0 || ^0.14.0 || >=15", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react@^18.0.0 || ^17.0.0 || ^16.8.0", "react@^18.0.0 || ^19.0.0", react@^19.0.0, "react@^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.14.0", "react@>= 0.14.0", "react@>= 15.2.1", "react@>= 16.8 || 18.0.0", "react@>= 18.2.0", react@>=15.0.0, react@>=16, "react@>=16 || >=17 || >= 18", react@>=16.0.0, react@>=16.13.1, react@>=16.6.0, react@>=16.8, react@>=16.8.0, react@>=17.0.0, react@>=17.x, react@>=18, react@>=18.2.0, react@19.0.0:
+react@*, "react@^0.13.0 || ^0.14.0 || >=15", "react@^16.0.0 || ^17.0.0 || ^18.0.0", "react@^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18", "react@^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react@^16.8.0 || ^17.0.0-rc.1 || ^18.0.0 || ^19.0.0-rc.1", "react@^18.0.0 || ^17.0.0 || ^16.8.0", "react@^18.0.0 || ^19.0.0", react@^19.0.0, "react@^19.0.0 || ^18.0.0 || ^17.0.0 || ^16.14.0", "react@>= 0.14.0", "react@>= 15.2.1", "react@>= 16.8 || 18.0.0", "react@>= 18.2.0", react@>=0.14.0, react@>=15.0.0, react@>=16, "react@>=16 || >=17 || >= 18", react@>=16.0.0, react@>=16.13.1, react@>=16.6.0, react@>=16.8, react@>=16.8.0, react@>=17.0.0, react@>=17.x, react@>=18, react@>=18.2.0, react@19.0.0:
   version "19.0.0"
   resolved "https://registry.npmjs.org/react/-/react-19.0.0.tgz"
   integrity sha512-V8AVnmPIICiWpGfm6GLzCR/W5FXLchHop40W4nXBmdlEceh16rCN8O8LNWm5bh5XUX91fh7KpA+W0TgMKmgTpQ==
@@ -10487,6 +10549,11 @@ typescript@^5, "typescript@>=4.3 <6", typescript@~5.8.3:
   version "5.8.3"
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.8.3.tgz"
   integrity sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ==
+
+ua-parser-js@^0.7.18:
+  version "0.7.40"
+  resolved "https://registry.npmjs.org/ua-parser-js/-/ua-parser-js-0.7.40.tgz"
+  integrity sha512-us1E3K+3jJppDBa3Tl0L3MOJiGhe1C6P0+nIvQAFYbxlMAx0h81eOwLmU57xgqToduDDPx3y5QsdjPfDu+FgOQ==
 
 ua-parser-js@^0.7.30:
   version "0.7.40"

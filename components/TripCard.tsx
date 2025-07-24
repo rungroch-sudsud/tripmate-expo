@@ -9,7 +9,8 @@ import {
   NativeSyntheticEvent,
   ScrollView,
 } from 'react-native';
-
+import RichTextRenderer from './richTextRenderer';
+import { Ionicons } from '@expo/vector-icons';
 // Types
 interface Trip {
   id: string;
@@ -39,6 +40,7 @@ interface TripOwner {
   age?: number;
   travelStyles?: string[];
   fullname: string;
+  review:string[]
 }
 
 interface TripCardProps {
@@ -136,7 +138,11 @@ const scrollViewRef = useRef(null);
     onJoinTrip(trip);
   };
 
-   
+const averageRating = (trip.tripOwner?.review?.length ?? 0) > 0
+  ? trip.tripOwner.review.reduce((sum, r) => sum + (r.rating || 0), 0) / trip.tripOwner.review.length
+  : 0.0;
+
+
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   return (
@@ -310,9 +316,12 @@ const scrollViewRef = useRef(null);
 
         {/* Trip Detail */}
         {trip.detail && (
-          <Text style={styles.description} numberOfLines={2}>
-            {trip.detail}
-          </Text>
+         
+           <RichTextRenderer 
+  jsxString={trip.detail} 
+  fallbackText="No details available" 
+/>
+       
         )}
 
         {/* Included Services Tags */}
@@ -345,6 +354,12 @@ const scrollViewRef = useRef(null);
               <Text style={styles.ownerName} numberOfLines={1}>
                 {ownerInfo.displayName}
               </Text>
+              <View style={{flexDirection:'row',alignItems:'center'}}>
+   <Ionicons name="star" size={20} color="#FFD700" />
+     <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: '400', color: '#374151',fontFamily:'LineSeedSansTH' }}>
+       {averageRating.toFixed(1)}
+     </Text>
+              </View>
              {/*  <Text style={styles.ownerAge}>{ownerInfo.age}</Text>*/}
             </View>
           </View>

@@ -26,6 +26,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
 import {TravelSelectionDetails,PickedFile} from '../../features/trip/schemas/trip-form.schema'
+import RichTextInputComponent from '../../components/richTextEditor'
 
 
 const MAX_WORDS = 40;
@@ -68,6 +69,13 @@ const ThaiFormScreen = () => {
     attachments: 0,
     details: '',
     detailsFormatting: null, 
+    travelPlans:'',
+    includedInprice:'',
+    notIncludedInprice:'',
+    preparation:'',
+    terms:'',
+    meetingPoint:'',
+    leaderDetails:''
   });
 
 
@@ -514,6 +522,8 @@ const UploadTripImages = async (tripId: string): Promise<void> => {
   type StatusType = 'published' | 'draft';
 
 const create = async (status: StatusType): Promise<void> => {
+  console.log(formData.details);
+  
   console.log(imageTextArray);
   
   setIsValidating(true);
@@ -531,13 +541,6 @@ const create = async (status: StatusType): Promise<void> => {
   try {
     console.log("🚀 Starting trip creation...");
     
-   // if (!formData2.name || !formData.startDate || !formData.endDate || 
-     //   selected.length === 0 || !maxParticipant || !pricePerPerson || 
-       // selectedItems.length === 0 || imageTextArray.length === 0) { // Updated validation
-     // Alert.alert('ข้อมูลไม่ครบถ้วน', 'กรุณากรอกข้อมูลให้ครบถ้วนและเพิ่มรูปภาพอย่างน้อย 1 รูป');
-   //   return;
-//    }
-
     setUploading(true);
     setResponseMessage(null);
 
@@ -1152,11 +1155,13 @@ const handleChangeText = useCallback((text) => {
 />
  </View>
 
+<View style={{marginBottom:20,marginTop:-10,marginLeft:10}}>
+          <Text style={{fontFamily:"LineSeedSansTH_A_Bd",fontSize:16,fontWeight:'700'}}>รายละเอียดทริป</Text>
+        </View>
 
 
 
-
-<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+{/*<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
     <AtmosphereInputComponent
   value={formData.description}
   onChangeText={(text) => {
@@ -1170,21 +1175,131 @@ const handleChangeText = useCallback((text) => {
   styles={styles}
   isEditMode={false}
 />
-</View>
+</View>*/}
 
-        
-        {/* General Details with Error */}
-<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
-<DetailsInputComponent    
-  value={formData.details}
-  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}
-  error={errors.details}
-  clearError={() => clearError('details')}
-  styles={styles}
+   {/**Travel Plans */}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>🗓 แผนการเดินทาง</Text>
+<RichTextInputComponent       
+  value={formData.travelPlans}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
   isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+     {/**Included in Price */}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>✅ สิ่งที่รวมในราคา</Text>
+<RichTextInputComponent       
+  value={formData.includedInprice}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+     {/**Not Included in Price */}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>❌ สิ่งที่ไม่รวมในราคา</Text>
+<RichTextInputComponent       
+  value={formData.notIncludedInprice}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+
+        {/**THings to bring yourself */}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>🎒 สิ่งที่ต้องเตรียมมาเอง</Text>
+<RichTextInputComponent       
+  value={formData.preparation}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+
+           {/**Terms and conditions */}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>⚠️ เงื่อนไข / กติกาทริป</Text>
+<RichTextInputComponent       
+  value={formData.terms}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+
+              {/**Meeting Point*/}
+  <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+    <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>📍 จุดนัดพบ</Text>
+<RichTextInputComponent       
+  value={formData.meetingPoint}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, meetingPoint: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="เขียนรายละเอียดทริปของคุณ..."
+/>
+   </View>
+
+
+   <View>
+    <Text style={{fontFamily:"LineSeedSansTH_A_Bd",fontSize:16,marginVertical:10}}>แนะนำตัวในฐานนะหัวตี้</Text>
+<TextInput
+  placeholderTextColor="#9CA3AF"
+  value={formData.leaderDetails}
+  onChangeText={(newData) =>
+    setFormData((prev) => ({ ...prev, leaderDetails: newData }))
+  }
+  style={{
+    borderColor: '#9CA3AF',
+    borderWidth: 1,
+    height: 231,
+    borderRadius: 20,
+    outlineWidth: 0,
+    color: '#374151',
+    padding: 20,
+    textAlign: 'left',
+    textAlignVertical: 'top', // <-- this is the key line
+    marginBottom:10,
+    fontFamily:'LineSeedSansTH_A_Bd'
+  }}
+  placeholder="เขียนแนะนำตัวได้ที่นี่..."
+  multiline // <-- required to support multiple lines
 />
 
-</View>
+   </View>
+
+
+        
+        {/* General Details with Error 
+<View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
+  <Text></Text>
+<RichTextInputComponent       
+  value={formData.details}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  error={errors.details}   
+  clearError={() => clearError('details')}   
+  isEditMode={false}
+  placeholder="Enter your details here..."
+/>
+</View>*/}
 
     
         <Text style={{fontWeight:'700',fontFamily:'LineSeedSansTH_A_Bd',margin:20,marginBottom:5,color:'#374151'}}>
@@ -1230,7 +1345,7 @@ const handleChangeText = useCallback((text) => {
       </ScrollView>
 
       {/* Updated Submit Buttons */}
-      <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: '#e0e0e0' }}>
+      <View style={{ flexDirection: 'row' }}>
         <View style={styles.submitContainer}>
           <TouchableOpacity 
             style={[styles.draftButton, isValidating && { opacity: 0.7 }]} 

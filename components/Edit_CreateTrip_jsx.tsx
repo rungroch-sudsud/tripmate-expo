@@ -486,7 +486,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
   </Text>
 
   {subtitle && (
-    <Text style={[styles.subtitle, error && { color: 'red' }   ]}>
+    <Text style={[styles.subtitle, error && { color: 'red' }  ]}>
       {subtitle}
     </Text>
   )}
