@@ -144,7 +144,10 @@ const TripDetails: React.FC = () => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+   <View style={{flex:1}}>
+     <ScrollView style={styles.container}
+     showsVerticalScrollIndicator={false}
+    >
 
       <Stack.Screen options={{ headerShown: false }} />
          <Image
@@ -336,13 +339,15 @@ const TripDetails: React.FC = () => {
               </View>
           </View>
 
-          {/* Book Button */}
-          <TouchableOpacity style={styles.bookButton} onPress={handleTripPress}>
-            <Text style={styles.bookButtonText}>เข้าร่วมแชท</Text>
-          </TouchableOpacity>
+       
         </View>
       </View>
     </ScrollView>
+       {/* Book Button */}
+          <TouchableOpacity style={styles.bookButton} onPress={handleTripPress}>
+            <Text style={styles.bookButtonText}>เข้าร่วมแชท</Text>
+          </TouchableOpacity>
+   </View>
   );
 };
 
@@ -388,10 +393,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: '#FFF',
- 
-    marginVertical: 8,
     borderRadius: 16,
- 
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -400,7 +402,7 @@ const styles = StyleSheet.create({
   },
   headerIcons: {
     position: 'absolute',
-    top: 50,
+    top: 30,
     left: 16,
     right: 16,
     flexDirection: 'row',
@@ -564,6 +566,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
+    margin:20
   },
   bookButtonText: {
     color: '#FFF',

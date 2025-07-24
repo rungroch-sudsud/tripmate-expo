@@ -522,7 +522,7 @@ const UploadTripImages = async (tripId: string): Promise<void> => {
   type StatusType = 'published' | 'draft';
 
 const create = async (status: StatusType): Promise<void> => {
-  console.log(formData.details);
+  console.log(formData.terms);
   
   console.log(imageTextArray);
   
@@ -1288,7 +1288,7 @@ const handleChangeText = useCallback((text) => {
 
 
         
-        {/* General Details with Error 
+        {/* General Details with Error */}
 <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
   <Text></Text>
 <RichTextInputComponent       
@@ -1299,7 +1299,7 @@ const handleChangeText = useCallback((text) => {
   isEditMode={false}
   placeholder="Enter your details here..."
 />
-</View>*/}
+</View>
 
     
         <Text style={{fontWeight:'700',fontFamily:'LineSeedSansTH_A_Bd',margin:20,marginBottom:5,color:'#374151'}}>

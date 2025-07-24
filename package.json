@@ -43,7 +43,7 @@
     "react-native": "0.79.5",
     "react-native-calendars": "^1.1312.1",
     "react-native-element-dropdown": "^2.12.4",
-    "react-native-gesture-handler": "^2.27.1",
+    "react-native-gesture-handler": "^2.27.2",
     "react-native-image-picker": "^8.2.1",
     "react-native-image-slider-box": "^2.0.7",
     "react-native-pager-view": "^6.8.1",

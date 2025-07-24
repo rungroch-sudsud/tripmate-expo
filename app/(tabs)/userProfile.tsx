@@ -1,10 +1,10 @@
-import { getUserProfile, fetchTravelStyles, transportationStyles } from '../../features/user/services/userServices'
-import { View, Image, SafeAreaView, ScrollView, Text, StyleSheet, TouchableOpacity } from 'react-native'
+import { getUserProfile } from '../../features/user/services/userServices'
+import { View, Image, SafeAreaView, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native'
 import BottomNavigation from '../../components/customNavigation'
-import { Stack, useRouter, useLocalSearchParams, router ,useFocusEffect} from 'expo-router'
-import React, { useEffect, useState, } from 'react'
+import { Stack, useRouter, useLocalSearchParams, router, useFocusEffect } from 'expo-router'
+import React, { useEffect, useState, useRef } from 'react'
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-
 
 const UserProfile = () => {
   const params = useLocalSearchParams();
@@ -12,95 +12,80 @@ const UserProfile = () => {
   
   // State based on your API response structure
   const [profileData, setProfileData] = useState(null);
-  const [travelStylesData, setTravelStylesData] = useState([]);
-  const [transportationStylesData, setTransportationStylesData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-useFocusEffect(
-  React.useCallback(() => {
-    const fetchProfile = async () => {
-      if (!userId) return;
-      try {
-        setLoading(true);
-        const [profileResult, travelStylesResult, transportationStylesResult] = await Promise.all([
-          getUserProfile(userId),
-          fetchTravelStyles(),
-          transportationStyles()
-        ]);
+  // Animation values for draggable bottom sheet
+  const translateY = useRef(new Animated.Value(0)).current;
+  const lastGestureY = useRef(0);
 
-        setProfileData(profileResult || null);
-        setTravelStylesData(travelStylesResult || []);
-        setTransportationStylesData(transportationStylesResult || []);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch profile');
-        console.error('Error in fetchProfile:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchProfile = async () => {
+        if (!userId) return;
+        try {
+          setLoading(true);
+          const profileResult = await getUserProfile(userId);
+          setProfileData(profileResult || null);
+          setError(null);
+        } catch (err) {
+          setError('Failed to fetch profile');
+          console.error('Error in fetchProfile:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
 
-    fetchProfile();
-  }, [userId])
-);
+      fetchProfile();
+    }, [userId])
+  );
 
-  // Helper function to get travel style details from IDs
-  const getTravelStyleDetails = (styleIds) => {
-    if (!styleIds || !Array.isArray(styleIds)) return [];
-    
-    // Debug logging
-    console.log('User selected travel style IDs:', styleIds);
-    console.log('Available travel styles:', travelStylesData);
-    
-    return styleIds.map(userSelectedId => {
-      // Try to find matching style with flexible comparison
-      const style = travelStylesData.find(item => {
-        // Convert both to strings for comparison
-        const itemId = String(item.id);
-        const selectedId = String(userSelectedId);
-        return itemId === selectedId;
-      });
-      
-      console.log(`Looking for ID: ${userSelectedId}, Found:`, style);
-      return style ? style : { id: userSelectedId, title: `${userSelectedId}` };
-    });
-  };
+  const averageRating = profileData?.reviews?.length
+    ? profileData.reviews.reduce((sum, r) => sum + r.rating, 0) / profileData.reviews.length
+    : 0;
 
-  // Helper function to get transportation style details from IDs
-  const getTransportationStyleDetails = (styleIds) => {
-    if (!styleIds || !Array.isArray(styleIds)) return [];
-    
-    // Debug logging
-    console.log('User selected transportation style IDs:', styleIds);
-    console.log('Available transportation styles:', transportationStylesData);
-    
-    return styleIds.map(userSelectedId => {
-      // Try to find matching style with flexible comparison
-      const style = transportationStylesData.find(item => {
-        // Convert both to strings for comparison
-        const itemId = String(item.id);
-        const selectedId = String(userSelectedId);
-        return itemId === selectedId;
-      });
-      
-      console.log(`Looking for transportation ID: ${userSelectedId}, Found:`, style);
-      return style ? style : { id: userSelectedId, title: `Unknown Transportation (${userSelectedId})` };
-    });
-  };
+  // New Gesture API implementation
+ const panGesture = Gesture.Pan()
+  .onUpdate((event) => {
+    const newTranslateY = lastGestureY.current + event.translationY;
 
- const averageRating = profileData?.reviews?.length
-  ? profileData.reviews.reduce((sum, r) => sum + r.rating, 0) / profileData.reviews.length
-  : 0;
+    // Only allow positive (downward) translation
+    if (newTranslateY >= 0) {
+      translateY.setValue(newTranslateY);
+    }
+  })
+  .onEnd((event) => {
+    const { translationY, velocityY } = event;
+    const totalTranslation = lastGestureY.current + translationY;
 
-  if (loading || !travelStylesData.length || !transportationStylesData.length) {
+    const shouldSnapDown = totalTranslation > 100 || velocityY > 500;
+    let toValue = 0; // default snap-back
+
+    if (shouldSnapDown) {
+      toValue = 200; // Snap down if dragged far enough
+    }
+
+    lastGestureY.current = toValue;
+
+    Animated.spring(translateY, {
+      toValue,
+      useNativeDriver: true,
+      tension: 100,
+      friction: 8,
+    }).start();
+  });
+
+
+  if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.centered}>
-          <Text>Loading...</Text>
+          <Text style={styles.loadingText}>Loading...</Text>
         </View>
-        <BottomNavigation currentScreen="profile" userId={userId} />
+        <View style={styles.bottomNavContainer}>
+          <BottomNavigation currentScreen="profile" userId={userId} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -110,9 +95,11 @@ useFocusEffect(
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.centered}>
-          <Text>Error: {error}</Text>
+          <Text style={styles.errorText}>Error: {error}</Text>
         </View>
-        <BottomNavigation currentScreen="profile" userId={userId} />
+        <View style={styles.bottomNavContainer}>
+          <BottomNavigation currentScreen="profile" userId={userId} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -122,9 +109,11 @@ useFocusEffect(
       <SafeAreaView style={styles.container}>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={styles.centered}>
-          <Text>No profile data available</Text>
+          <Text style={styles.noDataText}>No profile data available</Text>
         </View>
-        <BottomNavigation currentScreen="profile" userId={userId} />
+        <View style={styles.bottomNavContainer}>
+          <BottomNavigation currentScreen="profile" userId={userId} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -132,117 +121,92 @@ useFocusEffect(
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ScrollView style={styles.scrollView}>
-        {/* Profile Image */}
- 
-  <View style={styles.imageWrapper}>
-{profileData.profileImageUrl ? (
-  <Image 
-    source={{ uri: profileData.profileImageUrl }} 
-    style={styles.profileImage}
-  />
-) : (
-  <View style={styles.profileImage}>
-   
-  </View>
-)}
+      
+      {/* Base Layer - Full Width Profile Image */}
+      <View style={styles.backgroundImageContainer}>
+        {profileData.profileImageUrl ? (
+          <Image 
+            source={{ uri: profileData.profileImageUrl }} 
+            style={styles.backgroundImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[styles.backgroundImage, styles.placeholderBackground]} />
+        )}
 
-    <TouchableOpacity style={styles.editProfile} onPress={()=>router.push(`/profile?userId=${userId}`)}>
- <Image source={require('../assets/images/edit-profile.png')} style={{height:20,width:20}}/>
-    </TouchableOpacity>
-    <TouchableOpacity style={styles.threedots}>
- <Image source={require('../assets/images/3-dots.png')} style={{height:24,width:24}}/>
-    </TouchableOpacity>
-     <TouchableOpacity style={styles.facebook}>
- <Image source={require('../assets/images/facebook.png')} style={{height:35,width:35}}/>
-    </TouchableOpacity>
-        <TouchableOpacity style={styles.instagram}>
- <Image source={require('../assets/images/instagram.png')} style={{height:35,width:35}}/>
-    </TouchableOpacity>
+        {/* Action Buttons on Image */}
+        <TouchableOpacity 
+          style={styles.editProfile} 
+          onPress={() => router.push(`/profile?userId=${userId}`)}
+        >
+          <Image 
+            source={require('../assets/images/edit-profile.png')} 
+            style={{ height: 20, width: 20 }}
+          />
+        </TouchableOpacity>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8,   position: 'absolute',
-     bottom: 38,
-     left: 16,    
-     right: 'auto', }}>
-       <Text style={{  
-  color: '#FFFFFF',
-  fontSize: 24,
-  fontFamily:'LineSeedSansTH_A_Bd',
-  marginRight:10,
-  fontWeight: 'bold',
-  textShadowColor: 'rgba(0, 0, 0, 0.7)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 3,}}>{profileData.fullname}</Text>
-     <View style={{flexDirection:'row',alignItems:'baseline'}}>
-      <Ionicons name="star" size={20} color="#FFD700" />
-     <Text style={{ marginLeft: 4, fontSize: 14, fontWeight: '700', color: '#FFFFFF',fontFamily:'LineSeedSansTH_A_Bd' }}>
-       {averageRating.toFixed(1)}
-     </Text>
-     </View>
-   </View>
-   
-        <Text style={styles.destinationIconImage}>📍ชอบเที่ยวในไทยไปได้หลายจังหวัด หรือชวนไปตปท.ก็ได้</Text>
-  </View>
+        <TouchableOpacity style={styles.threedots}>
+          <Image 
+            source={require('../assets/images/3-dots.png')} 
+            style={{ height: 24, width: 24 }}
+          />
+        </TouchableOpacity>
+      </View>
 
+      {/* Draggable Layer - User Info Card */}
+      <GestureDetector gesture={panGesture}>
+        <Animated.View 
+          style={[
+            styles.draggableSheet,
+            {
+              transform: [{ translateY: translateY }]
+            }
+          ]}
+        >
+          {/* Home Tab / Drag Handle */}
+          <View style={styles.dragHandle} />
+          
+          {/* User Info Content */}
+          <View style={styles.userInfoContent}>
+            {/* Profile Avatar */}
+            <View style={styles.avatarContainer}>
+              {profileData.profileImageUrl ? (
+                <Image 
+                  source={{ uri: profileData.profileImageUrl }} 
+                  style={styles.avatar}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={[styles.avatar, styles.placeholderAvatar]} />
+              )}
+            </View>
+ {/* User Name */}
+            <Text style={styles.userName}>{profileData.fullname}</Text>
+           <View style={{flexDirection:'row',alignContent:'space-between',alignItems:'center',justifyContent:'center'}}> 
+           
 
-    
+            {/* Occupation */}
+            {profileData.occupation && (
+              <Text style={styles.occupation}>{profileData.occupation}</Text>
+            )}
+            <Text style={{marginBottom:1,color:'#9CA3AF'}}> | </Text>
 
-        {/* Travel Styles */}
-     {profileData.travelStyles && profileData.travelStyles.length > 0 && (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>ความสนใจ</Text>
+            {/* Rating */}
+         
+              <Ionicons name="star" size={18} color="#FFD700" />
+              <Text style={styles.ratingText}>
+                {averageRating.toFixed(1)}
+              </Text>
+          
+            </View>
+          </View>
+        </Animated.View>
+      </GestureDetector>
 
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      {getTravelStyleDetails(profileData.travelStyles).map((style, index) => (
-        <View key={index} style={styles.travelStyleCard}>
-          {style.iconImageUrl && (
-            <Image source={{ uri: style.iconImageUrl }} style={styles.styleIcon} />
-          )}
-          <Text style={styles.styleTitle}>{style.title}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  </View>
-)}
-
-
-        {/* Transportation Styles */}
-    {profileData.transportationStyles && profileData.transportationStyles.length > 0 && (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>สไตล์การเดินทาง</Text>
-
-    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-      {getTransportationStyleDetails(profileData.transportationStyles).map((transport, index) => (
-        <View key={index} style={styles.transportTag}>
-          <Text style={styles.transportTagText}>{transport.title}</Text>
-        </View>
-      ))}
-    </ScrollView>
-  </View>
-)}
-
-
-      {/* Past Trips */}
-{profileData.pastTrips && profileData.pastTrips.length > 0 && (
-  <View style={styles.section}>
-    <Text style={styles.sectionTitle}>ทริปที่เคยไป</Text>
-
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-    >
-      {profileData.pastTrips.map((trip, index) => (
-        <View key={index} style={styles.tripItem}>
-          <Image source={{ uri: trip.fileUrl }} style={styles.tripImage} />
-          {/*<Text style={styles.tripDescription}>{trip.description}</Text>*/}
-        </View>
-      ))}
-    </ScrollView>
-  </View>
-)}
-
-      </ScrollView>
-      <BottomNavigation currentScreen="profile" userId={userId} />
+      {/* Bottom Navigation - Ensure it's always visible */}
+      <View style={styles.bottomNavContainer}>
+        <BottomNavigation currentScreen="profile" userId={userId} />
+      </View>
     </SafeAreaView>
   );
 };
@@ -250,215 +214,153 @@ useFocusEffect(
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    paddingTop:40,
-    borderRadius:5
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
+    backgroundColor: '#000',
   },
   centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  profileImage: {
-    width: 400,
-    height: 350,
-    borderRadius: 20,
-    alignSelf: 'center',
-    marginBottom: 16,
-      boxShadow: '0px 6px 16px rgba(0, 0, 0, 0.4)',
+  loadingText: {
+    color: '#fff',
+    fontSize: 16,
   },
-section: {
-  marginBottom: 24,
-  marginLeft:20,
-},
-  name: {
+  errorText: {
+    color: '#ff6b6b',
+    fontSize: 16,
+  },
+  noDataText: {
+    color: '#fff',
+    fontSize: 16,
+  },
+  
+  // Background Layer - Full Profile Image
+  backgroundImageContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1,
+  },
+  backgroundImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderBackground: {
+    backgroundColor: '#e5e7eb',
+  },
+  editProfile: {
+    position: 'absolute',
+    top: 60,
+    left: 16,
+    padding: 8,
+    backgroundColor: 'rgba(156, 163, 175, 0.8)',
+    borderRadius: 50,
+    height: 36,
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  threedots: {
+    position: 'absolute',
+    top: 60,
+    right: 16,
+    padding: 6,
+    backgroundColor: 'rgba(156, 163, 175, 0.8)',
+    borderRadius: 50,
+    height: 36,
+    width: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  // Draggable Bottom Sheet
+  draggableSheet: {
+    position: 'absolute',
+    bottom: 90, // Increased space for bottom navigation
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    minHeight: 300,
+    zIndex: 5, // Lower than bottom nav but higher than background
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  
+  // Drag Handle (Home Tab)
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#d1d5db',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+
+  // User Info Content
+  userInfoContent: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  avatarContainer: {
+    marginBottom: 16,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  placeholderAvatar: {
+    backgroundColor: '#e5e7eb',
+  },
+  userName: {
     fontSize: 24,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  nickname: {
-    fontSize: 18,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginBottom: 16,
-    color: '#666',
-  },
-  info: {
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    marginBottom: 8,
     color: '#374151',
-    fontFamily:'LineSeedSansTH_A_Bd'
+    marginBottom: 8,
+    fontFamily: 'LineSeedSansTH_A_Bd',
   },
-  listItem: {
+  occupation: {
     fontSize: 16,
-    marginBottom: 4,
-    marginLeft: 8,
+    color: '#6b7280',
+    fontFamily: 'LineSeedSansTH',
   },
-tripItem: {
-  width: 90, // set a fixed width for horizontal layout
-  marginRight: 16, // space between items
-  borderBottomWidth: 0, // remove vertical-style border
-  boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
-  height: 60,
-  borderRadius:8
-},
-tripImage: {
-  width: 90,
-  height: 60,
-  borderRadius: 8,
-  marginBottom: 8,
-},
-
-transportTag: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#FFFFFF',
-  borderRadius: 9999,
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  marginRight: 10,
-  marginBottom: 8,
-  boxShadow: '0 0 2px rgba(0, 0, 0, 0.15)',
-},
-travelStyleCard: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#FFFFFF',
-  borderRadius: 9999,
-  paddingVertical: 8,
-  paddingHorizontal: 12,
-  marginRight: 10,
-  marginBottom: 8,
-  boxShadow: '0 0 2px rgba(0, 0, 0, 0.15)',
-},
-
-transportTagText: {
-  fontSize: 12,
-  fontFamily:'LineSeedSansTH_A_Bd',
-
-  color: '#374151',
-},
-
-  tripDescription: {
-    fontSize: 16,
-    color: '#666',
-  },
-  styleItem: {
+  ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    paddingHorizontal: 8,
-  },
-  styleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  imageWrapper: {
-  position: 'relative',
-  width: 400,
-  height: 350,
-  borderRadius: 20,
-  alignSelf: 'center',
-  marginBottom: 24,
-   boxShadow: '0px 8px 24px rgba(0, 0, 0, 0.3)', // stronger shadow
-},
 
-nameOnImage: {
-  position: 'absolute',
-  bottom: 38,
-  left: 16,    // add some padding from the left edge
-  right: 'auto', // let it size naturally, no right constraint
-  textAlign: 'left',
-  color: 'white',
-  fontSize: 24,
-  fontWeight: 'bold',
-  textShadowColor: 'rgba(0, 0, 0, 0.7)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 3,
-},
-editProfile:{
-  position: 'absolute',
-  top:20,
-  bottom: 'auto',
-  left: 16,    // add some padding from the left edge
-  right: 'auto', // let it size naturally, no right constraint
-  padding:8,
-  backgroundColor:'#9CA3AF',
-  borderRadius:9999,
-  height:35,
-  width:35
-},
-threedots:{
-  position: 'absolute',
-  top:20,
-  bottom: 'auto',
-  right:16,
-  left:'auto',
-  padding:5,
-  backgroundColor:'#9CA3AF',
-  borderRadius:9999,
-  height:35,
-  width:35
-},
-facebook:{
- position: 'absolute',
-  top:60,
-  bottom: 'auto',
-  right:16,
-  left:'auto',
-  padding:5,
-  backgroundColor:'#FFFFFF',
-  borderRadius:9999,
-  height:35,
-  width:35,
-  justifyContent:'center',
-  alignItems:'center'
-},
-instagram:{
- position: 'absolute',
-  top:100,
-  bottom: 'auto',
-  right:16,
-  left:'auto',
-  padding:5,
-  backgroundColor:'#FFFFFF',
-  borderRadius:9999,
-  height:35,
-  width:35,
-  justifyContent:'center',
-  alignItems:'center'
-},
-
-  styleTitle: {
-    fontSize: 12,
-    flex: 1,
-    color:'#374151',
-    fontFamily:'LineSeedSansTH_A_Bd'
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
-  destinationIconImage: {
-  position: 'absolute',
-  bottom: 20,
-  left: 16,    // add some padding from the left edge
-  right: 'auto', // let it size naturally, no right constraint
-  textAlign: 'left',
-  color: 'white',
-  fontSize: 12,
-  fontFamily:'LineSeedSansTH',
-  textShadowColor: 'rgba(0, 0, 0, 0.7)',
-  textShadowOffset: { width: 0, height: 1 },
-  textShadowRadius: 3,
-},
+  ratingText: {
+    marginLeft: 4,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+  },
+
+  // Bottom Navigation Container
+  bottomNavContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 15, // Highest z-index to ensure it's always visible
+    elevation: 10,
+    backgroundColor: 'transparent',
+  },
 });
 
 export default UserProfile;
