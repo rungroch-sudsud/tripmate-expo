@@ -46,6 +46,8 @@ interface ImageWithText {
   type: string;
   name: string;
   text: string;
+  isNewlyAdded?: boolean; // Track if this is a new image
+  serverFileUrl?: string; // Store server URL if synced
 }
 
 interface OriginalData {
@@ -53,6 +55,28 @@ interface OriginalData {
   selectedDestinations: string[];
   selectedTravelStyles: string[];
 }
+
+
+const safeArrayOfIds = (userData: any, field: string): string[] => {
+  const value = userData[field];
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(item => item && item !== "N/A");
+  if (typeof value === 'string') return [value].filter(item => item !== "N/A");
+  return [];
+};
+
+// Helper to find items by IDs and return the objects
+const findItemsByIds = (ids: string[], items: Category[]): Category[] => {
+  if (!ids || !Array.isArray(ids) || !items) return [];
+  return ids
+    .map(id => items.find(item => item.id === id))
+    .filter(Boolean) as Category[];
+};
+
+// Helper to get titles from IDs
+const getTitlesFromIds = (ids: string[], items: Category[]): string[] => {
+  return findItemsByIds(ids, items).map(item => item.title);
+};
 
 const ProfileForm: React.FC = () => {
   // Form data state
@@ -74,7 +98,7 @@ const ProfileForm: React.FC = () => {
   // Image states
   const [imageFile, setImageFile] = useState<PickedFile | null>(null);
   const [imageTextArray, setImageTextArray] = useState<ImageWithText[]>([]);
-
+  const [existingPastTrips, setExistingPastTrips] = useState<ImageWithText[]>([]);
   // Travel preferences
   const [selectedTravel, setSelectedTravel] = useState<Category[]>([]);
   const [selectedTransport, setSelectedTransport] = useState<Category[]>([]);
@@ -87,6 +111,8 @@ const ProfileForm: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [destinationError, setDestinationError] = useState<string | null>(null);
+const [destinationCategories, setDestinationCategories] = useState<Category[]>([])
+const [selectedDestinationIds, setSelectedDestinationIds] = useState<string[]>([]);
 
   // Travel styles
   const [categories, setCategories] = useState<Category[]>([]);
@@ -181,59 +207,91 @@ const validateForm = (): boolean => {
     }
   }, []);
 
-  const fetchInitialData = useCallback(async () => {
-    setLoading(true);
+const fetchInitialData = useCallback(async () => {
+  setLoading(true);
+  
+  try {
+    // Animate progress
+    setTimeout(() => {
+      Animated.timing(progressAnimation, {
+        toValue: 100,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }, 300);
+
+    // Fetch all required data in parallel
+    const [
+      destinationsResponse,
+      travelStylesResponse,
+      travelPersonalitiesResponse,
+      transportationResponse
+    ] = await Promise.all([
+      axiosInstance.get('/destinations'),
+      axiosInstance.get('/travel-styles'),
+      travelPersonalities(),
+      transportationStyles()
+    ]);
+
+    console.log('Raw destinations API response:', destinationsResponse.data);
+    console.log('Raw travel styles API response:', travelStylesResponse.data);
+
+    // ✅ Process destinations - handle both formats
+    const destinationsData = destinationsResponse.data.data || [];
     
-    try {
-      // Animate progress
-      setTimeout(() => {
-        Animated.timing(progressAnimation, {
-          toValue: 100,
-          duration: 300,
-          useNativeDriver: false,
-        }).start();
-      }, 300);
-
-      // Fetch all required data in parallel
-      const [
-        destinationsResponse,
-        travelStylesResponse,
-        travelPersonalitiesResponse,
-        transportationResponse
-      ] = await Promise.all([
-        axiosInstance.get('/destinations'),
-        axiosInstance.get('/travel-styles'),
-        travelPersonalities(),
-        transportationStyles()
-      ]);
-
-      // Set destinations
-      setDestinations(destinationsResponse.data.data || []);
-
-      // Set travel styles
-      const result: ApiResponse = travelStylesResponse.data;
-      const mappedCategories: Category[] = result.data.map(item => ({
-        id: item.id,
-        title: item.title,
-        iconImageUrl: item.iconImageUrl,
-        activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
-      }));
-      setCategories(mappedCategories);
-      setSelectedTravel(travelPersonalitiesResponse || []);
-      setSelectedTransport(transportationResponse || []);
-
-      console.log('Initial data loaded successfully');
-    } catch (error) {
-      console.error('Failed to load initial data:', error);
-      setDestinations([]);
-      setCategories([]);
-      setSelectedTravel([]);
-      setSelectedTransport([]);
-      Alert.alert('Error', 'Failed to load initial data. Please try again.');
-    } finally {
-      setLoading(false);
+    if (destinationsData.length > 0) {
+      // Check if API returns objects with id+title or just strings
+      if (typeof destinationsData[0] === 'object' && destinationsData[0].id) {
+        // If API returns objects: [{ id: "1", title: "Bangkok" }, ...]
+        const destinationCategories: Category[] = destinationsData.map(item => ({
+          id: item.id,
+          title: item.title || item.name
+        }));
+        setDestinationCategories(destinationCategories);
+        setDestinations(destinationCategories.map(d => d.title));
+      } else {
+        // If API returns just strings: ["Bangkok", "Phuket", ...]
+        // Create temporary IDs for string-based destinations
+        const destinationCategories: Category[] = destinationsData.map((title: string, index: number) => ({
+          id: `dest_${index}`,
+          title: title
+        }));
+        setDestinationCategories(destinationCategories);
+        setDestinations(destinationsData);
+      }
     }
-  }, [progressAnimation]);
+
+    // ✅ Process travel styles (always stored as IDs)
+    const result: ApiResponse = travelStylesResponse.data;
+    const mappedCategories: Category[] = result.data.map(item => ({
+      id: item.id,
+      title: item.title,
+    }));
+    setCategories(mappedCategories);
+    
+    // ✅ Set travel personalities and transportation (stored as IDs)
+    setSelectedTravel(travelPersonalitiesResponse || []);
+    setSelectedTransport(transportationResponse || []);
+
+    console.log('Initial data loaded successfully', {
+      destinations: destinationsData.length,
+      travelStyles: mappedCategories.length,
+      personalities: travelPersonalitiesResponse?.length,
+      transport: transportationResponse?.length
+    });
+
+  } catch (error) {
+    console.error('Failed to load initial data:', error);
+    setDestinations([]);
+    setCategories([]);
+    setSelectedTravel([]);
+    setSelectedTransport([]);
+    setDestinationCategories([]);
+    Alert.alert('Error', 'Failed to load initial data. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+}, [progressAnimation]);
 
   // Event handlers
   const updateFormField = (field: keyof ProfileFormData, value: string) => {
@@ -268,52 +326,81 @@ const validateForm = (): boolean => {
     );
   };
 
-  const addDestination = (dest: string) => {
-    if (!selected.includes(dest)) {
-      setSelected(prev => [...prev, dest]);
-    }
-    setDropdownOpen(false);
-    setSearchText('');
-  };
+// ✅ Fixed destination management
+const addDestination = (destTitle: string) => {
+  if (!destTitle || selected.includes(destTitle)) return;
+  
+  // Find the destination object from title
+  const destinationObj = destinationCategories.find(dest => 
+    dest && dest.title === destTitle
+  );
+  
+  if (!destinationObj) {
+    console.warn(`Destination not found: ${destTitle}`);
+    return;
+  }
 
-  const removeDestination = (dest: string) => {
-    setSelected(prev => prev.filter(d => d !== dest));
-  };
+  // Update display titles
+  setSelected(prev => [...prev, destTitle]);
+  
+  // Update IDs for form submission (if your backend expects IDs)
+  // If backend expects titles, you can skip this
+  setSelectedDestinationIds(prev => [...prev, destinationObj.id]);
+  
+  setDropdownOpen(false);
+  setSearchText('');
+};
+
+const removeDestination = (destTitle: string) => {
+  // Find the destination object from title
+  const destinationObj = destinationCategories.find(dest => dest.title === destTitle);
+  
+  // Remove from display titles
+  setSelected(prev => prev.filter(d => d !== destTitle));
+  
+  // Remove from IDs (if used)
+  if (destinationObj) {
+    setSelectedDestinationIds(prev => prev.filter(id => id !== destinationObj.id));
+  }
+};
 
   const clearError = () => {
     setDestinationError(null);
   };
 
-  const handleBack = (): void => {
-    console.log("Resetting form to original values...");
-    
-    isResetting.current = true;
-    
-    // Reset to original data
-    setFormData({ ...originalData.formData });
-    setSelected([...originalData.selectedDestinations]);
-    setSelectedItems([...originalData.selectedTravelStyles]);
-    
-    // Reset other form states
-    setErrors({});
-    setImageFile(null);
-    setResponseMessage(null);
-    setDropdownOpen(false);
-    setSearchText('');
-    setShowGenderDropdown(false);
-    
-    console.log("Form reset completed");
-    
-    setTimeout(() => {
-      isResetting.current = false;
-    }, 100);
-    
-    if (userId) {
-      router.push('/(tabs)/findTrips');
-    } else {
-      router.push('/(tabs)/account-verification');
-    }
-  };
+const handleBack = (): void => {
+  console.log("Resetting form to original values...");
+  
+  isResetting.current = true;
+  
+  // Reset to original data
+  setFormData({ ...originalData.formData });
+  setSelected([...originalData.selectedDestinations]);
+  setSelectedItems([...originalData.selectedTravelStyles]);
+  
+  // ✅ Reset images to only existing ones (remove newly added)
+  setImageTextArray(existingPastTrips);
+  
+  // Reset other form states
+  setErrors({});
+  setImageFile(null);
+  setResponseMessage(null);
+  setDropdownOpen(false);
+  setSearchText('');
+  setShowGenderDropdown(false);
+  
+  console.log("Form reset completed");
+  
+  setTimeout(() => {
+    isResetting.current = false;
+  }, 100);
+  
+  if (userId) {
+    router.push('/(tabs)/findTrips');
+  } else {
+    router.push('/(tabs)/account-verification');
+  }
+};
 
   const handleLogout = async () => {
     try {
@@ -393,61 +480,98 @@ const validateForm = (): boolean => {
     });
   }, []);
 
-  const pickImageWithText = useCallback(() => {
-    const options = {
-      mediaType: 'photo' as const,
-      maxWidth: 1024,
-      maxHeight: 1024,
-      quality: 0.8,
-      storageOptions: {
-        skipBackup: true,
-        path: 'images'
-      },
-      presentationStyle: 'overFullScreen' as const,
-    };
+const pickImageWithText = useCallback(() => {
+  const options = {
+    mediaType: 'photo' as const,
+    maxWidth: 1024,
+    maxHeight: 1024,
+    quality: 0.8,
+    storageOptions: {
+      skipBackup: true,
+      path: 'images'
+    },
+    presentationStyle: 'overFullScreen' as const,
+  };
+  
+  launchImageLibrary(options, (response) => {
+    if (response.didCancel || response.errorMessage) {
+      if (response.errorMessage) {
+        console.log('ImagePicker Error: ', response.errorMessage);
+      }
+      return;
+    }
+
+    const pickedImage = response.assets?.[0];
+    if (!pickedImage?.uri) {
+      console.log("No Image uri received, Please Try Again");
+      return;
+    }
+
+    const uniqueId = `new_${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
     
-    launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.errorMessage) {
-        if (response.errorMessage) {
-          console.log('ImagePicker Error: ', response.errorMessage);
+    const newImageItem: ImageWithText = {
+      id: uniqueId,
+      uri: pickedImage.uri,
+      type: pickedImage.type ?? 'image/jpeg',
+      name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
+      text: '',
+      isNewlyAdded: true, // ✅ Mark as newly added
+    };
+
+    setImageTextArray(prev => [...prev, newImageItem]);
+    
+    console.log('New image added with ID:', uniqueId);
+  });
+}, []);
+
+// Enhanced removeImageFromArray to handle both new and existing images
+const removeImageFromArray = useCallback((id: string) => {
+  const imageToRemove = imageTextArray.find(img => img.id === id);
+  
+  if (!imageToRemove) return;
+
+  if (imageToRemove.isNewlyAdded === false && imageToRemove.serverFileUrl) {
+    // ✅ This is an existing image from server - you might want to implement delete API call here
+    console.log('Removing existing server image:', imageToRemove.serverFileUrl);
+    // TODO: Implement DELETE API call when backend supports it
+    // await axiosInstance.delete(`/users/past-trip-image/${imageId}`);
+    Alert.alert(
+      'Remove Image', 
+      'This will remove the image from your profile. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Remove', 
+          style: 'destructive',
+          onPress: () => {
+            setImageTextArray(prev => prev.filter(item => item.id !== id));
+            console.log('Server image marked for removal:', id);
+          }
         }
-        return;
-      }
-
-      const pickedImage = response.assets?.[0];
-      if (!pickedImage?.uri) {
-        console.log("No Image uri received, Please Try Again");
-        return;
-      }
-
-      const uniqueId = `${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
-      
-      const newImageItem: ImageWithText = {
-        id: uniqueId,
-        uri: pickedImage.uri,
-        type: pickedImage.type ?? 'image/jpeg',
-        name: pickedImage.fileName ?? `image-${Date.now()}.jpg`,
-        text: '',
-      };
-
-      setImageTextArray(prev => [...prev, newImageItem]);
-      
-      console.log('Image added successfully with ID:', uniqueId);
-    });
-  }, []);
-
-  const removeImageFromArray = useCallback((id: string) => {
-    setImageTextArray(prev => prev.filter(item => item.id !== id));
-    console.log('Image removed with ID:', id);
-  }, []);
-
-  const updateImageText = useCallback((id: string, newText: string) => {
-    setImageTextArray(prev => 
-      prev.map(item => 
-        item.id === id ? { ...item, text: newText } : item
-      )
+      ]
     );
-  }, []);
+  } else {
+    // This is a newly added image - safe to remove locally
+    setImageTextArray(prev => prev.filter(item => item.id !== id));
+    console.log('Newly added image removed:', id);
+  }
+}, [imageTextArray]);
+
+const updateImageText = useCallback((id: string, newText: string) => {
+  setImageTextArray(prev => 
+    prev.map(item => 
+      item.id === id ? { ...item, text: newText } : item
+    )
+  );
+
+  // ✅ If this is an existing image and text changed, you might want to implement update API
+  const imageItem = imageTextArray.find(img => img.id === id);
+  if (imageItem && imageItem.isNewlyAdded === false) {
+    console.log('Text updated for existing server image:', id, newText);
+    // TODO: Implement PATCH API call when backend supports it
+    // await axiosInstance.patch(`/users/past-trip-image/${imageId}`, { description: newText });
+  }
+}, [imageTextArray]);
 
   const uploadImageWithFetch = async (): Promise<void> => {
     if (!imageFile) {
@@ -515,94 +639,131 @@ const validateForm = (): boolean => {
     }
   };
 
-  const uploadPastTripImages = async (): Promise<void> => {
-    try {
-      for (const imageItem of imageTextArray) {
-        const formData = new FormData();
-        
-        const response = await fetch(imageItem.uri);
-        const blob = await response.blob();
-        
-        formData.append('file', blob, imageItem.name);
-        formData.append('description', imageItem.text || 'A sample file');
+const uploadPastTripImages = async (): Promise<void> => {
+  try {
+    // ✅ Filter only newly added images
+    const newlyAddedImages = imageTextArray.filter(imageItem => 
+      imageItem.isNewlyAdded === true
+    );
 
-        const uploadResponse = await axiosInstance.post(
-          '/users/past-trip-image',
-          formData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          }
-        );
-        
-        console.log(`Past trip image ${imageItem.id} uploaded successfully:`, uploadResponse.data);
-      }
-    } catch (error) {
-      console.error('Error uploading past trip images:', error);
-      throw error;
-    }
-  };
+    console.log(`Uploading ${newlyAddedImages.length} newly added images out of ${imageTextArray.length} total images`);
 
-  const handleSubmit = async (): Promise<void> => {
-    console.log(formData.gender);
-    
-    if (!validateForm()) {
-      console.log('Validation failed');
+    if (newlyAddedImages.length === 0) {
+      console.log('No new images to upload');
       return;
     }
 
-    const userId = await AsyncStorage.getItem('userId');
-    if (!userId) {
-      console.log('No userId found');
-      return;
-    }
-
-    try {
-      const selectedStyleIds = selectedItems;
-      const profileData = {
-        fullname: formData.fullName,
-        nickname: formData.nickname,
-        occupation: formData.occupation,
-        email: formData.email,
-        gender: formData.gender,
-        age: Number(formData.age),
-        travelStyles: selectedStyleIds,
-        destinations: Array.from(new Set(selected)),
-        lineId: formData.lineId || '',
-        facebookUrl: formData.facebookUrl || '',
-        transportationStyles: selectedTransportIds
-      };
-
-      console.log('Submitting profile data:', profileData);
+    for (const imageItem of newlyAddedImages) {
+      const formData = new FormData();
       
-      const profileResponse = await axiosInstance.patch(
-        `/users/profile/${userId}`,
-        profileData,
+      const response = await fetch(imageItem.uri);
+      const blob = await response.blob();
+      
+      formData.append('file', blob, imageItem.name);
+      formData.append('description', imageItem.text || 'A sample file');
+
+      const uploadResponse = await axiosInstance.post(
+        '/users/past-trip-image',
+        formData,
         {
           headers: {
-            "Content-Type": 'application/json'
-          }
+            'Content-Type': 'multipart/form-data',
+          },
         }
       );
       
-      console.log("Profile updated successfully:", profileResponse.data);
+      console.log(`Past trip image ${imageItem.id} uploaded successfully:`, uploadResponse.data);
 
-      if (imageFile) {
-        await uploadImageWithFetch();
-      }
-
-      if (imageTextArray.length > 0) {
-        await uploadPastTripImages();
-      }
-
-      router.push('/findTrips');
-    } catch (error) {
-      console.error("Error updating profile:", error);
-      Alert.alert('Error', 'Failed to update profile. Please try again.');
+      // ✅ Mark as synced after successful upload
+      setImageTextArray(prev => 
+        prev.map(img => 
+          img.id === imageItem.id 
+            ? { ...img, isNewlyAdded: false, serverFileUrl: uploadResponse.data.fileUrl }
+            : img
+        )
+      );
     }
-  };
+  } catch (error) {
+    console.error('Error uploading past trip images:', error);
+    throw error;
+  }
+};
 
+const handleSubmit = async (): Promise<void> => {
+  if (!validateForm()) {
+    console.log('Validation failed');
+    return;
+  }
+
+  const userId = await AsyncStorage.getItem('userId');
+  if (!userId) {
+    console.log('No userId found');
+    return;
+  }
+
+  try {
+    // Determine what format your backend expects for destinations
+    let destinationsToSubmit: string[];
+    
+    // Option 1: If backend expects destination IDs
+    const destinationIds = selected.map(title => {
+      const destObj = destinationCategories.find(dest => dest.title === title);
+      return destObj ? destObj.id : null;
+    }).filter(Boolean) as string[];
+    
+    // Option 2: If backend expects destination titles/names
+    const destinationTitles = selected;
+    
+    // ✅ Choose based on your backend expectation:
+    // Use destinationIds if backend expects IDs
+    // Use destinationTitles if backend expects titles
+    destinationsToSubmit = destinationTitles; // Change this based on your backend
+
+    const profileData = {
+      fullname: formData.fullName,
+      nickname: formData.nickname,
+      occupation: formData.occupation,
+      email: formData.email,
+      gender: formData.gender,
+      age: Number(formData.age),
+      // All these are IDs
+      travelStyles: selectedItems, // IDs
+      transportationStyles: selectedTransportIds, // IDs
+      travelPersonalities: selectedTravelIds, // IDs
+      destinations: destinationsToSubmit, // IDs or titles based on backend
+      lineId: formData.lineId || '',
+      facebookUrl: formData.facebookUrl || '',
+    };
+
+    console.log('Submitting profile data:', profileData);
+    
+    const profileResponse = await axiosInstance.patch(
+      `/users/profile/${userId}`,
+      profileData,
+      {
+        headers: {
+          "Content-Type": 'application/json'
+        }
+      }
+    );
+    
+    console.log("Profile updated successfully:", profileResponse.data);
+
+    // Handle image uploads...
+    if (imageFile) {
+      await uploadImageWithFetch();
+    }
+
+    if (imageTextArray.length > 0) {
+      await uploadPastTripImages();
+    }
+
+    router.push('/findTrips');
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    Alert.alert('Error', 'Failed to update profile. Please try again.');
+  }
+};
   // Effects
   useEffect(() => {
     fetchInitialData();
@@ -612,69 +773,130 @@ const validateForm = (): boolean => {
     fetchUserProfile();
   }, [fetchUserProfile]);
 
-  useEffect(() => {
-    if (isResetting.current) {
-      console.log("Skipping useEffect due to reset in progress");
-      return;
-    }
-    
-    if (!user || categories.length === 0) return;
+useEffect(() => {
+  if (isResetting.current) {
+    console.log("Skipping useEffect due to reset in progress");
+    return;
+  }
+  
+  // Wait for all required data to be loaded
+  if (!user || categories.length === 0 || selectedTravel.length === 0 || 
+      selectedTransport.length === 0 || destinations.length === 0 || 
+      destinationCategories.length === 0) {
+    console.log("Waiting for data to load...", { 
+      hasUser: !!user, 
+      categoriesCount: categories.length,
+      travelCount: selectedTravel.length,
+      transportCount: selectedTransport.length,
+      destinationsCount: destinations.length,
+      destinationCategoriesCount: destinationCategories.length
+    });
+    return;
+  }
 
-    console.log("Processing user data:", user);
-
-    const newFormData: ProfileFormData = {
-      fullName: sanitizeValue(user.fullname),
-      nickname: sanitizeValue(user.nickname),
-      email: sanitizeValue(user.email),
-      occupation: sanitizeValue(user.occupation) || '',
-      age: user.age !== -999 ? user.age.toString() : '',
-      gender: '',
-      customGender: '',
-      facebookUrl: sanitizeValue(user.facebookUrl),
-      lineId: sanitizeValue(user.lineId),
-      travelInterests: [],
-      favouriteDestinations: user.destinations?.filter(dest => dest !== "N/A") || [],
-      travelStyles: user.travelStyles || [],
-    };
-
-    const newSelectedDestinations = user.destinations?.filter(dest => dest !== "N/A") || [];
-    
-    let newSelectedTravelStyles: string[] = [];
-    if (user.travelStyles && Array.isArray(user.travelStyles)) {
-      newSelectedTravelStyles = user.travelStyles.filter(styleId => 
-        categories.some(cat => cat.id === styleId)
-      );
-      
-      if (newSelectedTravelStyles.length === 0 && categories.length > 0) {
-        newSelectedTravelStyles = user.travelStyles
-          .map(styleName => categories.find(cat => cat.title === styleName)?.id)
-          .filter(Boolean) as string[];
+    const existingImages: ImageWithText[] = [];
+  if (user.pastTrips && Array.isArray(user.pastTrips)) {
+    user.pastTrips.forEach((trip: any, index: number) => {
+      if (trip.fileUrl) {
+        existingImages.push({
+          id: `existing_${index}_${Date.now()}`, // Unique ID for existing images
+          uri: trip.fileUrl,
+          type: 'image/jpeg',
+          name: `existing_image_${index}.jpg`,
+          text: trip.description || '',
+          isNewlyAdded: false, // Mark as existing
+          serverFileUrl: trip.fileUrl
+        });
       }
-    }
+    });
+     setExistingPastTrips(existingImages);
+  
+  // Combine existing images with any newly added images
+setImageTextArray(prev => {
+  const newlyAdded = prev.filter(img => img.isNewlyAdded !== false);
+  return [...existingImages, ...newlyAdded];
+});}
 
-    const shouldUpdate = 
-      originalData.formData.fullName === '' ||
-      JSON.stringify(originalData.formData) !== JSON.stringify(newFormData) || 
-      JSON.stringify(originalData.selectedDestinations) !== JSON.stringify(newSelectedDestinations) ||
-      JSON.stringify(originalData.selectedTravelStyles) !== JSON.stringify(newSelectedTravelStyles);
 
-    if (shouldUpdate) {
-      setFormData(newFormData);
-      setSelected(newSelectedDestinations);
-      setSelectedItems(newSelectedTravelStyles);
+  console.log("Processing user data with full context:", user);
 
-      const originalDataSnapshot: OriginalData = {
-        formData: { ...newFormData },
-        selectedDestinations: [...newSelectedDestinations],
-        selectedTravelStyles: [...newSelectedTravelStyles],
-      };
-      setOriginalData(originalDataSnapshot);
-
-      console.log("Form data processed successfully");
+  // ✅ Process destinations based on what's stored in DB
+  let userDestinations: string[] = [];
+  const rawDestinations = safeArrayOfIds(user, 'destinations');
+  
+  if (rawDestinations.length > 0) {
+    // Check if stored data are IDs or titles
+    const firstDest = rawDestinations[0];
+    const isStoredAsId = destinationCategories.some(dest => dest.id === firstDest);
+    
+    if (isStoredAsId) {
+      // Convert IDs to titles for display
+      userDestinations = rawDestinations
+        .map(id => destinationCategories.find(dest => dest.id === id)?.title)
+        .filter(Boolean) as string[];
     } else {
-      console.log("Skipping form data update - no changes detected");
+      // Already titles
+      userDestinations = rawDestinations;
     }
-  }, [user, categories]);
+  }
+  
+  // ✅ Process travel styles (always IDs)
+  const userTravelStyleIds = safeArrayOfIds(user, 'travelStyles');
+  const validTravelStyleIds = userTravelStyleIds.filter(id => 
+    categories.some(cat => cat.id === id)
+  );
+  
+  // ✅ Process transportation (always IDs)
+  const userTransportIds = safeArrayOfIds(user, 'transportationStyles'); 
+  const validTransportIds = userTransportIds.filter(id =>
+    selectedTransport.some(transport => transport.id === id)
+  );
+
+  // ✅ Process personalities (always IDs)
+  const userPersonalityIds = safeArrayOfIds(user, 'travelPersonalities');
+  const validPersonalityIds = userPersonalityIds.filter(id =>
+    selectedTravel.some(travel => travel.id === id)
+  );
+
+  // Process form data
+  const newFormData: ProfileFormData = {
+    fullName: sanitizeValue(user.fullname) || '',
+    nickname: sanitizeValue(user.nickname) || '',
+    email: sanitizeValue(user.email) || '',
+    occupation: sanitizeValue(user.occupation) || '',
+    age: user.age && user.age !== -999 ? user.age.toString() : '',
+    gender: sanitizeValue(user.gender) || '',
+    customGender: '',
+    facebookUrl: sanitizeValue(user.facebookUrl) || '',
+    lineId: sanitizeValue(user.lineId) || '',
+    travelInterests: [],
+    favouriteDestinations: userDestinations, // Store titles
+    travelStyles: validTravelStyleIds, // Store IDs
+  };
+
+  // ✅ Update states with correct data types
+  setFormData(newFormData);
+  setSelected(userDestinations); // Titles for destinations dropdown
+  setSelectedItems(validTravelStyleIds); // IDs for travel styles
+  setSelectedTransportIds(validTransportIds); // IDs for transportation
+  setSelectedTravelIds(validPersonalityIds); // IDs for personalities
+
+  // Store original data for reset functionality
+  const originalDataSnapshot: OriginalData = {
+    formData: { ...newFormData },
+    selectedDestinations: [...userDestinations], // Titles
+    selectedTravelStyles: [...validTravelStyleIds], // IDs
+  };
+  setOriginalData(originalDataSnapshot);
+
+  console.log("Form data processed successfully", {
+    destinations: userDestinations,
+    travelStyles: validTravelStyleIds,
+    transport: validTransportIds,
+    personalities: validPersonalityIds
+  });
+
+}, [user, categories, selectedTravel, selectedTransport, destinations, destinationCategories]);
 
   // Helper functions
   const renderError = (error?: string) => {
@@ -694,7 +916,11 @@ const validateForm = (): boolean => {
     );
   };
 
-  const filteredDestinations = destinations.filter(dest =>
+const filteredDestinations = (destinations || [])
+  .filter(dest => 
+    dest && 
+    typeof dest === 'string' && 
+    dest.trim() !== '' &&
     dest.toLowerCase().includes(searchText.toLowerCase())
   );
 
@@ -745,7 +971,7 @@ const validateForm = (): boolean => {
       <TouchableOpacity style={styles.backButton} onPress={handleBack}>
         <Image source={require('../assets/images/back.png')} style={{ height: 8, width: 14 }} />
       </TouchableOpacity>
-      <Text style={styles.headerText}>สร้างโปรไฟล์</Text>
+      <Text style={styles.headerText}>{userId ?'แก้ไขโปรไฟล์':'สร้างโปรไฟล์'}</Text>
       {userId ? (
         <TouchableOpacity onPress={handleLogout}>
           <Text style={{ color: '#585DDB', fontFamily: 'LineSeedSansTH', fontSize: 14 }}>บันทึก</Text>
