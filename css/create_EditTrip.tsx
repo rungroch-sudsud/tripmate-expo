@@ -16,11 +16,12 @@ const styles = StyleSheet.create({
       borderBottomColor: '#e0e0e0',
       boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     },
-    backButton: {
-      marginRight:-30,
-      marginLeft:-10,
-      padding:20
-    },
+ backButton: {
+  padding: 10, // provides tap area
+  borderRadius: 20,
+  justifyContent: 'center',
+  alignItems: 'center',
+},
     headerTitle: {
       fontSize: 16,
       color: '#374151',
@@ -100,7 +101,10 @@ const styles = StyleSheet.create({
     dateContainer: {
       flexDirection: 'row',
       borderRadius: 8,
-      alignItems: 'center'
+      paddingTop:6,
+      alignItems: 'center',
+   
+      width:'auto'
     },
     dateField: {
       flex: 0.48,

@@ -6,6 +6,9 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import {styles} from '../../css/userProfile_css'
+
+const { height: screenHeight } = Dimensions.get('window');
+
 type Dimension = number | `${number}%` | 'auto';
 
 interface SkeletonBoxProps {
@@ -23,6 +26,167 @@ interface ProfileData {
   occupation:string;
   fullname:string
 }
+
+// Modal Component
+const ThreeDotsModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: () => void }) => {
+  const modalHeight = screenHeight * 0.5; // Half screen height
+  const translateY = useRef(new Animated.Value(modalHeight)).current;
+  const lastGestureY = useRef(modalHeight);
+
+  useEffect(() => {
+    if (isVisible) {
+      // Slide up to half screen
+      lastGestureY.current = 0;
+      Animated.spring(translateY, {
+        toValue: 0,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }).start();
+    } else {
+      // Slide down
+      lastGestureY.current = modalHeight;
+      Animated.spring(translateY, {
+        toValue: modalHeight,
+        useNativeDriver: true,
+        tension: 100,
+        friction: 8,
+      }).start();
+    }
+  }, [isVisible, modalHeight]);
+
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      const newTranslateY = lastGestureY.current + event.translationY;
+      
+      // Only allow positive (downward) translation
+      if (newTranslateY >= 0) {
+        translateY.setValue(newTranslateY);
+      }
+    })
+    .onEnd((event) => {
+      const { translationY, velocityY } = event;
+      const totalTranslation = lastGestureY.current + translationY;
+
+      const shouldClose = totalTranslation > 50 || velocityY > 300;
+
+      if (shouldClose) {
+        // Immediately disable interactions by calling onClose
+        onClose();
+        lastGestureY.current = modalHeight;
+        Animated.spring(translateY, {
+          toValue: modalHeight,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }).start();
+      } else {
+        // Snap back to open position
+        lastGestureY.current = 0;
+        Animated.spring(translateY, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 100,
+          friction: 8,
+        }).start();
+      }
+    });
+
+  if (!isVisible) return null;
+
+  return (
+    <View style={modalStyles.overlay}>
+      <TouchableOpacity 
+        style={modalStyles.backdrop} 
+        activeOpacity={1}
+        onPress={onClose}
+      />
+      <GestureDetector gesture={panGesture}>
+        <Animated.View 
+          style={[
+            modalStyles.modalContainer,
+            {
+              transform: [{ translateY: translateY }]
+            }
+          ]}
+        >
+          {/* Drag Handle */}
+          <View style={modalStyles.dragHandle} />
+          
+          {/* Modal Content */}
+          <View style={modalStyles.content}>
+            <TouchableOpacity style={modalStyles.menuItem}>
+              <Ionicons name="settings-outline" size={24} color="#333" />
+              <Text style={modalStyles.menuText}>การตั้งค่า</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={modalStyles.menuItem}>
+             <Ionicons name="receipt-outline" size={24} color="#333" />
+
+              <Text style={modalStyles.menuText}>ประวัติการจอง</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={modalStyles.menuItem}>
+              <Ionicons name="log-out-outline" size={24} color="#FF0000" />
+              <Text style={[modalStyles.menuText,{color:'#FF0000'}]}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </GestureDetector>
+    </View>
+  );
+};
+
+const modalStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 1000,
+  },
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: screenHeight * 0.5, // Fixed height to half screen
+    backgroundColor: 'white',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34, // Safe area padding
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 20,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+  },
+  menuText: {
+    fontSize: 16,
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+});
 
 const SkeletonBox: React.FC<SkeletonBoxProps> = ({ width, height, style }) => {
   const animatedValue = useRef(new Animated.Value(0)).current;
@@ -154,6 +318,7 @@ const UserProfile = () => {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
 
   // Animation values for draggable bottom sheet
   const translateY = useRef(new Animated.Value(0)).current;
@@ -272,6 +437,7 @@ const UserProfile = () => {
         <TouchableOpacity 
           style={styles.editProfile} 
           onPress={() => router.push(`/profile?userId=${userId}`)}
+          disabled={isModalVisible}
         >
           <Image 
             source={require('../assets/images/edit-profile.png')} 
@@ -279,7 +445,10 @@ const UserProfile = () => {
           />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.threedots}>
+        <TouchableOpacity 
+          style={styles.threedots}
+          onPress={() => setIsModalVisible(true)}
+        >
           <Image 
             source={require('../assets/images/3-dots.png')} 
             style={{ height: 24, width: 24 }}
@@ -296,6 +465,7 @@ const UserProfile = () => {
               transform: [{ translateY: translateY }]
             }
           ]}
+          pointerEvents={isModalVisible ? 'none' : 'auto'}
         >
           {/* Home Tab / Drag Handle */}
           <View style={styles.dragHandle} />
@@ -338,9 +508,18 @@ const UserProfile = () => {
       </GestureDetector>
 
       {/* Bottom Navigation - Ensure it's always visible */}
-      <View style={styles.bottomNavContainer}>
+      <View 
+        style={styles.bottomNavContainer}
+        pointerEvents={isModalVisible ? 'none' : 'auto'}
+      >
         <BottomNavigation currentScreen="profile" userId={userId} />
       </View>
+
+      {/* Three Dots Modal */}
+      <ThreeDotsModal 
+        isVisible={isModalVisible} 
+        onClose={() => setIsModalVisible(false)} 
+      />
     </SafeAreaView>
   );
 };

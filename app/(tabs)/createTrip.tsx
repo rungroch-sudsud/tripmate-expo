@@ -13,10 +13,7 @@ import {
 } from 'react-native';
 import {
   DatePickerComponent,
-  ServicesCheckboxComponent,
   TravelStylesComponent,
-  AtmosphereInputComponent,
-  DetailsInputComponent
  } from '../../components/Edit_CreateTrip_jsx'
 import { router,Stack } from 'expo-router';
 import { launchImageLibrary } from 'react-native-image-picker';
@@ -528,15 +525,15 @@ const create = async (status: StatusType): Promise<void> => {
   
   setIsValidating(true);
 
-  const isValid = validateForm();
+  //const isValid = validateForm();
 
-  if (!isValid) {
-    setIsValidating(false);
-    const firstError = Object.values(errors).find(error => error !== '');
-    console.log('Error');
-    
-    return;
-  }
+  //if (!isValid) {
+    //setIsValidating(false);
+   // const firstError = Object.values(errors).find(error => error !== '');
+    //console.log('Error');
+   // 
+  //  return;
+ // } 
 
   try {
     console.log("🚀 Starting trip creation...");
@@ -585,23 +582,28 @@ const create = async (status: StatusType): Promise<void> => {
     }
     
     
-      requestFormData.append('destinations', []);
+     requestFormData.append('destinations', JSON.stringify([]));
     
     
     requestFormData.append('maxParticipants', maxParticipant.toString());
     requestFormData.append('pricePerPerson', pricePerPerson.toString());
     
-    if (selectedServices.length > 0) {
-      requestFormData.append('includedServices', selectedServices);
+    if (formData.includedInprice) {
+      requestFormData.append('includedServices', JSON.stringify([formData.includedInprice]));
     }
     
     requestFormData.append('detail', formData.details || '');
+    requestFormData.append('itinerary', formData.details || '');
+requestFormData.append('notIncludedServices', formData.notIncludedInprice || '');
+requestFormData.append('prerequisites', formData.preparation || '');
+requestFormData.append('rule', formData.terms || '');
+requestFormData.append('venue', formData.meetingPoint || '');
+requestFormData.append('tripCreatorIntroduction', formData.leaderDetails || '');
 
     if (travelStyleIds.length > 0) {
       requestFormData.append('travelStyles', travelStyleIds);
     }
     
-    requestFormData.append('groupAtmosphere', formData.description || '');
     requestFormData.append('status', status);
     
     const userId = await AsyncStorage.getItem('userId');
@@ -855,9 +857,10 @@ const handleChangeText = useCallback((text) => {
       {/* Header */}
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+        <TouchableOpacity style={styles.backButton} onPress={handleBack}
+         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
        <FontAwesome name="angle-left" size={30} color="#333" style={{marginLeft:10}}/>
-
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
@@ -1126,7 +1129,7 @@ const handleChangeText = useCallback((text) => {
 </View> 
 
 
-        {/* Services with Error */}
+        {/* Services with Error 
    <ServicesCheckboxComponent 
   services={services}
   selectedServices={selectedServices}
@@ -1135,7 +1138,7 @@ const handleChangeText = useCallback((text) => {
   clearError={() => clearError('services')}
   styles={styles}
   isEditMode={false}
-/>
+/>*/}
 
 
  <View>
@@ -1181,7 +1184,7 @@ const handleChangeText = useCallback((text) => {
   <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>🗓 แผนการเดินทาง</Text>
 <RichTextInputComponent       
-  value={formData.travelPlans}   
+  value={formData.details}   
   onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
   error={errors.details}   
   clearError={() => clearError('details')}   
@@ -1195,7 +1198,7 @@ const handleChangeText = useCallback((text) => {
     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>✅ สิ่งที่รวมในราคา</Text>
 <RichTextInputComponent       
   value={formData.includedInprice}   
-  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev,includedInprice: newData }))}   
   error={errors.details}   
   clearError={() => clearError('details')}   
   isEditMode={false}
@@ -1208,7 +1211,7 @@ const handleChangeText = useCallback((text) => {
     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>❌ สิ่งที่ไม่รวมในราคา</Text>
 <RichTextInputComponent       
   value={formData.notIncludedInprice}   
-  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, notIncludedInprice: newData }))}   
   error={errors.details}   
   clearError={() => clearError('details')}   
   isEditMode={false}
@@ -1222,7 +1225,7 @@ const handleChangeText = useCallback((text) => {
     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>🎒 สิ่งที่ต้องเตรียมมาเอง</Text>
 <RichTextInputComponent       
   value={formData.preparation}   
-  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, preparation: newData }))}   
   error={errors.details}   
   clearError={() => clearError('details')}   
   isEditMode={false}
@@ -1236,7 +1239,7 @@ const handleChangeText = useCallback((text) => {
     <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'700',fontSize:13,marginLeft:20}}>⚠️ เงื่อนไข / กติกาทริป</Text>
 <RichTextInputComponent       
   value={formData.terms}   
-  onChangeText={(newData) => setFormData(prev => ({ ...prev, details: newData }))}   
+  onChangeText={(newData) => setFormData(prev => ({ ...prev, terms: newData }))}   
   error={errors.details}   
   clearError={() => clearError('details')}   
   isEditMode={false}
@@ -1268,7 +1271,7 @@ const handleChangeText = useCallback((text) => {
     setFormData((prev) => ({ ...prev, leaderDetails: newData }))
   }
   style={{
-    borderColor: '#9CA3AF',
+    borderColor: '#E5E7EB',
     borderWidth: 1,
     height: 231,
     borderRadius: 20,
@@ -1276,19 +1279,19 @@ const handleChangeText = useCallback((text) => {
     color: '#374151',
     padding: 20,
     textAlign: 'left',
-    textAlignVertical: 'top', // <-- this is the key line
+    textAlignVertical: 'top', 
     marginBottom:10,
     fontFamily:'LineSeedSansTH_A_Bd'
   }}
   placeholder="เขียนแนะนำตัวได้ที่นี่..."
-  multiline // <-- required to support multiple lines
+  multiline 
 />
 
    </View>
 
 
         
-        {/* General Details with Error */}
+        {/* General Details with Error
 <View style={{backgroundColor:'#F3F4F6',paddingTop:10,borderRadius:20,marginBottom:20}}>
   <Text></Text>
 <RichTextInputComponent       
@@ -1299,7 +1302,7 @@ const handleChangeText = useCallback((text) => {
   isEditMode={false}
   placeholder="Enter your details here..."
 />
-</View>
+</View> */}
 
     
         <Text style={{fontWeight:'700',fontFamily:'LineSeedSansTH_A_Bd',margin:20,marginBottom:5,color:'#374151'}}>

@@ -1361,11 +1361,14 @@ const filteredDestinations = (destinations || [])
         </View>
       </View>
     </ScrollView>
+ {/* Only show button when no userId */}
+{!userId && (
+  <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+    <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
+  </TouchableOpacity>
+)}
 
-    {/* Submit Button */}
-    <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-      <Text style={styles.submitButtonText}>บันทึกและดำเนินการต่อ</Text>
-    </TouchableOpacity>
+ 
   </SafeAreaView>
 );
 

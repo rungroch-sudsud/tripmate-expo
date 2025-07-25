@@ -433,6 +433,7 @@ const styles = StyleSheet.create({
   subImagesContainer: {
     paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor:'#F3F4F6'
   },
   subImageWrapper: {
     marginRight: 8,
@@ -519,11 +520,14 @@ const styles = StyleSheet.create({
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    flex:1
   },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
+    borderColor:'#E5E7EB',
+    borderWidth:1,
+    borderRadius:15
   },
   detailIcon: {
     width: 40,
