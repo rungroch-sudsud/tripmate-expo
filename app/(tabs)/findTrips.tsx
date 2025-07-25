@@ -13,7 +13,6 @@ import BottomNavigation from '../../components/customNavigation';
 import { SearchBar } from '../../components/SearchBar';
 import { TravelStyleCategories } from '../../components/TravelStyleCategories';
 import { TripCountHeader } from '../../components/TripCountHeader';
-
 import { HeaderSection } from '../../components/HeaderSection';
 import { EmptyState } from '../../components/EmptyState';
 
@@ -49,12 +48,18 @@ const FindTripScreen: React.FC = () => {
     clearAllSearchHistory 
   } = useSearchHistory();
   
+  // Updated useTripFilters hook with new features
   const {
     selectedTravelStyles,
     searchQuery,
     displayedTrips,
+    dateRange,
+    priceRange,
+    hasActiveFilters,
     handleTravelStylePress,
-    handleSearchChange
+    handleSearchChange,
+    applyFilters,
+    clearAllFilters
   } = useTripFilters(allTrips, travelStyles);
 
   const { handleTripPress, handleJoinTripSuccess, handleCreateTrip } = useNavigationService();
@@ -83,7 +88,7 @@ const FindTripScreen: React.FC = () => {
     }, [userId, fetchTrips, fetchTravelStyles, loadBookmarkedTrips])
   );
 
-  // Handlers
+  // Existing handlers
   const handleBookmarkToggle = useCallback(async (trip: any) => {
     try {
       await toggleBookmark(trip.id);
@@ -153,6 +158,21 @@ const FindTripScreen: React.FC = () => {
     }, 200);
   }, []);
 
+  // Handler for applying filters from modal
+  const handleApplyFilters = useCallback((filters: {
+    startDate: Date | null;
+    endDate: Date | null;
+    priceRange: {
+      id: string;
+      label: string;
+      min: number;
+      max: number;
+    };
+  }) => {
+    applyFilters(filters);
+  }, [applyFilters]);
+
+  // Refresh handler
   const onRefresh = useCallback((): void => {
     setRefreshing(true);
     Promise.all([
@@ -170,12 +190,6 @@ const FindTripScreen: React.FC = () => {
       
       <HeaderSection />
 
-      <TravelStyleCategories 
-        travelStyles={travelStyles}
-        selectedTravelStyles={selectedTravelStyles}
-        onTravelStylePress={handleTravelStylePress}
-      />
-
       <SearchBar
         searchQuery={searchQuery}
         onSearchChange={handleSearchChangeWithDebounce}
@@ -189,8 +203,20 @@ const FindTripScreen: React.FC = () => {
         onRemoveFromHistory={removeFromSearchHistory}
         onClearAllHistory={clearAllSearchHistory}
       />
+
+      <TravelStyleCategories 
+        travelStyles={travelStyles}
+        selectedTravelStyles={selectedTravelStyles}
+        onTravelStylePress={handleTravelStylePress}
+      />
       
-      <TripCountHeader count={displayedTrips.length} />
+      <TripCountHeader 
+        count={displayedTrips.length}
+        onApplyFilters={handleApplyFilters}
+        currentDateRange={dateRange}
+        currentPriceRange={priceRange}
+        hasActiveFilters={hasActiveFilters}
+      />
       
       <ScrollView
         style={styles.scrollView}
@@ -200,7 +226,11 @@ const FindTripScreen: React.FC = () => {
         }
       >
         {displayedTrips.length === 0 ? (
-          <EmptyState searchQuery={searchQuery} />
+          <EmptyState 
+            searchQuery={searchQuery}
+            hasActiveFilters={hasActiveFilters}
+            onClearFilters={clearAllFilters}
+          />
         ) : (
           displayedTrips.map(trip => (
             <TripCard
@@ -216,8 +246,6 @@ const FindTripScreen: React.FC = () => {
         )}
       </ScrollView>
 
-   
-     
       <BottomNavigation currentScreen="findTrips" userId={userId} />
     </View>
   );

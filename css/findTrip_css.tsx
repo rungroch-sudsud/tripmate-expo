@@ -6,14 +6,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   headerTitle: {
-    flex:0.9,
-    fontSize: 18,
-    color: '#1F2937',
+    fontSize: 16,
+    color: '#374151',
     textAlign: 'left',
-    paddingVertical: 16,
-    fontWeight:500,
-    lineHeight:18,
-    fontFamily:'InterTight-Regular',
+    fontWeight:'700',
+    fontFamily:'LineSeedSansTH_A_Bd',
   },
   scrollView: {
     flex: 1,
@@ -282,18 +279,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 9999,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
     color:'#374151',
     gap: 8,
-    height:34,
+     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
   },
   categoryItemActive: {
-    backgroundColor: '#29C4AF',
-    borderColor: '#29C4AF',
+    backgroundColor: '#585DDB',
+    borderColor: '#585DDB',
   },
   categoryIcon: {
     width: 20,
@@ -304,38 +299,38 @@ const styles = StyleSheet.create({
     tintColor: '#ffffff',
   },
   categoryText: {
-    fontSize: 14,
-    fontWeight: '400',
+    fontSize: 12,
+    fontWeight: '700',
     color: '#374151',
-    fontFamily:'InterTight-SemiBold',
+    fontFamily:'LineSeedSansTH_A_Bd',
     
   },
   categoryTextActive: {
     color: '#ffffff',
+    fontFamily:"LineSeedSansTH_A_Bd"
   },
 
   searchInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 100,
     paddingHorizontal: 12,
     height: 44,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
+    fontFamily:'LineSeedSansTH'
   },
   searchIcon: {
-    width: 18,
-    height: 18,
+    width: 14,
+    height: 14,
     marginRight: 8,
     tintColor: '#999',
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#ADAEBC',
+    color: '#374151',
     paddingVertical: 0,
-    outlineColor:'#f5f5f5',
+    outlineWidth:0,
     lineHeight:24,
     fontFamily:'InterTight-Regular'
   },
@@ -379,15 +374,16 @@ const styles = StyleSheet.create({
   tripCountContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
-    flexDirection:'row',
-    alignItems:'center'
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   tripCountText: {
-    fontSize: 14,
-    flex:0.8,
-    color: '#1F2937',
-    fontFamily:'InterTight-SemiBold'
+    fontSize: 12,
+    color: '#585DDB',
+    fontFamily:'LineSeedSansTH',
+    fontWeight:'400'
   },
   searchHistoryContainer: {
     position: 'absolute',
@@ -404,6 +400,54 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     zIndex: 1000,
     maxHeight: 300,
+  },
+  filterButton: {
+    flex: 0.1,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 32,
+    height: 34,
+    borderRadius: 6,
+    position: 'relative', // For the active indicator dot
+  },
+  
+  filterButtonActive: {
+    backgroundColor: '#585DDB',
+  },
+  
+  filterIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#374151'
+  },
+  
+  filterIconActive: {
+    tintColor: '#FFFFFF'
+  },
+  
+  // Small dot indicator for active filters
+  filterDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444', // Red dot
+  },
+
+  // Filter summary text (optional - for showing active filter count)
+  filterSummary: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontFamily: 'InterTight-Regular',
+    marginTop: 2,
+  },
+  
+  filterSummaryActive: {
+    color: '#585DDB',
+    fontWeight: '500',
   },
 
   // Search History Header
@@ -481,13 +525,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Update existing searchContainer to handle positioning
+
   searchContainer: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: '#FFFFFF',
-    position: 'relative', // Add this for dropdown positioning
-    zIndex: 1, // Add this for dropdown layering
+    position: 'relative',
+    zIndex: 1, 
+    borderWidth:0
   },
 });
 

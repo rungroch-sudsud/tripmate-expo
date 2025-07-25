@@ -13,7 +13,7 @@ import {
 import { useRouter,useLocalSearchParams,Stack,useFocusEffect } from 'expo-router';
 import { axiosInstance } from '../../lib/axios';
 import { Ionicons } from '@expo/vector-icons';
-
+import RichTextRenderer from '../../components/richTextRenderer';
 const { width } = Dimensions.get('window');
 
 interface TripOwner {
@@ -40,6 +40,10 @@ interface Trip {
   tripOwner: TripOwner;
   fullname: string;
   tripOwnerId: string;
+  itinerary:string;
+  notIncludedServices:string;
+  prerequisites:string;
+  rule:string;
 }
 
 const TripDetails: React.FC = () => {
@@ -218,7 +222,10 @@ const TripDetails: React.FC = () => {
 
 
           <Text style={styles.tripDescription}>
-            {trip.detail}
+                   <RichTextRenderer 
+  jsxString={trip.detail} 
+  fallbackText="No details available" 
+/>
           </Text>
 
           {/* Travel Styles Tags */}
@@ -281,7 +288,12 @@ const TripDetails: React.FC = () => {
           </View>
           <View>
  <View style={{borderRadius:16,borderWidth:1,borderColor:'#E5E7EB',padding:20,marginVertical:20}}>
+
               <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>🗓 แผนการเดินทาง</Text>
+                                   <RichTextRenderer 
+  jsxString={trip.itinerary} 
+  fallbackText="No details available" 
+/>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>07:00</Text>{'   '}นัดพบ BTS หมอชิต</Text>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>12:00</Text>{'   '}แวะกินข้าวกลางวัน</Text>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>14:00</Text>{'   '}เช็กอินที่พัก ปายแลนด์</Text>
@@ -290,6 +302,10 @@ const TripDetails: React.FC = () => {
 
             <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
               <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>❌ สิ่งที่ไม่รวม</Text>
+                                              <RichTextRenderer 
+  jsxString={trip.notIncludedServices} 
+  fallbackText="No details available" 
+/>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าอาหารกลางวัน</Text>
                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าทางเข้าอุทยาน</Text>
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ค่าเครื่องดื่มส่วนตัว</Text>
@@ -297,6 +313,10 @@ const TripDetails: React.FC = () => {
 
               <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
               <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>🎒 สิ่งที่ต้องเตรียมมาเอง</Text>
+                                                            <RichTextRenderer 
+  jsxString={trip.prerequisites} 
+  fallbackText="No details available" 
+/>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- บัตรประชาชน/พาสปอร์ต/Visa</Text>
                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- เสื้อกันหนาว</Text>
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ยาประจำตัว</Text>

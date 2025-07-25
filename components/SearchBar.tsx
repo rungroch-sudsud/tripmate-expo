@@ -38,7 +38,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <TextInput
         style={styles.searchInput}
         placeholder="ค้นหาจุดหมายปลายทาง หรือ สไตล์เที่ยว"
-        placeholderTextColor="#999"
+        placeholderTextColor="#9CA3AF"
         value={searchQuery}
         onChangeText={onSearchChange}
         onFocus={onFocus}
@@ -58,7 +58,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       )}
     </View>
     
-    {/* Search History Dropdown */}
+    {/* Search History Dropdown 
     {showSearchHistory && isSearchFocused && searchHistory.length > 0 && (
       <View style={styles.searchHistoryContainer}>
         <View style={styles.searchHistoryHeader}>
@@ -71,7 +71,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           </TouchableOpacity>
         </View>
         
-        <FlatList
+      <FlatList
           data={searchHistory}
           keyExtractor={(item, index) => `${item}-${index}`}
           renderItem={({ item }) => (
@@ -98,6 +98,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           showsVerticalScrollIndicator={false}
         />
       </View>
-    )}
+    )}*/}
   </View>
 );
