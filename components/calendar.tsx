@@ -1,15 +1,13 @@
-import {View,TouchableOpacity,Text,StyleSheet} from 'react-native'
-import React,{useState,useEffect} from 'react'
-import {toThaiYear}  from '../shared/utils/thaiYear'
-import {CalendarProps} from  '../features/trip/schemas/calendatProps'
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native'
+import React, { useState, useEffect,useCallback } from 'react'
+import { toThaiYear } from '../shared/utils/thaiYear'
+import { CalendarProps } from '../features/trip/schemas/calendatProps'
 
-
-export const Calendar = ({ startDate, endDate, onDateSelect }:CalendarProps) => {
+export const Calendar = ({ startDate, endDate, onDateSelect }: CalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedStart, setSelectedStart] = useState<Date | null>(null);
   const [selectedEnd, setSelectedEnd] = useState<Date | null>(null);
-
-  // Update internal state when props change (for clear functionality)
+  
   useEffect(() => {
     setSelectedStart(startDate);
     setSelectedEnd(endDate);
@@ -20,7 +18,7 @@ export const Calendar = ({ startDate, endDate, onDateSelect }:CalendarProps) => 
     'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
   ];
 
-  const getDaysInMonth = (date : Date):(Date | null)[] => {
+  const getDaysInMonth = (date: Date): { date: Date; isCurrentMonth: boolean }[] => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -30,39 +28,43 @@ export const Calendar = ({ startDate, endDate, onDateSelect }:CalendarProps) => 
 
     const days = [];
     
-    // Add empty cells for days before the first day of the month
-    for (let i = 0; i < startingDayOfWeek; i++) {
-      days.push(null);
+    // Add days from previous month to fill empty cells
+    const prevMonth = new Date(year, month - 1, 0); // Last day of previous month
+    const prevMonthDays = prevMonth.getDate();
+    
+    for (let i = startingDayOfWeek - 1; i >= 0; i--) {
+      const prevDate = new Date(year, month - 1, prevMonthDays - i);
+      days.push({ date: prevDate, isCurrentMonth: false });
     }
     
-    // Add all days of the month
+    // Add all days of the current month
     for (let day = 1; day <= daysInMonth; day++) {
-      days.push(new Date(year, month, day));
+      days.push({ date: new Date(year, month, day), isCurrentMonth: true });
     }
     
     return days;
   };
 
-  const isDateInRange = (date: Date,selectedStart:Date | null,selectedEnd:Date| null):boolean => {
+  const isDateInRange = useCallback((date: Date): boolean => {
     if (!selectedStart || !selectedEnd) return false;
     return date >= selectedStart && date <= selectedEnd;
+  }, [selectedStart, selectedEnd]);
+
+  const isDateSelected = (date: Date): boolean => {
+    if (!selectedStart && !selectedEnd) return false;
+    return (
+      Boolean(selectedStart && date.getTime() === selectedStart.getTime()) ||
+      Boolean(selectedEnd && date.getTime() === selectedEnd.getTime())
+    );
   };
 
-const isDateSelected = (
-  date: Date,
-  selectedStart: Date | null,
-  selectedEnd: Date | null
-): boolean => {
-  if (!selectedStart && !selectedEnd) return false;
-  return (
-    Boolean(selectedStart && date.getTime() === selectedStart.getTime()) ||
-    Boolean (selectedEnd && date.getTime() === selectedEnd.getTime())
-  );
-};
-
-
-  const handleDatePress = (date : Date | null) => {
-    if (!date) return;
+  const handleDatePress = (dateObj: { date: Date; isCurrentMonth: boolean } | null) => {
+    if (!dateObj) return;
+    
+    const { date, isCurrentMonth } = dateObj;
+    
+    // Only allow selection of current month dates
+    if (!isCurrentMonth) return;
 
     if (!selectedStart || (selectedStart && selectedEnd)) {
       // Starting new selection
@@ -81,8 +83,17 @@ const isDateSelected = (
       }
     }
   };
+  
+  const isRangeStart = (date: Date): boolean =>
+    Boolean(selectedStart && selectedEnd && date.getTime() === selectedEnd.getTime());
 
-  const navigateMonth = (direction:number) => {
+  const isRangeEnd = (date: Date): boolean =>
+    Boolean(selectedStart && selectedEnd && date.getTime() === selectedStart.getTime());
+
+  const isSingleDaySelection = (date: Date): boolean =>
+    Boolean(selectedStart && !selectedEnd && date.getTime() === selectedStart.getTime());
+
+  const navigateMonth = (direction: number) => {
     const newMonth = new Date(currentMonth);
     newMonth.setMonth(currentMonth.getMonth() + direction);
     setCurrentMonth(newMonth);
@@ -104,81 +115,84 @@ const isDateSelected = (
         </TouchableOpacity>
       </View>
 
-      <View style={styles.weekDaysContainer}>
-        {['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'].map((day, index) => (
-          <Text key={index} style={styles.weekDay}>{day}</Text>
-        ))}
-      </View>
-
       <View style={styles.daysContainer}>
-        {days.map((date, index) => (
-      <TouchableOpacity
-            key={index}
-            onPress={() => handleDatePress(date)}
-       style={[
-       styles.dayCell,
-       !date && styles.emptyDay,
-        date && isDateSelected(date, selectedStart, selectedEnd) && styles.selectedDay,
-        date && isDateInRange(date, selectedStart, selectedEnd) &&
-        !isDateSelected(date, selectedStart, selectedEnd) && styles.rangeDay,]}
-        disabled={!date}
-          >
-        <Text
-         style={[
-          styles.dayText,
-           date && isDateSelected(date, selectedStart, selectedEnd) && styles.selectedDayText,
-           date && isDateInRange(date, selectedStart, selectedEnd) &&
-          !isDateSelected(date, selectedStart, selectedEnd) && styles.rangeDayText,
-          ]}
-             >
-          {date ? date.getDate() : ''}
-           </Text>
-           </TouchableOpacity>
-
-             ))}
-             </View>
-            </View>
-           );
+        {days.map((dateObj, index) => {
+          const { date, isCurrentMonth } = dateObj;
+          
+          return (
+            <TouchableOpacity
+              accessible={true}
+              accessibilityLabel={`${date.getDate()} ${monthNames[date.getMonth()]}`}
+              accessibilityRole="button"
+              key={index}
+              onPress={() => handleDatePress(dateObj)}
+              disabled={!isCurrentMonth}
+              style={[
+                styles.dayCell,
+                !isCurrentMonth && styles.prevMonthDay,
+                // Apply range styles only for current month dates
+                isCurrentMonth && isDateInRange(date) && styles.rangeDay,
+                isCurrentMonth && isRangeStart(date) && styles.rangeStart,
+                isCurrentMonth && isRangeEnd(date) && styles.rangeEnd,
+                // Selected styles should override range styles
+                isCurrentMonth && isDateSelected(date) && styles.selectedDay,
+                isCurrentMonth && isSingleDaySelection(date) && styles.singleDay,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.dayText,
+                  !isCurrentMonth && styles.prevMonthDayText,
+                  isCurrentMonth && isDateInRange(date) && styles.rangeDayText,
+                  isCurrentMonth && isDateSelected(date) && styles.selectedDayText,
+                ]}
+              >
+                {date.getDate()}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
 };
 
-
-const styles=StyleSheet.create({
-    calendarContainer:{
-      backgroundColor:'#FFFFFF'
-    },
-    calendarHeader: {
+const styles = StyleSheet.create({
+  calendarContainer: {
+    backgroundColor: '#FFFFFF'
+  },
+  calendarHeader: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-    navButtonText: {
+  navButtonText: {
     fontSize: 24,
     color: '#000000',
     fontWeight: 'bold',
   },
-
   monthYear: {
     fontSize: 12,
     fontWeight: '700',
     color: '#374151',
     fontFamily: 'LineSeedSansTH_A_Bd',
-    marginHorizontal:10
+    marginHorizontal: 10
   },
   weekDaysContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
-    navButton: {
+  navButton: {
     width: 32,
     height: 32,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 16,
   },
-    weekDay: {
+  weekDay: {
     flex: 1,
     textAlign: 'center',
     fontSize: 12,
@@ -186,41 +200,66 @@ const styles=StyleSheet.create({
     fontWeight: '500',
     fontFamily: 'LineSeedSansTH',
   },
-    daysContainer: {
+  daysContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 16,
   },
-    dayCell: {
+  dayCell: {
     width: '14.28%',
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 4,
-    borderRadius: 8,
+
   },
-    emptyDay: {
+  emptyDay: {
     backgroundColor: 'transparent',
   },
-    selectedDay: {
-    backgroundColor: '#585DDB',
-    borderRadius:9999
-    
-  },
-  rangeDay: {
-    backgroundColor: '#E0E7FF',
-  },
+
+
   dayText: {
     fontSize: 14,
     color: '#374151',
-    fontFamily: 'InterTight-Regular',
+    fontFamily: 'LineSeedSansTH_A_Bd',
   },
-    selectedDayText: {
+  selectedDayText: {
     color: 'white',
     fontWeight: '600',
   },
-    rangeDayText: {
+  rangeDayText: {
     color: '#585DDB',
     fontWeight: '500',
   },
+  rangeDay: {
+  backgroundColor: '#E0E7FF', // soft fill for middle dates
+},
+
+rangeStart: {
+  backgroundColor: '#E0E7FF',
+  borderTopLeftRadius: 999,
+  borderBottomLeftRadius: 999,
+},
+
+rangeEnd: {
+  backgroundColor: '#E0E7FF',
+  borderTopRightRadius: 999,
+  borderBottomRightRadius: 999,
+},
+
+selectedDay: {
+  backgroundColor: '#585DDB',
+  borderRadius: 9999, // full circle
+},
+
+singleDay: {
+  backgroundColor: '#585DDB',
+  borderRadius: 9999,
+},
+prevMonthDay: {
+  opacity: 0.6,
+},
+prevMonthDayText: {
+  color: '#ccc', 
+}
 })

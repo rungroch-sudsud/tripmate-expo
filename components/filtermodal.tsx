@@ -11,9 +11,10 @@ import {
   ScrollView,
   StyleSheet,
 } from 'react-native';
-import {Calendar} from  './calendar'
+
 import {PriceRangeDropdown,priceRange}  from './priceRangeDropDown'
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import {Calendar} from './calendar'
 const MODAL_HEIGHT = SCREEN_HEIGHT * 0.8;
 
 type FilterModalProps = {
@@ -169,11 +170,12 @@ const FilterModal:React.FC<FilterModalProps> = ({
           <ScrollView style={{flex:1}} showsVerticalScrollIndicator={false}>
             <View style={styles.section}>
            
-              <Calendar
-                startDate={startDate}
-                endDate={endDate}
-                onDateSelect={handleDateSelect}
-              />
+            <Calendar
+  startDate={startDate}
+  endDate={endDate}
+  onDateSelect={handleDateSelect}
+/>
+
             </View>
 
             <PriceRangeDropdown

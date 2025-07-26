@@ -253,34 +253,21 @@ const averageRating = (trip.tripOwner?.review?.length ?? 0) > 0
               </View>
             )}
           </View>
-       {iscreateTrip ? (
-  <View>
-    <Image 
-      source={require('../app/assets/images/createTripSave.png')} 
-      style={{ width: 16, height: 24,  }} 
-    />
-  </View>
-) : (
-  <TouchableOpacity
-    style={styles.bookmarkButton}
-    onPress={handleBookmarkPress}
-    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-  >
-    <View style={styles.bookmarkIcon}>
-      {isBookmarked ? (
-        <Image 
-          source={require('../app/assets/images/images/images/image22.png')} 
-          style={{ width: 12, height: 20, tintColor: '#FACC15' }} 
-        />
-      ) : (
-        <Image 
-          source={require('../app/assets/images/saved.png')} 
-          style={{ width: 12, height: 20 }} 
-        />
-      )}
-    </View>
-  </TouchableOpacity>
-)}
+<TouchableOpacity
+  style={styles.bookmarkButton}
+  onPress={handleBookmarkPress}
+  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+>
+  <Image 
+    source={require('../app/assets/images/createTripSave.png')} 
+    style={{
+      width: 16,
+      height: 24,
+      tintColor: isBookmarked ? '#FACC15' : undefined,
+    }} 
+  />
+</TouchableOpacity>
+
 
 
         
@@ -488,8 +475,9 @@ destinationRow: {
   backgroundColor: '#FFF7ED',
   paddingVertical: 10,
   paddingHorizontal: 10,
-  borderRadius: 10,
+  borderRadius: 100,
   alignSelf: 'flex-start',
+  marginTop:10
 }
 ,
   locationIcon: {
@@ -511,8 +499,8 @@ bookmarkButton: {
   backgroundColor: '#FFFFFF',
   justifyContent: 'center',
   alignItems: 'center',
-  borderRadius: 12, // half of width/height for circle
-  overflow: 'hidden', // ensures nothing bleeds out
+  borderRadius: 12, 
+  overflow: 'hidden', 
 },
 
   bookmarkIcon: {
