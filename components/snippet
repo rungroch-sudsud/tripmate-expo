@@ -1,0 +1,271 @@
+const styles = StyleSheet.create({
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  overlayTouch: {
+    flex: 1,
+  },
+  modalContent: {
+    height: MODAL_HEIGHT,
+    backgroundColor: 'white',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+  },
+  dragHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  header: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'center',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+  },
+  scrollContent: {
+    flex: 1,
+  },
+  section: {
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    color: '#374151',
+    flex: 0.5,
+  },
+  dateRangeDisplay: {
+    backgroundColor: '#F9FAFB',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  dateRangeText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    fontFamily: 'InterTight-Regular',
+  },
+  calendarContainer: {
+    backgroundColor: 'white',
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  navButton: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+  },
+  navButtonText: {
+    fontSize: 24,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  monthYear: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#374151',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    marginHorizontal:10
+  },
+  weekDaysContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  weekDay: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+    fontFamily: 'LineSeedSansTH',
+  },
+  daysContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: 16,
+  },
+  dayCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 4,
+    borderRadius: 8,
+  },
+  emptyDay: {
+    backgroundColor: 'transparent',
+  },
+  selectedDay: {
+    backgroundColor: '#585DDB',
+    borderRadius:9999
+    
+  },
+  rangeDay: {
+    backgroundColor: '#E0E7FF',
+  },
+  dayText: {
+    fontSize: 14,
+    color: '#374151',
+    fontFamily: 'InterTight-Regular',
+  },
+  selectedDayText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  rangeDayText: {
+    color: '#585DDB',
+    fontWeight: '500',
+  },
+  // Price Range Dropdown Styles
+  priceContainer: {
+    padding: 20,
+    paddingHorizontal:50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    flex: 1,
+  },
+dropdownTrigger: {
+  flex: 0.5,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  backgroundColor: '#F9FAFB',
+  borderRadius: 8,
+  borderWidth: 1,
+  borderColor: '#585DDB',
+  marginBottom: 8,
+},
+dropdownTriggerText: {
+  fontSize: 12,
+  color: '#374151',
+  fontFamily: 'LineSeedSansTH_A_Bd',
+  flex: 1,
+},
+
+dropdownIcon: {
+  width: 12,
+  height: 8,
+  marginLeft: 8,
+  tintColor: '#6B7280', // Optional: Match theme
+},
+  dropdownList: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    overflow: 'hidden',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  dropdownScrollView: {
+    maxHeight: 250,
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+    
+  },
+  selectedDropdownItem: {
+    backgroundColor: '#EEF2FF',
+  },
+  dropdownItemText: {
+     fontSize: 12,
+    color: '#374151',
+    fontWeight:'700',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+    flex: 1,
+  },
+  selectedDropdownItemText: {
+    color: '#585DDB',
+    fontWeight: '500',
+  },
+  checkmark: {
+    fontSize: 16,
+    color: '#585DDB',
+    fontWeight: 'bold',
+  },
+  // Main Footer Styles (consolidated buttons)
+  footer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    gap: 12,
+  },
+  clearButton: {
+    flex: 0.1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    alignItems: 'center',
+  },
+  clearButtonText: {
+    fontSize: 12,
+    color: '#374151',
+    fontWeight: '700',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+  },
+  applyButton: {
+    flex: 0.1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#585DDB',
+    alignItems: 'center',
+  },
+  applyButtonText: {
+    fontSize: 12,
+    color: '#585DDB',
+    fontWeight: '700',
+    fontFamily: 'LineSeedSansTH_A_Bd',
+  },
+});
