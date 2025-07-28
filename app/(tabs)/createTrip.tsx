@@ -9,7 +9,8 @@ import {
   SafeAreaView,
   Alert,
   Image,
-  TextInput
+  TextInput,
+  Modal
 } from 'react-native';
 import {
   DatePickerComponent,
@@ -24,13 +25,13 @@ import TripCard from '../../components/TripCard'
 import styles from '../../css/create_EditTrip'
 import {TravelSelectionDetails,PickedFile} from '../../features/trip/schemas/trip-form.schema'
 import RichTextInputComponent from '../../components/richTextEditor'
-
+import Icon from 'react-native-vector-icons/Feather';
 
 const MAX_WORDS = 40;
 
  
 const ThaiFormScreen = () => {
-
+ const[p3Modal,setP3MOdal]=useState<boolean>(false)
 
   const [isFocused, setIsFocused] = useState(false);
   const [categories, setCategories] = useState<TravelSelectionDetails[]>([]);
@@ -860,10 +861,11 @@ const handleChangeText = useCallback((text) => {
         <TouchableOpacity style={styles.backButton} onPress={handleBack}
          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-       <FontAwesome name="angle-left" size={30} color="#333" style={{marginLeft:10}}/>
+       <Image source={require('../assets/images/home-back.png')} style={{tintColor:'#374151',height:24,width:24}}/>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>สร้างทริปใหม่</Text>
       </View>
+      <View></View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Form Fields */}
@@ -1093,7 +1095,62 @@ const handleChangeText = useCallback((text) => {
     
   </View>
   <View style={{flex:0.65,backgroundColor:"#F3F4F6",paddingHorizontal:20,paddingVertical:15,borderRadius:10,marginBottom:15}}>
-         <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ราคาต่อคน (รวม 20%)</Text>
+         <View style={{flexDirection:'row'}}>
+          <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10}}>ราคาต่อคน (รวม 20%)</Text>
+          <TouchableOpacity onPress={()=>setP3MOdal(true)} style={{backgroundColor:'#FFFFFF',marginLeft:5}}>
+            <Icon name="info" size={16} color="#374151" />
+          </TouchableOpacity>
+        <Modal
+      visible={p3Modal}
+      transparent
+      animationType='none'
+    >
+      <View style={{
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.3)', // dim background
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}>
+        <View style={{
+          justifyContent:'center',
+          padding: 16,
+          backgroundColor: '#FFFFFF',
+          borderRadius: 12,
+          position: 'relative',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 4,
+          elevation: 5
+          
+        }}>
+          {/* Close button */}
+          <TouchableOpacity
+            onPress={() => setP3MOdal(false)}
+            style={{
+              position: 'absolute',
+              top: -12,
+              right: -12,
+              borderRadius:9999,
+              padding: 4,
+              zIndex: 10,
+              backgroundColor:'#FF0000'
+            }}
+          >
+            <Icon name="x" size={18} color="#FFFFFF" />
+          </TouchableOpacity>
+
+          {/* Modal content */}
+          <Text style={{ color: '#374151', fontSize: 12, marginBottom: 5 ,fontFamily:'LineSeedSansTH_A_Bd',textAlign:'center'}}>
+           แอพจะหักค่าบริการ 20% หลังทริปสำเร็จ
+          </Text>
+          <Text style={{ color: '#374151', fontSize: 12 ,fontFamily:"LineSeedSansTH_A_Bd",textAlign:'center'}}>
+            เพื่อดูแลระบบ + การันตีการจองที่ปลอดภัยต่อหัวตี้ และผู้เข้าร่วม
+          </Text>
+        </View>
+      </View>
+    </Modal>
+         </View>
             <View style={{flexDirection:'row',marginTop:10,justifyContent:'space-around'}}>
                 <Image
                          source={require('../assets/images/images/images/image12.png')}

@@ -8,6 +8,7 @@ import {
   MessageList,
   MessageInput
 } from 'stream-chat-react';
+
 import TripCard from '../../components/TripCard';
 import type { Channel as StreamChannel } from 'stream-chat';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';

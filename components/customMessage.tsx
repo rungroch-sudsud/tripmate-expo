@@ -35,7 +35,16 @@ const ProductionCustomMessage: React.FC = () => {
          
     // Check if status is 200 AND user is eligible (data: true)
     if (response.status === 200 && response.data.data === true) {
-      router.push(`/Review?id=${message.user.id}&tripId=${tripId}`);
+      // router.push(`/Review?id=${message.user.id}&tripId=${tripId}`);
+      console.log(message.user);
+      
+      router.push({
+        pathname: '/(tabs)/PF_106',
+        params: { targetUser: JSON.stringify(message.user) ,
+           tripId:JSON.stringify(tripId)
+
+        },
+      });
     } else if (response.status === 200 && response.data.data === false) {
       // User is not eligible for review - handle this case
       console.log('User is not eligible for review');

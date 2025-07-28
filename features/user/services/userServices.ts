@@ -208,7 +208,83 @@ export const fetchUserProfile = async () => {
     return null;
   }
 };
+interface TravelItem {
+  id: string
+  title: string
+}
 
+interface UserTravelData {
+  travelStyles: string[]
+  travelPersonalities: string[]
+  transportationStyles: string[]
+}
+export const fetchUserTravelProperties = async (userId: string) => {
+  try {
+    const userDetails = await axiosInstance.get(`users/profile/${userId}`)
+    
+    // Debug the entire user profile response
+    console.log('Full user details response:', userDetails.data)
+    console.log('User details data:', userDetails.data.data)
+    
+    const userTravelStylesIds = userDetails.data.data.travelStyles
+    const userTravelPersonalitiesIds = userDetails.data.data.travelPersonalities
+    const userTransportationStylesIds = userDetails.data.data.transportationStyles
+
+    // Debug logging for travel styles
+    console.log('User travel styles IDs:', userTravelStylesIds)
+    console.log('Type of userTravelStylesIds:', typeof userTravelStylesIds)
+    console.log('Is array:', Array.isArray(userTravelStylesIds))
+    console.log('userTravelStylesIds length:', userTravelStylesIds?.length)
+    console.log('First userTravelStylesId:', userTravelStylesIds?.[0])
+    console.log('Second userTravelStylesId:', userTravelStylesIds?.[1])
+
+    const TravelStyles = await axiosInstance.get(`/travel-styles`)
+    const travelPersonalities = await axiosInstance.get('/travel-personalities')
+    const transportation = await axiosInstance.get(`transportation-styles`)
+
+    const allTravelStyles = TravelStyles.data.data
+    const allTravelPersonalities = travelPersonalities.data.data
+    const allTransportation = transportation.data.data
+
+    // Debug logging for all travel styles
+    console.log('All travel styles:', allTravelStyles)
+    console.log('First travel style:', allTravelStyles[0])
+
+    const userTravelStyles = allTravelStyles.filter((style: TravelItem) => {
+      const isIncluded = userTravelStylesIds.includes(style.title) // Changed from style.id to style.title
+      console.log(`Checking style ${style.id} (${style.title}): ${isIncluded}`)
+      return isIncluded
+    }).map((style: TravelItem) => ({
+      id: style.id,
+      title: style.title
+    }))
+
+    console.log('Filtered user travel styles:', userTravelStyles)
+
+    const userTravelPersonalities = allTravelPersonalities.filter((item: TravelItem) =>
+      userTravelPersonalitiesIds.includes(item.id)
+    ).map((item: TravelItem) => ({
+      id: item.id,
+      title: item.title
+    }))
+
+    const userTransportationStyles = allTransportation.filter((item: TravelItem) =>
+      userTransportationStylesIds.includes(item.id)
+    ).map((item: TravelItem) => ({
+      id: item.id,
+      title: item.title
+    }))
+
+    return {
+      travelStyles: userTravelStyles,
+      travelPersonalities: userTravelPersonalities,
+      transportation: userTransportationStyles
+    }
+  } catch (error) {
+    console.error('Error in fetchUserTravelProperties:', error)
+    throw error
+  }
+}
 export const updateUserProfile = async (profileData) => {
   try {
     const userId = await AsyncStorage.getItem(STORAGE_KEYS.USER_ID);
@@ -247,8 +323,6 @@ export const fetchTravelStyles = async () => {
     const mappedCategories = result.data.map(item => ({
       id: item.id,
       title: item.title,
-      iconImageUrl: item.iconImageUrl,
-      activeIconImageUrl: item.activeIconImageUrl || item.iconImageUrl,
     }));
     
     return mappedCategories;

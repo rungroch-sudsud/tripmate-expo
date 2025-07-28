@@ -13,6 +13,7 @@ import {
   Image,
   SafeAreaView,
   Alert,
+  Modal
 } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { axiosInstance } from '../../lib/axios';

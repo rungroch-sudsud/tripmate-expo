@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import RichTextRenderer from './richTextRenderer';
 import { Ionicons } from '@expo/vector-icons';
+import {getUserProfile} from '../features/user/services/userServices'
 // Types
 interface Trip {
   id: string;
@@ -28,7 +29,7 @@ interface Trip {
   tripCoverImageUrls?: string[];
   tripOwner: TripOwner;
   fullname: string;
-  tripOwnerId: string; // Added this field that you're checking in handleTripPress
+  tripOwnerId: string; 
 }
 
 interface TripOwner {
@@ -50,6 +51,7 @@ interface TripCardProps {
   onBookmarkToggle: (trip: Trip) => void;
   onTripPress: (trip: Trip) => void;
   onJoinTrip: (trip: Trip) => void;
+  handleUserProfile?:(user:TripOwner)=>void;
 }
 
 // Utility functions
@@ -83,7 +85,8 @@ const TripCard: React.FC<TripCardProps> = ({
  iscreateTrip,
   onBookmarkToggle, 
   onTripPress, 
-  onJoinTrip 
+  onJoinTrip,
+  handleUserProfile
 }) => {
   // Add null/undefined check for trip
   if (!trip) {
@@ -137,6 +140,19 @@ const scrollViewRef = useRef(null);
     e.stopPropagation(); // Prevent card press when join button is pressed
     onJoinTrip(trip);
   };
+
+  const handleOwner=()=>{
+     if(handleUserProfile){
+      const ownerData=getUserProfile(trip.tripOwnerId)
+      if(ownerData){
+       handleUserProfile(trip.tripOwner)
+      }else{
+        console.log("LOL AI");
+        
+      }
+     
+     }
+  }
 
 const averageRating = (trip.tripOwner?.review?.length ?? 0) > 0
   ? trip.tripOwner.review.reduce((sum, r) => sum + (r.rating || 0), 0) / trip.tripOwner.review.length
@@ -332,11 +348,13 @@ const averageRating = (trip.tripOwner?.review?.length ?? 0) > 0
         {/* Bottom Row with Owner Info and Join Button */}
         <View style={styles.bottomRow}>
           <View style={styles.ownerInfo}>
-            <Image
+         <TouchableOpacity onPress={handleOwner}>
+             <Image
               source={{ uri: ownerInfo.profileImageUrl }}
               style={styles.ownerAvatar}
               defaultSource={{ uri: 'https://via.placeholder.com/40' }}
             />
+         </TouchableOpacity>
             <View style={styles.ownerDetails}>
               <Text style={styles.ownerName} numberOfLines={1}>
                 {ownerInfo.displayName}

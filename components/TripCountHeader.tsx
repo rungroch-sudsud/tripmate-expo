@@ -4,6 +4,7 @@ import { View, Text, Image, TouchableOpacity } from 'react-native';
 import styles from '../css/findTrip_css';
 import FilterModal from './filtermodal'
 
+
 interface TripCountHeaderProps {
   count: number;
   onApplyFilters: (filters: {

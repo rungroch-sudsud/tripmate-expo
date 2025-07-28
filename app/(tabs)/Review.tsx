@@ -215,27 +215,32 @@ const ReviewScreen: React.FC = () => {
           <Text style={styles.userName}>
             {userProfile.fullname}
           </Text>
-          <Text style={styles.userSubtitle}>
-            {userProfile.gender} • อายุ {userProfile.age} ปี
-          </Text>
-          {userProfile.destinations && userProfile.destinations.length > 0 && (
-            <Text style={styles.userDestinations}>
-              {userProfile.destinations.join(', ')}
-            </Text>
-          )}
+  {/*
+<Text style={styles.userSubtitle}>
+  {userProfile.gender} • อายุ {userProfile.age} ปี
+</Text>
+{userProfile.destinations && userProfile.destinations.length > 0 && (
+  <Text style={styles.userDestinations}>
+    {userProfile.destinations.join(', ')}
+  </Text>
+)}
+*/}
+
+         <Text style={{fontFamily:'LineSeedSansTH',color:'#9CA3AF',fontWeight:'400',fontSize:14,textAlign:'center'}}>เที่ยวร่วมกันเมื่อ 3 วันที่แล้ว</Text>
         </View>
       </View>
 
-      {/* Rating Section */}
+ 
+
+      {/* Comment Section */}
+      <View style={styles.commentSection}>
+             {/* Rating Section */}
       <View style={styles.ratingSection}>
         <Text style={styles.ratingTitle}>ให้คะแนนประสบการณ์</Text>
         <View style={styles.starsContainer}>
           {renderStars()}
         </View>
       </View>
-
-      {/* Comment Section */}
-      <View style={styles.commentSection}>
         <Text style={styles.commentLabel}>ความคิดเห็น (ไม่บังคับ)</Text>
         <TextInput
           style={styles.commentInput}
@@ -286,19 +291,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingTop:35,
+    paddingBlock:20,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
-     fontFamily:'InterTight-Regular'
+     fontFamily:'InterTight-Regular',
+     boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
+     zIndex:10
   },
   backButton: {
     padding: 4,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-     fontFamily:'InterTight-Regular'
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#374151',
+     fontFamily:'LineSeedSansTH_A_Bd'
   },
   placeholder: {
     width: 40,
@@ -325,16 +333,15 @@ const styles = StyleSheet.create({
      fontFamily:'InterTight-Regular'
   },
   profileSection: {
-    flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 20,
   },
   profileImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 16,
+    width: 64,
+    height: 64,
+    borderRadius: 9999,
+    marginVertical:20
   },
   profileInfo: {
     flex: 1,
@@ -342,9 +349,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: '#374151',
     marginBottom: 4,
-     fontFamily:'InterTight-Regular'
+     fontFamily:'LineSeedSansTH_A_Bd',
+     textAlign:'center'
   },
   userSubtitle: {
     fontSize: 14,
@@ -380,7 +388,10 @@ const styles = StyleSheet.create({
   commentSection: {
     paddingHorizontal: 20,
     paddingVertical: 20,
+    marginHorizontal:40,
+    borderRadius:20,
     flex: 1,
+    backgroundColor:'#F3F4F6'
   },
   commentLabel: {
     fontSize: 16,

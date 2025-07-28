@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, use } from 'react';
 import {
   View,
   ScrollView,
   RefreshControl,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { Stack } from 'expo-router';
-
+import { router, Stack } from 'expo-router';
 // Components
 import TripCard from '../../components/TripCard';
 import BottomNavigation from '../../components/customNavigation';
@@ -241,6 +240,26 @@ const FindTripScreen: React.FC = () => {
               onTripPress={handleTripPress}
               onJoinTrip={handleJoinTrip}
               iscreateTrip={false}
+              handleUserProfile={
+                     async (user)=>{
+                
+                           if(user.userId===userId){
+                            router.push(`/userProfile?userId=${userId}`);
+                           }
+                           else{
+                             /*router.push({
+                              pathname:'/PF_104',
+                              params:{owner:JSON.stringify(user)}
+                             })*/
+router.push({
+  pathname: '/(tabs)/PF_105',
+  params: { userId: user.userId },
+});
+
+
+                           }
+                     }
+              }
             />
           ))
         )}

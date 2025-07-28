@@ -1,13 +1,11 @@
 import { getUserProfile } from '../../features/user/services/userServices'
 import { View, Image, SafeAreaView, Text, StyleSheet, TouchableOpacity, Animated ,StyleProp,ViewStyle, Dimensions} from 'react-native'
-import BottomNavigation from '../../components/customNavigation'
 import { Stack, useLocalSearchParams, router, useFocusEffect } from 'expo-router'
 import React, { useState, useRef, useEffect } from 'react'
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import {styles} from '../../css/userProfile_css'
-import Icon from 'react-native-vector-icons/Feather';
-import {getAuth, signOut} from 'firebase/auth'
+
 const { height: screenHeight } = Dimensions.get('window');
 
 type Dimension = number | `${number}%` | 'auto';
@@ -92,18 +90,7 @@ const ThreeDotsModal = ({ isVisible, onClose }: { isVisible: boolean; onClose: (
         }).start();
       }
     });
-const logout=async()=>{
-   try{
-    const auth=getAuth()
-    await signOut(auth)
-      onClose()
-      router.push('/')
-    
-   }catch(error){
-    console.log("Error :",error);
-    
-   }
-}
+
   if (!isVisible) return null;
 
   return (
@@ -128,24 +115,18 @@ const logout=async()=>{
           {/* Modal Content */}
           <View style={modalStyles.content}>
             <TouchableOpacity style={modalStyles.menuItem}>
-         
-              <Icon name="settings" size={24} color="#333" />
-   
+              <Ionicons name="settings-outline" size={24} color="#333" />
               <Text style={modalStyles.menuText}>การตั้งค่า</Text>
-                 <Text style={{    fontSize: 26,color: '#000000',textAlign:'left',flex:0.1}}>›</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={modalStyles.menuItem}>
-             <Icon name="book" size={24} color="#333" />
-
+             <Ionicons name="receipt-outline" size={24} color="#333" />
 
               <Text style={modalStyles.menuText}>ประวัติการจอง</Text>
-               <Text style={{    fontSize: 26,color: '#000000',textAlign:'left',flex:0.1}}>›</Text>
             </TouchableOpacity>
             
-            <TouchableOpacity style={modalStyles.menuItem} onPress={logout}>
-          <Icon name="log-out" size={24} color="red" />
-
+            <TouchableOpacity style={modalStyles.menuItem}>
+              <Ionicons name="log-out-outline" size={24} color="#FF0000" />
               <Text style={[modalStyles.menuText,{color:'#FF0000'}]}>Logout</Text>
             </TouchableOpacity>
           </View>
@@ -175,8 +156,8 @@ const modalStyles = StyleSheet.create({
     right: 0,
     height: screenHeight * 0.5, // Fixed height to half screen
     backgroundColor: 'white',
-    borderTopLeftRadius: 50,
-    borderTopRightRadius: 50,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     paddingBottom: 34, // Safe area padding
   },
   dragHandle: {
@@ -193,22 +174,16 @@ const modalStyles = StyleSheet.create({
     paddingBottom: 20,
   },
   menuItem: {
-    flex:1,
-    backgroundColor:'#FFFFFF',
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 16,
     paddingHorizontal: 12,
-    borderRadius: 90,
-      boxShadow: '0px 2px 6px rgba(0, 0, 0, 0.1)',
-      marginBottom:10
+    borderRadius: 12,
   },
   menuText: {
-    flex:0.9,
-    fontSize: 13,
+    fontSize: 16,
     marginLeft: 12,
-    fontFamily:'LineSeedSansTH_A_Bd',
-
+    fontWeight: '500',
   },
 });
 
@@ -253,9 +228,6 @@ const SkeletonBox: React.FC<SkeletonBoxProps> = ({ width, height, style }) => {
     />
   );
 };
-
-
-
 
 const SkeletonLoader = ( {userId}:{userId :string} ) => {
   return (
@@ -331,13 +303,13 @@ const SkeletonLoader = ( {userId}:{userId :string} ) => {
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNavContainer}>
-        <BottomNavigation currentScreen="profile" userId={userId} />
+       
       </View>
     </SafeAreaView>
   );
 };
 
-const UserProfile = () => {
+const PF_105 = () => {
   const params = useLocalSearchParams();
   const userId = params.userId;
   
@@ -420,7 +392,7 @@ const UserProfile = () => {
           <Text style={styles.errorText}>Error: {error}</Text>
         </View>
         <View style={styles.bottomNavContainer}>
-          <BottomNavigation currentScreen="profile" userId={userId} />
+        
         </View>
       </SafeAreaView>
     );
@@ -434,7 +406,7 @@ const UserProfile = () => {
           <Text style={styles.noDataText}>No profile data available</Text>
         </View>
         <View style={styles.bottomNavContainer}>
-          <BottomNavigation currentScreen="profile" userId={userId} />
+        
         </View>
       </SafeAreaView>
     );
@@ -463,31 +435,41 @@ const UserProfile = () => {
         {/* Action Buttons on Image */}
         <TouchableOpacity 
           style={styles.editProfile} 
-          onPress={() => router.push(`/profile?userId=${userId}`)}
+          onPress={() => router.push('/findTrips')}
           disabled={isModalVisible}
         >
           <Image 
-            source={require('../assets/images/edit-profile.png')} 
+            source={require('../assets/images/home-back.png')} 
             style={{ height: 20, width: 20 }}
           />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.threedots}
-          onPress={() => setIsModalVisible(true)}
-        >
-          <Image 
-            source={require('../assets/images/3-dots.png')} 
-            style={{ height: 24, width: 24 }}
-          />
-        </TouchableOpacity>
+      
       </View>
 
       {/* Draggable Layer - User Info Card */}
       <GestureDetector gesture={panGesture}>
         <Animated.View 
           style={[
-            styles.draggableSheet,
+           {
+                position: 'absolute',
+    bottom: 0, // Increased space for bottom navigation
+    left: 0,
+    right: 0,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 50,
+    borderTopRightRadius: 50,
+    minHeight: 300,
+    zIndex: 5, 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 5,
+           },
             {
               transform: [{ translateY: translateY }]
             }
@@ -531,6 +513,12 @@ const UserProfile = () => {
           
             </View>
           </View>
+     <TouchableOpacity style={{alignSelf:'center',backgroundColor:'#585DDB',width:'70%',height:36,marginHorizontal:100,alignItems:'center',marginBottom:50,borderRadius:8,justifyContent:'center'}}
+     onPress={()=>{console.log("wdsf3v");
+     }}
+     >
+          <Text style={{color:'#FFFFFF',fontFamily:'LineSeedSansTH_A_Bd',fontSize:14}}>เริ่มแชท</Text>
+     </TouchableOpacity> 
         </Animated.View>
       </GestureDetector>
 
@@ -539,7 +527,7 @@ const UserProfile = () => {
         style={styles.bottomNavContainer}
         pointerEvents={isModalVisible ? 'none' : 'auto'}
       >
-        <BottomNavigation currentScreen="profile" userId={userId} />
+\
       </View>
 
       {/* Three Dots Modal */}
@@ -552,4 +540,4 @@ const UserProfile = () => {
 };
 
 
-export default UserProfile;
+export default PF_105;

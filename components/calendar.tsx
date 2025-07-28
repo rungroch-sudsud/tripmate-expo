@@ -63,7 +63,6 @@ export const Calendar = ({ startDate, endDate, onDateSelect }: CalendarProps) =>
     
     const { date, isCurrentMonth } = dateObj;
     
-    // Only allow selection of current month dates
     if (!isCurrentMonth) return;
 
     if (!selectedStart || (selectedStart && selectedEnd)) {
