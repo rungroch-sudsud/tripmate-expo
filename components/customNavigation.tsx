@@ -15,7 +15,7 @@ const BottomNavigation = ({ currentScreen, userId }) => {
         router.push('/savedTrips');
         break;
       case 'channel':
-       // router.push('/channel');
+        router.push('/(tabs)/ChannelList');
         break;
       case 'profile':
         router.push(`/userProfile?userId=${userId}`);

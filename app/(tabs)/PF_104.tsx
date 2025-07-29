@@ -1,4 +1,4 @@
-import {Image,View,Text,ScrollView,TouchableOpacity,SafeAreaView,ImageBackground} from 'react-native'
+import {Image,View,Text,ScrollView,TouchableOpacity,SafeAreaView,ImageBackground,StyleSheet} from 'react-native'
 import {use, useEffect,useState} from 'react'
 import React from 'react'
 import {useLocalSearchParams,useRouter,Stack, router} from  'expo-router'
@@ -45,8 +45,8 @@ useEffect(() => {
   fetchData()
 }, [user?.userId])
 
- const averageRating = user.reviews?.length > 0
-  ? user.reviews.reduce((sum, r) => sum + r.rating, 0) / user.reviews.length
+ const averageRating = user?.reviews?.length > 0
+  ? user?.reviews.reduce((sum, r) => sum + r.rating, 0) / user.reviews.length
   : 0;
 
    return(
@@ -152,19 +152,41 @@ useEffect(() => {
           <View style={{ alignItems: 'center' }}>
   <Text>{averageRating.toFixed(1)}</Text>
 
-  <View style={{ flexDirection: 'row' }}>
-    {[1, 2, 3, 4, 5].map((star) => (
-      <Ionicons 
-        key={star}
-        name='star' 
-        style={{
-          color: star <= averageRating ? '#FACC15' : '#F3F4F6',
-          height: 30,
-          width: 33.75
-        }}
-      />
-    ))}
-  </View>
+<View style={{ flexDirection: 'row' }}>
+      {[1, 2, 3, 4, 5].map((star) => {
+        const fillPercent =
+          averageRating >= star
+            ? 100
+            : averageRating >= star - 1
+            ? (averageRating - (star - 1)) * 100
+            : 0;
+
+        return (
+          <View key={star} style={{  position: 'relative',
+    width: 24,
+    height: 24,
+    marginRight: 4,}}>
+            {/* Empty (gray) star as background */}
+            <Ionicons name="star" size={24} color="#F3F4F6" />
+
+            {/* Filled (yellow) part overlaid */}
+            {fillPercent > 0 && (
+              <View
+                style={[
+                  StyleSheet.absoluteFill,
+                  {
+                    width: `${fillPercent}%`,
+                    overflow: 'hidden',
+                  },
+                ]}
+              >
+                <Ionicons name="star" size={24} color="#FACC15" />
+              </View>
+            )}
+          </View>
+        );
+      })}
+    </View>
 </View>
                   </View>
                   <Text>เรตติ้ง</Text>

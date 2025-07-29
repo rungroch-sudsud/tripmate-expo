@@ -1395,11 +1395,14 @@ const handleChangeText = useCallback((text) => {
   </View>
 </TouchableOpacity>
 
-            <Text style={{fontFamily:'LineSeedSansTH',fontSize:12,color:'#374151',marginBottom:5}}>
+       <View style={{paddingTop:10,marginLeft:10}}>
+             <Text style={{fontFamily:'LineSeedSansTH',fontSize:12,color:'#374151',marginBottom:5,textAlign:'left'}}>
               ฉันได้อ่านและยอมรับ{' '}
               <Text style={styles.linkText}>นโยบายและข้อตกลง</Text>
-              {' '}ของแอปพลิเคชัน
+              {' '}ในการใช้
             </Text>
+            <Text style={{fontFamily:'LineSeedSansTH',fontSize:12,color:'#374151',marginBottom:5,textAlign:'left',marginTop:-10}}>งานแอปพลิเคชัน</Text>
+       </View>
           </View>  
         </View>
       </ScrollView>

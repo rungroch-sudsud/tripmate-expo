@@ -46,10 +46,16 @@ const ProductionCustomMessage: React.FC = () => {
         },
       });
     } else if (response.status === 200 && response.data.data === false) {
-      // User is not eligible for review - handle this case
-      console.log('User is not eligible for review');
-      // You can show a toast message, alert, or handle this however you want
-      // For example: toast.error('You are not eligible to review this user');
+if (message?.user && tripId) {
+  router.push({
+    pathname: '/(tabs)/PF_104',
+    params: { 
+      targetUser: JSON.stringify(message.user),
+      tripId: JSON.stringify(tripId),
+    },
+  });
+}
+
     }
   } catch (error) {
     // Handle errors (404, 500, etc.) - just return normally

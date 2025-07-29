@@ -52,7 +52,7 @@ const ReviewScreen: React.FC = () => {
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const targetUserId = Array.isArray(id) ? id[0] : id;
-  const currentTripId = Array.isArray(tripId) ? tripId[0] : tripId || '1';
+  const currentTripId = Array.isArray(tripId) ? tripId[0] : tripId;
 
 
 
@@ -87,6 +87,8 @@ const ReviewScreen: React.FC = () => {
   };
 
   const handleSubmit = async () => {
+
+    
     if (rating === 0) {
       return;
     }

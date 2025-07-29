@@ -904,6 +904,13 @@ export const submitProfileForm = async (formData, selectedDestinations, selected
   }
 };
 
+
+export const fetchReviewers=async(userId :string)=>{
+   const reviewsId=(await axiosInstance.get(`/users/profile/${userId}`)).data.data;
+   
+
+}
+
 // Keep the class export for backward compatibility
 class UserService {
   static storeUserTokens = storeUserTokens;

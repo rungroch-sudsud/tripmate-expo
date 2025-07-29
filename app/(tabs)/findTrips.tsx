@@ -12,7 +12,7 @@ import BottomNavigation from '../../components/customNavigation';
 import { SearchBar } from '../../components/SearchBar';
 import { TravelStyleCategories } from '../../components/TravelStyleCategories';
 import { TripCountHeader } from '../../components/TripCountHeader';
-import { HeaderSection } from '../../components/HeaderSection';
+import  HeaderSection  from '../../components/HeaderSection';
 import { EmptyState } from '../../components/EmptyState';
 
 // Hooks

@@ -193,7 +193,9 @@ const styles = StyleSheet.create({
       flexDirection: 'row',
       justifyContent: 'flex-start',
       marginTop: 1,
-      flexWrap:'wrap'
+      flexWrap:'wrap',
+      alignItems:'center',
+      
     },
     checkboxRow: {
       flexDirection: 'row',
@@ -279,19 +281,21 @@ checkmark: {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#585DDB',
-      paddingVertical: 16,
+      paddingVertical: 20,
       borderRadius: 8,
       marginBottom: 8,
+       boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)',
     },
     draftButton:{
       flex:0.5,
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#E5E7EB',
-      paddingVertical: 16,
+      backgroundColor: '#F3F4F6',
+      paddingVertical: 20,
       borderRadius: 8,
       marginBottom: 8,
+       boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)',
     },
     draftText:{
       marginLeft: 8,

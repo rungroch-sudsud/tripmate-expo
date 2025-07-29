@@ -93,14 +93,44 @@ const TripDetails: React.FC = () => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('th-TH', {
+const formatDateRange = (startDateString: string, endDateString: string) => {
+  const startDate = new Date(startDateString);
+  const endDate = new Date(endDateString);
+  
+  const startMonth = startDate.getMonth();
+  const endMonth = endDate.getMonth();
+  const startYear = startDate.getFullYear();
+  const endYear = endDate.getFullYear();
+  
+  const dayOptions: Intl.DateTimeFormatOptions = { day: '2-digit' };
+  const monthOptions: Intl.DateTimeFormatOptions = { month: 'short' };
+  const yearOptions: Intl.DateTimeFormatOptions = { year: '2-digit' };
+  
+  if (startMonth === endMonth && startYear === endYear) {
+    // Same month and year: "01-15 ม.ค. 67"
+    const startDay = startDate.toLocaleDateString('th-TH', dayOptions);
+    const endDay = endDate.toLocaleDateString('th-TH', dayOptions);
+    const month = startDate.toLocaleDateString('th-TH', monthOptions);
+    const year = startDate.toLocaleDateString('th-TH', yearOptions);
+    
+    return `${startDay}-${endDay} ${month} ${year}`;
+  } else {
+    // Different months: "25 ธ.ค. - 05 ม.ค. 67"
+    const startFormatted = startDate.toLocaleDateString('th-TH', {
       day: '2-digit',
-      month: 'short',
-      year: '2-digit'
+      month: 'short'
     });
-  };
+    const endFormatted = endDate.toLocaleDateString('th-TH', {
+      day: '2-digit',
+      month: 'short'
+    });
+    const year = endDate.toLocaleDateString('th-TH', yearOptions);
+    
+    return `${startFormatted} - ${endFormatted} ${year}`;
+  }
+};
+
+
 
   const getStyleColor = (style: string) => {
     const colors: { [key: string]: string } = {
@@ -148,7 +178,7 @@ const TripDetails: React.FC = () => {
   }
 
   return (
-   <View style={{flex:1}}>
+   <View style={{flex:1,backgroundColor:'#FFFFFF'}}>
      <ScrollView style={styles.container}
      showsVerticalScrollIndicator={false}
     >
@@ -246,26 +276,27 @@ const TripDetails: React.FC = () => {
             <Text style={styles.sectionTitle}>รายละเอียดทริป</Text>
             
             <View style={styles.detailRow}>
-              <View style={styles.detailItem}>
+              <View style={[styles.detailItem,{marginLeft:0}]}>
                 <View style={[styles.detailIcon,{backgroundColor:'#FF956E26'}]}>
                   <Ionicons name="calendar-outline" size={20} color="#FF956E" />
                 </View>
                 <View style={{}}>
                   <Text style={styles.detailLabel}>วันที่เดินทาง</Text>
                   <Text style={styles.detailValue}>
-                    {formatDate(trip.startDate)} - {formatDate(trip.endDate)}
+                 
+{formatDateRange(trip.startDate, trip.endDate)}
                   </Text>
                 </View>
               </View>
 
-              <View style={styles.detailItem}>
+              <View style={[styles.detailItem,{marginRight:0}]}>
                 <View style={[styles.detailIcon,{backgroundColor:'#FACC1526'}]}>
                 <Image source={require('../assets/images/coin.png')} style={{width:20,height:20}}/>
                 </View>
                 <View>
                   <Text style={styles.detailLabel}>ราคาต่อคน</Text>
                   <Text style={styles.detailValue}>
-                    ฿{trip.pricePerPerson}
+                    {trip.pricePerPerson} บาท/คน
                   </Text>
                 </View>
               </View>
@@ -300,6 +331,14 @@ const TripDetails: React.FC = () => {
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}><Text style={{color:'#585DDB',fontFamily:'LineSeedSansTH_A_Bd',fontSize:10,fontWeight:'bold'}}>17:00</Text>{'   '}ชมวิวหยุนไหล</Text>
             </View>
 
+           <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>✅ เงื่อนไข / กติกาทริป</Text>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- เดินทางตรงเวลา</Text>
+               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- แชร์ห้องพัก 2 คน/ห้อง</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- งดใช้เสียงหลัง 22:00</Text>
+                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ทริปนี้หญิงล้วน</Text>
+              </View>
+
             <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
               <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>❌ สิ่งที่ไม่รวม</Text>
                                               <RichTextRenderer 
@@ -323,19 +362,41 @@ const TripDetails: React.FC = () => {
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ของใช้ส่วนตัว</Text>
               </View>
 
-
-
-              <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
-              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>✅ เงื่อนไข / กติกาทริป</Text>
+                       <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>⚠️ เงื่อนไข / กติกาทริป</Text>
+                                                            <RichTextRenderer 
+  jsxString={trip.prerequisites} 
+  fallbackText="No details available" 
+/>
               <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- เดินทางตรงเวลา</Text>
                <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- แชร์ห้องพัก 2 คน/ห้อง</Text>
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- งดใช้เสียงหลัง 22:00</Text>
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>- ทริปนี้หญิงล้วน</Text>
               </View>
 
+
+                                     <View style={{borderRadius:16,borderWidth:1,borderColor: '#E5E7EB',padding:20,marginVertical:20}}>
+              <Text style={{color:'#374151',fontSize:10,fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',marginBottom:5}}>📍 จุดนัดพบ</Text>
+                                                            <RichTextRenderer 
+  jsxString={trip.prerequisites} 
+  fallbackText="No details available" 
+/>
+              <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>หน้าห้างเซนทรัลเวิล์ด ประตู  1</Text>
+          
+              </View>
+
+
+              <View>
+                  <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',fontSize:10}}>แนะนำตัวในฐานะหัวตี้</Text>
+              </View>
+
+
+
+   
+
               <View>
                 <Text style={{color:'#374151',fontFamily:'LineSeedSansTH_A_Bd',fontWeight:'bold',fontSize:10}}>แนะนำตัวในฐานะหัวตี้</Text>
-                <View style={{borderRadius:16,borderWidth:1,borderBlockColor:'#E5E7EB',padding:20,marginVertical:20}}>
+                <View style={{borderRadius:16,borderWidth:1,borderColor:'#E5E7EB',padding:20,marginVertical:20}}>
                   <Text style={{color:'#374151',fontFamily:'LineSeedSansTH',fontSize:10,fontWeight:'400'}}>
                     ชื่อเบียร์ครับ เป็นสายเที่ยวชิล ๆ ชอบถ่ายรูป เคยจัดทริปไปปาย 4 ครั้ง
 ดูแลเพื่อนๆ ตั้งแต่ต้นจนจบชอบวางแผนเน้นครบ จบ ไม่ต้องจ่ายเพิ่ม
@@ -532,9 +593,10 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
+    fontFamily:'LineSeedSansTH_A_Bd',
     fontWeight: 'bold',
-    color: '#1F2937',
+    color: '#374151',
     marginBottom: 16,
   },
   detailRow: {
@@ -547,7 +609,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderColor:'#E5E7EB',
     borderWidth:1,
-    borderRadius:15
+    borderRadius:15,
+    flex:0.5,
+    marginHorizontal:20,
+    paddingVertical:15,
+    paddingHorizontal:10
+    
   },
   detailIcon: {
     width: 40,
@@ -559,14 +626,16 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 10,
+    color: '#374151',
     marginBottom: 2,
+    fontFamily:'LineSeedSansTH'
   },
   detailValue: {
-    fontSize: 14,
+    fontSize: 10,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#374151',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
   servicesContainer: {
     marginTop: 16,
@@ -596,6 +665,7 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 16,
     fontWeight: 'bold',
+    fontFamily:'LineSeedSansTH_A_Bd'
   },
 });
 

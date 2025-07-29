@@ -146,7 +146,7 @@ const logout=async()=>{
             <TouchableOpacity style={modalStyles.menuItem} onPress={logout}>
           <Icon name="log-out" size={24} color="red" />
 
-              <Text style={[modalStyles.menuText,{color:'#FF0000'}]}>Logout</Text>
+              <Text style={[modalStyles.menuText,{color:'#FF0000'}]}>ออกจากระบบ</Text>
             </TouchableOpacity>
           </View>
         </Animated.View>

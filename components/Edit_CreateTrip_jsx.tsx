@@ -122,6 +122,8 @@ export const DatePickerComponent = ({
               if (errors.startDate) clearError('startDate');
             }}
             placeholder="dd/mm/yyyy"
+            placeholderTextColor="#9CA3AF"
+        
             keyboardType="numeric"
             maxLength={10}
             accessibilityLabel="วันที่เริ่มต้น"
@@ -147,7 +149,7 @@ export const DatePickerComponent = ({
               if (errors.endDate) clearError('endDate');
             }}
             placeholder="dd/mm/yyyy"
-            placeholderTextColor={!isEditMode && !formData.startDate ? '#B0B0B0' : undefined}
+            placeholderTextColor="#9CA3AF"
             keyboardType="numeric"
             maxLength={10}
             accessibilityLabel="วันที่สิ้นสุด"
@@ -479,6 +481,7 @@ export const TravelStylesComponent: React.FC<TravelInterestComponentProps> = ({
       <Text
     style={[
       styles.title,styles.label, 
+      {fontFamily:'LineSeedSansTH_A_Bd'},
       error && { color: 'red' }      
     ]}
   >
